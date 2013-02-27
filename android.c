@@ -490,6 +490,31 @@ out:
         return ret;
 }
 
+
+static UINT32 swap_bytes32(UINT32 n)
+{
+        return ((n & 0x000000FF) << 24) |
+               ((n & 0x0000FF00) << 8 ) |
+               ((n & 0x00FF0000) >> 8 ) |
+               ((n & 0xFF000000) >> 24);
+}
+
+
+static UINT16 swap_bytes16(UINT16 n)
+{
+        return ((n & 0x00FF) << 8) | ((n & 0xFF00) >> 8);
+}
+
+
+static void copy_and_swap_guid(EFI_GUID *dst, const EFI_GUID *src)
+{
+        memcpy((CHAR8 *)&dst->Data4, (CHAR8 *)src->Data4, sizeof(src->Data4));
+        dst->Data1 = swap_bytes32(src->Data1);
+        dst->Data2 = swap_bytes16(src->Data2);
+        dst->Data3 = swap_bytes16(src->Data3);
+}
+
+
 static EFI_STATUS open_partition(
                 IN const EFI_GUID *guid,
                 OUT UINT32 *MediaIdPtr,
@@ -500,7 +525,7 @@ static EFI_STATUS open_partition(
         EFI_BLOCK_IO *BlockIo;
         EFI_DISK_IO *DiskIo;
         UINT32 MediaId;
-        UINTN NoHandles;
+        UINTN NoHandles = 0;
         EFI_HANDLE *HandleBuffer = NULL;
 
         /* Get a handle on the partition containing the boot image */
@@ -510,9 +535,21 @@ static EFI_STATUS open_partition(
                         (void *)guid,
                         &NoHandles,
                         &HandleBuffer);
-        if (EFI_ERROR(ret)) {
-                error(L"LibLocateHandle", ret);
-                return ret;
+        if (EFI_ERROR(ret) || NoHandles == 0) {
+                /* Workaround for old installers which incorrectly wrote
+                 * GUIDs strings as little-endian */
+                EFI_GUID g;
+                copy_and_swap_guid(&g, guid);
+                ret = LibLocateHandleByDiskSignature(
+                                MBR_TYPE_EFI_PARTITION_TABLE_HEADER,
+                                SIGNATURE_TYPE_GUID,
+                                (void *)&g,
+                                &NoHandles,
+                                &HandleBuffer);
+                if (EFI_ERROR(ret)) {
+                        error(L"LibLocateHandle", ret);
+                        return ret;
+                }
         }
         if (NoHandles != 1) {
                 Print(L"%d handles found for GUID, expecting 1: %g\n",
@@ -675,23 +712,6 @@ static UINT8 getdigit(IN CHAR16 *str)
 }
 
 
-/* GUIDs are written out little-endian. When reading in as a string,
- * need to byteswap data1, data2 and data3.
- * Note that all the efilib functions which print string representations
- * of EFI_GUIDs don't correctly do this!! */
-static UINT32 swap_bytes32(UINT32 n)
-{
-        return ((n & 0x000000FF) << 24) |
-               ((n & 0x0000FF00) << 8 ) |
-               ((n & 0x00FF0000) >> 8 ) |
-               ((n & 0xFF000000) >> 24);
-}
-
-static UINT16 swap_bytes16(UINT16 n)
-{
-        return ((n & 0x00FF) << 8) | ((n & 0xFF00) >> 8);
-}
-
 EFI_STATUS string_to_guid(
                 IN CHAR16 *in_guid_str,
                 OUT EFI_GUID *guid)
@@ -704,9 +724,9 @@ EFI_STATUS string_to_guid(
         gstr[8] = 0;
         gstr[13] = 0;
         gstr[18] = 0;
-        guid->Data1 = swap_bytes32((UINT32)xtoi(gstr));
-        guid->Data2 = swap_bytes16((UINT16)xtoi(&gstr[9]));
-        guid->Data3 = swap_bytes16((UINT16)xtoi(&gstr[14]));
+        guid->Data1 = (UINT32)xtoi(gstr);
+        guid->Data2 = (UINT16)xtoi(&gstr[9]);
+        guid->Data3 = (UINT16)xtoi(&gstr[14]);
 
         guid->Data4[0] = getdigit(&gstr[19]);
         guid->Data4[1] = getdigit(&gstr[21]);
@@ -715,6 +735,7 @@ EFI_STATUS string_to_guid(
 
         return EFI_SUCCESS;
 }
+
 
 EFI_STATUS android_load_bcb(
                 IN const EFI_GUID *bcb_guid,
