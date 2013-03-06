@@ -402,9 +402,12 @@ static CHAR16 *get_serial_number(void)
 
 
 static EFI_STATUS setup_command_line(UINT8 *bootimage,
-                CHAR16 *gummiboot_opts)
+                CHAR16 *install_id)
 {
-        CHAR16 *cmdline16, *tmp, *serialno;
+        CHAR16 *cmdline16 = NULL;
+        CHAR16 *serialno;
+        CHAR16 *tmp;
+
         EFI_PHYSICAL_ADDRESS cmdline_addr;
         CHAR8 *cmdline;
         UINTN cmdlen;
@@ -435,9 +438,22 @@ static EFI_STATUS setup_command_line(UINT8 *bootimage,
                 }
         }
 
-        if (gummiboot_opts) {
+        if (install_id) {
+                CHAR16 *pos = install_id;
+
+                /* install_id should be a hex sequence and nothing else */
+                while (*pos) {
+                        if (!((*pos >= '0' && *pos <= '9') ||
+                                    (*pos >= 'a' && *pos <= 'f') ||
+                                    (*pos >= 'A' && *pos <= 'F'))) {
+                                ret = EFI_INVALID_PARAMETER;
+                                goto out;
+                        }
+                        pos++;
+                }
                 tmp = cmdline16;
-                cmdline16 = PoolPrint(L"%s %s", cmdline16, gummiboot_opts);
+                cmdline16 = PoolPrint(L"%s androidboot.install_id=ANDROID!%s",
+                        cmdline16, install_id);
                 FreePool(tmp);
                 if (!cmdline16) {
                         ret = EFI_OUT_OF_RESOURCES;
@@ -680,7 +696,7 @@ static EFI_STATUS load_bootimage(
 EFI_STATUS android_image_start(
                 IN EFI_HANDLE parent_image,
                 IN const EFI_GUID *guid,
-                IN CHAR16 *gummiboot_opts)
+                IN CHAR16 *install_id)
 {
         EFI_STATUS ret;
         struct boot_params *buf;
@@ -739,7 +755,7 @@ EFI_STATUS android_image_start(
         }
 
         debug("Creating command line");
-        ret = setup_command_line(bootimage, gummiboot_opts);
+        ret = setup_command_line(bootimage, install_id);
         if (EFI_ERROR(ret)) {
                 error(L"setup_command_line", ret);
                 goto out_bootimage;
