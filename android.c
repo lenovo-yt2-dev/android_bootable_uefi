@@ -67,7 +67,8 @@ struct setup_header {
         UINT32 ramdisk_max;    /* Highest legal initrd address */
         UINT32 kernel_alignment; /* Physical addr alignment required for kernel */
         UINT8 relocatable_kernel; /* Whether kernel is relocatable or not */
-        UINT8 _pad2[3];
+        UINT8 min_alignment;
+        UINT16 xloadflags;
         UINT32 cmdline_size;
         UINT32 hardware_subarch;
         UINT64 hardware_subarch_data;
@@ -246,39 +247,25 @@ struct boot_img_hdr
 **    else: jump to kernel_addr
 */
 
-#if __LP64__
-typedef void(*handover_func)(void *, EFI_SYSTEM_TABLE *, struct boot_params *);
+typedef void(*handover_func)(void *, EFI_SYSTEM_TABLE *, struct boot_params *) \
+            __attribute__((regparm(0)));
 
 static inline void handover_jump(EFI_HANDLE image, struct boot_params *bp,
                                  EFI_PHYSICAL_ADDRESS kernel_start)
 {
-        UINT32 offset = bp->hdr.handover_offset;
+        UINTN offset = bp->hdr.handover_offset;
         handover_func hf;
 
         asm volatile ("cli");
 
+#if __LP64__
         /* The 64-bit kernel entry is 512 bytes after the start. */
         kernel_start += 512;
+#endif
 
-        hf = (handover_func)(kernel_start + offset);
+        hf = (handover_func)((UINTN)kernel_start + offset);
         hf(image, ST, bp);
 }
-#else
-static inline void handover_jump(EFI_HANDLE image, struct boot_params *bp,
-                                 EFI_PHYSICAL_ADDRESS kernel_start)
-{
-        kernel_start += bp->hdr.handover_offset;
-
-        asm volatile ("cli                \n"
-                      "pushl %0         \n"
-                      "pushl %1         \n"
-                      "pushl %2         \n"
-                      "movl %3, %%ecx        \n"
-                      "jmp *%%ecx        \n"
-                      :: "m" (bp), "m" (ST),
-                         "m" (image), "m" (kernel_start));
-}
-#endif
 
 
 static VOID error(CHAR16 *str, EFI_STATUS ret)
@@ -650,9 +637,38 @@ EFI_STATUS android_image_start(
         aosp_header = (struct boot_img_hdr *)bootimage;
         buf = (struct boot_params *)(bootimage + aosp_header->page_size);
 
-        if (buf->hdr.version < 0x20b) {
-                /* Protocol 2.11, kernel 3.6 required */
+        /* Check boot sector signature */
+        if (buf->hdr.signature != 0xAA55) {
+                Print(L"bzImage kernel corrupt\n");
+                ret = EFI_INVALID_PARAMETER;
+                goto out_bootimage;
+        }
+
+        if (buf->hdr.header != SETUP_HDR) {
+                Print(L"Setup code version is invalid\n");
+                ret = EFI_INVALID_PARAMETER;
+                goto out_bootimage;
+        }
+
+        if (buf->hdr.version < 0x20c) {
+                /* Protocol 2.12, kernel 3.8 required */
                 Print(L"Kernel header version %x too old\n", buf->hdr.version);
+                ret = EFI_INVALID_PARAMETER;
+                goto out_bootimage;
+        }
+
+#if __LP64__
+        if (!(buf->hdr.xloadflags & XLF_EFI_HANDOVER_64)) {
+#else
+        if (!(buf->hdr.xloadflags & XLF_EFI_HANDOVER_32)) {
+#endif
+                Print(L"EFI Handover protocol not supported\n");
+                ret = EFI_INVALID_PARAMETER;
+                goto out_bootimage;
+        }
+
+        if (!buf->hdr.relocatable_kernel) {
+                Print(L"Expected relocatable kernel\n");
                 ret = EFI_INVALID_PARAMETER;
                 goto out_bootimage;
         }
