@@ -360,11 +360,51 @@ out_error:
 }
 
 
+static CHAR16 *get_serial_number(void)
+{
+        /* Per Android CDD, the value must be 7-bit ASCII and
+         * match the regex ^[a-zA-Z0-9](0,20)$ */
+        CHAR8 *tmp, *pos;
+        CHAR16 *ret;
+        CHAR8 *serialno;
+        EFI_GUID guid;
+        UINTN len;
+
+        if (EFI_ERROR(LibGetSmbiosSystemGuidAndSerialNumber(&guid,
+                        &serialno)))
+                return NULL;
+
+        len = strlena(serialno);
+        tmp = AllocatePool(len + 1);
+        if (!tmp)
+                return NULL;
+        tmp[len] = '\0';
+        memcpy(tmp, serialno, strlena(serialno));
+
+        pos = tmp;
+        while (*pos) {
+                /* Truncate if greater than 20 chars */
+                if ((pos - tmp) >= 20) {
+                        *pos = '\0';
+                        break;
+                }
+                /* Replace foreign characters with zeroes */
+                if (!((*pos >= '0' && *pos <= '9') ||
+                            (*pos >= 'a' && *pos <= 'z') ||
+                            (*pos >= 'A' && *pos <= 'Z')))
+                        *pos = '0';
+                pos++;
+        }
+        ret = stra_to_str(tmp);
+        FreePool(tmp);
+        return ret;
+}
+
+
 static EFI_STATUS setup_command_line(UINT8 *bootimage,
                 CHAR16 *gummiboot_opts)
 {
-        CHAR16 *aosp_hdr_opts = NULL;
-        CHAR16 *full_cmdline = NULL;
+        CHAR16 *cmdline16, *tmp, *serialno;
         EFI_PHYSICAL_ADDRESS cmdline_addr;
         CHAR8 *cmdline;
         UINTN cmdlen;
@@ -375,20 +415,40 @@ static EFI_STATUS setup_command_line(UINT8 *bootimage,
         aosp_header = (struct boot_img_hdr *)bootimage;
         buf = (struct boot_params *)(bootimage + aosp_header->page_size);
 
-        aosp_hdr_opts = stra_to_str(aosp_header->cmdline);
-        if (!aosp_hdr_opts) {
+        cmdline16 = stra_to_str(aosp_header->cmdline);
+        if (!cmdline16) {
                 ret = EFI_OUT_OF_RESOURCES;
                 goto out;
         }
-        full_cmdline = PoolPrint(L"%s %s", aosp_hdr_opts, gummiboot_opts);
-        if (!full_cmdline) {
-                ret = EFI_OUT_OF_RESOURCES;
-                goto out;
+
+        /* Append serial number from DMI */
+        serialno = get_serial_number();
+        if (serialno) {
+                tmp = cmdline16;
+                cmdline16 = PoolPrint(L"%s androidboot.serialno=%s",
+                        cmdline16, serialno);
+                FreePool(tmp);
+                FreePool(serialno);
+                if (!cmdline16) {
+                        ret = EFI_OUT_OF_RESOURCES;
+                        goto out;
+                }
         }
+
+        if (gummiboot_opts) {
+                tmp = cmdline16;
+                cmdline16 = PoolPrint(L"%s %s", cmdline16, gummiboot_opts);
+                FreePool(tmp);
+                if (!cmdline16) {
+                        ret = EFI_OUT_OF_RESOURCES;
+                        goto out;
+                }
+        }
+
         /* Documentation/x86/boot.txt: "The kernel command line can be located
          * anywhere between the end of the setup heap and 0xA0000" */
         cmdline_addr = 0xA0000;
-        cmdlen = StrLen(full_cmdline);
+        cmdlen = StrLen(cmdline16);
         ret = allocate_pages(AllocateMaxAddress, EfiLoaderData,
                              EFI_SIZE_TO_PAGES(cmdlen + 1),
                              &cmdline_addr);
@@ -396,7 +456,7 @@ static EFI_STATUS setup_command_line(UINT8 *bootimage,
                 goto out;
 
         cmdline = (CHAR8 *)(UINTN)cmdline_addr;
-        ret = str_to_stra(cmdline, full_cmdline, cmdlen + 1);
+        ret = str_to_stra(cmdline, cmdline16, cmdlen + 1);
         if (EFI_ERROR(ret)) {
                 free_pages(cmdline_addr, EFI_SIZE_TO_PAGES(cmdlen + 1));
                 goto out;
@@ -405,9 +465,7 @@ static EFI_STATUS setup_command_line(UINT8 *bootimage,
         buf->hdr.cmd_line_ptr = (UINT32)(UINTN)cmdline;
         ret = EFI_SUCCESS;
 out:
-        FreePool(gummiboot_opts);
-        FreePool(aosp_hdr_opts);
-        FreePool(full_cmdline);
+        FreePool(cmdline16);
 
         return ret;
 }
