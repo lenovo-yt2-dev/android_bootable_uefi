@@ -19,10 +19,24 @@
 #include "efi.h"
 #include "efilib.h"
 
-EFI_STATUS android_image_start(
+/* Functions to load an Android boot image.
+ * You can do this from a file, a partition GUID, or
+ * from a RAM buffer */
+EFI_STATUS android_image_start_buffer(
+                IN EFI_HANDLE parent_image,
+                IN VOID *bootimage,
+                IN CHAR16 *install_id);
+
+EFI_STATUS android_image_start_file(
+                IN EFI_HANDLE parent_image,
+                IN EFI_HANDLE device,
+                IN CHAR16 *loader,
+                IN CHAR16 *install_id);
+
+EFI_STATUS android_image_start_partition(
                 IN EFI_HANDLE parent_image,
                 IN const EFI_GUID *guid,
-                IN CHAR16 *gummiboot_opts);
+                IN CHAR16 *install_id);
 
 /* Load the next boot target if specified in the BCB partition,
  * which we specify by partition GUID. Place the value in var,
@@ -41,3 +55,6 @@ EFI_STATUS string_to_guid(
                 IN CHAR16 *guid_str,
                 OUT EFI_GUID *guid);
 #endif
+
+/* vim: softtabstop=8:shiftwidth=8:expandtab
+ */

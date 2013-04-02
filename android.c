@@ -644,18 +644,18 @@ out:
 }
 
 
-
-static EFI_STATUS load_bootimage(
+EFI_STATUS android_image_start_partition(
+                IN EFI_HANDLE parent_image,
                 IN const EFI_GUID *guid,
-                OUT UINT8 **bootimage_ptr)
+                IN CHAR16 *install_id)
 {
         EFI_BLOCK_IO *BlockIo;
         EFI_DISK_IO *DiskIo;
         UINT32 MediaId;
         UINT32 img_size;
-        struct boot_img_hdr aosp_header;
         UINT8 *bootimage;
         EFI_STATUS ret;
+        struct boot_img_hdr aosp_header;
 
         debug("Locating boot image");
         ret = open_partition(guid, &MediaId, &BlockIo, &DiskIo);
@@ -685,28 +685,129 @@ static EFI_STATUS load_bootimage(
         debug("Reading full boot image");
         ret = uefi_call_wrapper(DiskIo->ReadDisk, 5, DiskIo, MediaId, 0,
                         img_size, bootimage);
-        if (EFI_ERROR(ret))
-                FreePool(bootimage);
-        else
-                *bootimage_ptr = bootimage;
+        if (EFI_ERROR(ret)) {
+                error(L"ReadDisk", ret);
+                goto out;
+        }
+
+        ret = android_image_start_buffer(parent_image, bootimage, install_id);
+out:
+        FreePool(bootimage);
         return ret;
 }
 
 
-EFI_STATUS android_image_start(
+EFI_STATUS android_image_start_file(
                 IN EFI_HANDLE parent_image,
-                IN const EFI_GUID *guid,
+                IN EFI_HANDLE device,
+                IN CHAR16 *loader,
                 IN CHAR16 *install_id)
 {
         EFI_STATUS ret;
-        struct boot_params *buf;
-        struct boot_img_hdr *aosp_header;
-        UINT8 *bootimage;
+        VOID *bootimage;
+        EFI_DEVICE_PATH *path;
+        EFI_GUID SimpleFileSystemProtocol = SIMPLE_FILE_SYSTEM_PROTOCOL;
+        EFI_GUID EfiFileInfoId = EFI_FILE_INFO_ID;
+        EFI_FILE_IO_INTERFACE *drive;
+        EFI_FILE_INFO *fileinfo = NULL;
+        EFI_FILE *imagefile, *root;
+        UINTN buffersize = sizeof(EFI_FILE_INFO);
 
-        debug("Locating boot image");
-        ret = load_bootimage(guid, &bootimage);
-        if (EFI_ERROR(ret))
+        debug("Locating boot image from file %s", loader);
+        path = FileDevicePath(device, loader);
+        if (!path) {
+                Print(L"Error getting device path.");
+                uefi_call_wrapper(BS->Stall, 1, 3 * 1000 * 1000);
+                return EFI_INVALID_PARAMETER;
+        }
+
+        /* Open the device */
+        ret = uefi_call_wrapper(BS->HandleProtocol, 3, device,
+                        &SimpleFileSystemProtocol, (void **)&drive);
+        if (EFI_ERROR(ret)) {
+                error(L"HandleProtocol", ret);
                 return ret;
+        }
+        ret = uefi_call_wrapper(drive->OpenVolume, 2, drive, &root);
+        if (EFI_ERROR(ret)) {
+                error(L"OpenVolume", ret);
+                return ret;
+        }
+
+        /* Get information about the boot image file, we need to know
+         * how big it is, and allocate a suitable buffer */
+        ret = uefi_call_wrapper(root->Open, 5, root, &imagefile, loader,
+                        EFI_FILE_MODE_READ, 0);
+        if (EFI_ERROR(ret)) {
+                error(L"Open", ret);
+                return ret;
+        }
+        fileinfo = AllocatePool(buffersize);
+        if (!fileinfo)
+                return EFI_OUT_OF_RESOURCES;
+
+        ret = uefi_call_wrapper(imagefile->GetInfo, 4, imagefile,
+                        &EfiFileInfoId, &buffersize, fileinfo);
+        if (ret == EFI_BUFFER_TOO_SMALL) {
+                /* buffersize updated with the required space for
+                 * the request */
+                FreePool(fileinfo);
+                fileinfo = AllocatePool(buffersize);
+                if (!fileinfo)
+                        return EFI_OUT_OF_RESOURCES;
+                ret = uefi_call_wrapper(imagefile->GetInfo, 4, imagefile,
+                        &EfiFileInfoId, &buffersize, fileinfo);
+        }
+        if (EFI_ERROR(ret)) {
+                error(L"GetInfo", ret);
+                goto out;
+        }
+        buffersize = fileinfo->FileSize;
+        bootimage = AllocatePool(buffersize);
+        if (!bootimage) {
+                ret = EFI_OUT_OF_RESOURCES;
+                goto out;
+        }
+
+        /* Read the file into the buffer */
+        ret = uefi_call_wrapper(imagefile->Read, 3, imagefile,
+                        &buffersize, bootimage);
+        if (ret == EFI_BUFFER_TOO_SMALL) {
+                /* buffersize updated with the required space for
+                 * the request. By the way it doesn't make any
+                 * sense to me why this is needed since we supposedly
+                 * got the file size from the GetInfo call but
+                 * whatever... */
+                FreePool(bootimage);
+                bootimage = AllocatePool(buffersize);
+                if (!fileinfo) {
+                        ret = EFI_OUT_OF_RESOURCES;
+                        goto out;
+                }
+                ret = uefi_call_wrapper(imagefile->Read, 3, imagefile,
+                        &buffersize, bootimage);
+        }
+        if (EFI_ERROR(ret)) {
+                error(L"Read", ret);
+                goto out;
+        }
+
+        ret = android_image_start_buffer(parent_image, bootimage, install_id);
+out:
+        FreePool(fileinfo);
+        FreePool(bootimage);
+        return ret;
+}
+
+
+EFI_STATUS android_image_start_buffer(
+                IN EFI_HANDLE parent_image,
+                IN VOID *bootimage,
+                IN CHAR16 *install_id)
+{
+        struct boot_img_hdr *aosp_header;
+        struct boot_params *buf;
+        EFI_STATUS ret;
 
         aosp_header = (struct boot_img_hdr *)bootimage;
         buf = (struct boot_params *)(bootimage + aosp_header->page_size);
@@ -863,3 +964,5 @@ EFI_STATUS android_load_bcb(
         return EFI_SUCCESS;
 }
 
+/* vim: softtabstop=8:shiftwidth=8:expandtab
+ */
