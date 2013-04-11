@@ -34,9 +34,12 @@
 #include <efi.h>
 #include <efilib.h>
 
+#include <shim.h>
+
 #include "gummiboot.h"
 #include "android.h"
 #include "efilinux.h"
+
 
 struct setup_header {
         UINT8 setup_secs;        /* Sectors for setup code */
@@ -211,7 +214,8 @@ struct boot_img_hdr
 
     unsigned tags_addr;    /* physical addr for kernel tags */
     unsigned page_size;    /* flash page size we assume */
-    unsigned unused[2];    /* future expansion: should be 0 */
+    unsigned sig_size;     /* Size of signature block */
+    unsigned unused;       /* future expansion: should be 0 */
 
     unsigned char name[BOOT_NAME_SIZE]; /* asciiz product name */
 
@@ -230,10 +234,13 @@ struct boot_img_hdr
 ** +-----------------+
 ** | second stage    | o pages
 ** +-----------------+
+** | signature       | p pages
+** +-----------------+
 **
 ** n = (kernel_size + page_size - 1) / page_size
 ** m = (ramdisk_size + page_size - 1) / page_size
 ** o = (second_size + page_size - 1) / page_size
+** p = (sig_size + page_size - 1) / page_size
 **
 ** 0. all entities are page_size aligned in flash
 ** 1. kernel and ramdisk are required (size != 0)
@@ -245,6 +252,8 @@ struct boot_img_hdr
 ** 5. r0 = 0, r1 = MACHINE_TYPE, r2 = tags_addr
 ** 6. if second_size != 0: jump to second_addr
 **    else: jump to kernel_addr
+** 7. signature is optional; size should be 0 if not
+**    present. signature type specified by bootloader
 */
 
 typedef void(*handover_func)(void *, EFI_SYSTEM_TABLE *, struct boot_params *) \
@@ -318,12 +327,46 @@ static UINT32 pages(struct boot_img_hdr *hdr, UINT32 blob_size)
 }
 
 
+static UINTN bootimage_size(struct boot_img_hdr *aosp_header,
+                BOOLEAN include_sig)
+{
+        UINTN size;
+
+        size = (1 + pages(aosp_header, aosp_header->kernel_size) +
+                pages(aosp_header, aosp_header->ramdisk_size) +
+                pages(aosp_header, aosp_header->second_size)) *
+                        aosp_header->page_size;
+        if (include_sig)
+                size += (pages(aosp_header, aosp_header->sig_size) *
+                        aosp_header->page_size);
+        return size;
+}
+
+
 static EFI_STATUS verify_boot_image(UINT8 *bootimage)
 {
-        /* TODO: Read digital signature and verify that the boot image
-         * is properly signed using UEFI Shim APIs. */
+        SHIM_LOCK *shim_lock;
+        EFI_GUID shim_guid = SHIM_LOCK_GUID;
+        EFI_STATUS ret;
+        UINTN sig_offset;
+        UINTN sigsize;
+        struct boot_img_hdr *aosp_header;
 
-        return EFI_SUCCESS;
+        aosp_header = (struct boot_img_hdr *)bootimage;
+        ret = LibLocateProtocol(&shim_guid, (VOID **)&shim_lock);
+        if (EFI_ERROR(ret)) {
+                error(L"Couldn't instantiate shim protocol", ret);
+                return ret;
+        }
+
+        sig_offset = bootimage_size(aosp_header, FALSE);
+        sigsize = aosp_header->sig_size;
+
+        ret = shim_lock->VerifyBlob(bootimage, sig_offset,
+                        bootimage + sig_offset, sigsize);
+        if (EFI_ERROR(ret))
+                error(L"Boot image verification failed", ret);
+        return ret;
 }
 
 
@@ -674,10 +717,7 @@ EFI_STATUS android_image_start_partition(
                 return EFI_INVALID_PARAMETER;
         }
 
-        /* TODO: will need revision when signature is added */
-        img_size = (1 + pages(&aosp_header, aosp_header.kernel_size) +
-                        pages(&aosp_header, aosp_header.ramdisk_size) +
-                        pages(&aosp_header, aosp_header.second_size)) * aosp_header.page_size;
+        img_size = bootimage_size(&aosp_header, TRUE);
         bootimage = AllocatePool(img_size);
         if (!bootimage)
                 return EFI_OUT_OF_RESOURCES;
@@ -712,6 +752,8 @@ EFI_STATUS android_image_start_file(
         EFI_FILE_INFO *fileinfo = NULL;
         EFI_FILE *imagefile, *root;
         UINTN buffersize = sizeof(EFI_FILE_INFO);
+        struct boot_img_hdr *aosp_header;
+        UINTN bsize;
 
         debug("Locating boot image from file %s", loader);
         path = FileDevicePath(device, loader);
@@ -792,6 +834,15 @@ EFI_STATUS android_image_start_file(
                 goto out;
         }
 
+        aosp_header = (struct boot_img_hdr *)bootimage;
+        bsize = bootimage_size(aosp_header, TRUE);
+        if (buffersize != bsize) {
+                Print(L"Boot image size mismatch; got %ld expected %ld\n",
+                                buffersize, bsize);
+                ret = EFI_INVALID_PARAMETER;
+                goto out;
+        }
+
         ret = android_image_start_buffer(parent_image, bootimage, install_id);
 out:
         FreePool(fileinfo);
@@ -848,11 +899,13 @@ EFI_STATUS android_image_start_buffer(
                 goto out_bootimage;
         }
 
-        debug("Verifying the boot image");
-        ret = verify_boot_image(bootimage);
-        if (EFI_ERROR(ret)) {
-                error(L"boot image digital signature verification failed", ret);
-                goto out_bootimage;
+        if (is_secure_boot_enabled()) {
+                debug("Verifying the boot image");
+                ret = verify_boot_image(bootimage);
+                if (EFI_ERROR(ret)) {
+                        error(L"boot image digital signature verification failed", ret);
+                        goto out_bootimage;
+                }
         }
 
         debug("Creating command line");
