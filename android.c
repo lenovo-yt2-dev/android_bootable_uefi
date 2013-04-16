@@ -362,6 +362,11 @@ static EFI_STATUS verify_boot_image(UINT8 *bootimage)
         sig_offset = bootimage_size(aosp_header, FALSE);
         sigsize = aosp_header->sig_size;
 
+        if (!sigsize) {
+                Print(L"Secure boot enabled, but Android boot image is unsigned\n");
+                return EFI_ACCESS_DENIED;
+        }
+
         ret = shim_lock->VerifyBlob(bootimage, sig_offset,
                         bootimage + sig_offset, sigsize);
         if (EFI_ERROR(ret))
