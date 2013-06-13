@@ -40,12 +40,17 @@ EFI_STATUS android_image_start_partition(
 
 /* Load the next boot target if specified in the BCB partition,
  * which we specify by partition GUID. Place the value in var,
- * which must be freed.
- * Return values:
- * EFI_SUCCESS - A valid value was found in the BCB
+ * which must be freed. Capsule updates are also attempted if
+ * specified in the BCB. The success of the capsule update part
+ * is not reflected in the return value and instead is placed
+ * in the BCB.
+ *
+ * EFI_SUCCESS - A valid value was found in the BCB and *var is set
  * EFI_NOT_FOUND - BCB didn't specify a target; boot normally
- * EFI_INVALID_PARAMETER - BCB wasn't readble, bad GUID? */
+ * EFI_INVALID_PARAMETER - BCB wasn't readble, bad GUID?
+ * Potentially other errors related to Disk I/O */
 EFI_STATUS android_load_bcb(
+                IN EFI_FILE *root_dir,
                 IN const EFI_GUID *bcb_guid,
                 OUT CHAR16 **var);
 
