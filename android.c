@@ -201,6 +201,7 @@ typedef struct boot_img_hdr boot_img_hdr;
 #define BOOT_MAGIC_SIZE 8
 #define BOOT_NAME_SIZE 16
 #define BOOT_ARGS_SIZE 512
+#define BOOT_EXTRA_ARGS_SIZE 1024
 
 struct boot_img_hdr
 {
@@ -225,6 +226,10 @@ struct boot_img_hdr
     unsigned char cmdline[BOOT_ARGS_SIZE];
 
     unsigned id[8]; /* timestamp / checksum / sha1 / etc */
+
+    /* Supplemental command line data; kept here to maintain
+     * binary compatibility with older versions of mkbootimg */
+    unsigned char extra_cmdline[BOOT_EXTRA_ARGS_SIZE];
 };
 
 /*
@@ -461,6 +466,7 @@ static EFI_STATUS setup_command_line(UINT8 *bootimage,
         CHAR16 *tmp;
 
         EFI_PHYSICAL_ADDRESS cmdline_addr;
+        CHAR8 *full_cmdline;
         CHAR8 *cmdline;
         UINTN cmdlen;
         EFI_STATUS ret;
@@ -470,7 +476,18 @@ static EFI_STATUS setup_command_line(UINT8 *bootimage,
         aosp_header = (struct boot_img_hdr *)bootimage;
         buf = (struct boot_params *)(bootimage + aosp_header->page_size);
 
-        cmdline16 = stra_to_str(aosp_header->cmdline);
+        full_cmdline = AllocatePool(BOOT_ARGS_SIZE + BOOT_EXTRA_ARGS_SIZE);
+        if (!full_cmdline) {
+                ret = EFI_OUT_OF_RESOURCES;
+                goto out;
+        }
+        memcpy(full_cmdline, aosp_header->cmdline, (BOOT_ARGS_SIZE - 1));
+        if (aosp_header->cmdline[BOOT_ARGS_SIZE - 2]) {
+                memcpy(full_cmdline + (BOOT_ARGS_SIZE - 1),
+                                aosp_header->extra_cmdline,
+                                BOOT_EXTRA_ARGS_SIZE);
+        }
+        cmdline16 = stra_to_str(full_cmdline);
         if (!cmdline16) {
                 ret = EFI_OUT_OF_RESOURCES;
                 goto out;
@@ -535,6 +552,7 @@ static EFI_STATUS setup_command_line(UINT8 *bootimage,
         ret = EFI_SUCCESS;
 out:
         FreePool(cmdline16);
+        FreePool(full_cmdline);
 
         return ret;
 }
