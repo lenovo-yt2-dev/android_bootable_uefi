@@ -7,7 +7,7 @@ ifeq ($(TARGET_ARCH),x86)
 	SPECIFIC_GNU_EFI_SRC := ""
 	LOCAL_CFLAGS := \
 		-fPIC -fshort-wchar -ffreestanding -Wall -fno-stack-protector -mno-android -m32 \
-		-D$(EFI_ARCH) \
+		-D$(EFI_ARCH) -DUSE_SHIM=0\
 		-DEFI_FUNCTION_WRAPPER
 endif
 
@@ -28,7 +28,8 @@ LOCAL_SRC_FILES := \
 	loaders/bzimage/graphics.c \
 	malloc.c \
 	entry.c \
-	fs/fs.c
+	fs/fs.c \
+	android.c
 
 EFILINUX_VERSION_STRING := $(shell cd $(LOCAL_PATH) ; git describe --abbrev=8 --dirty --always)
 EFILINUX_VERSION_DATE := $(shell date -u)

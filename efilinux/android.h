@@ -14,11 +14,13 @@
  * limitations under the License.
  */
 
-#ifndef GUMMIBOOT_ANDROID_H
+#ifndef _ANDROID_H
 
 #include "efi.h"
 #include "efilib.h"
 
+#define XLF_EFI_HANDOVER_32     (1<<2)
+#define XLF_EFI_HANDOVER_64     (1<<3)
 /* Functions to load an Android boot image.
  * You can do this from a file, a partition GUID, or
  * from a RAM buffer */

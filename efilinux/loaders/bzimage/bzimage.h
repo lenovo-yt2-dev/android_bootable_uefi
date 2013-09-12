@@ -70,6 +70,7 @@ struct setup_header {
 	UINT32 kernel_alignment; /* Physical addr alignment required for kernel */
 	UINT8 relocatable_kernel; /* Whether kernel is relocatable or not */
 	UINT8 _pad2[3];
+	UINT16 xloadflags;
 	UINT32 cmdline_size;
 	UINT32 hardware_subarch;
 	UINT64 hardware_subarch_data;

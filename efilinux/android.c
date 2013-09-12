@@ -33,143 +33,18 @@
  */
 #include <efi.h>
 #include <efilib.h>
+#include "stdlib.h"
+#include "loaders/bzimage/bzimage.h"
 
+#if USE_SHIM
 #include <shim.h>
+#endif
 
-#include "gummiboot.h"
 #include "android.h"
 #include "efilinux.h"
 
 
 #define FWUPDATE_DIR    L"fwupdate"
-
-
-struct setup_header {
-        UINT8 setup_secs;        /* Sectors for setup code */
-        UINT16 root_flags;
-        UINT32 sys_size;
-        UINT16 ram_size;
-        UINT16 video_mode;
-        UINT16 root_dev;
-        UINT16 signature;        /* Boot signature */
-        UINT16 jump;
-        UINT32 header;
-        UINT16 version;
-        UINT16 su_switch;
-        UINT16 setup_seg;
-        UINT16 start_sys;
-        UINT16 kernel_ver;
-        UINT8 loader_id;
-        UINT8 load_flags;
-        UINT16 movesize;
-        UINT32 code32_start;        /* Start of code loaded high */
-        UINT32 ramdisk_start;        /* Start of initial ramdisk */
-        UINT32 ramdisk_len;        /* Lenght of initial ramdisk */
-        UINT32 bootsect_kludge;
-        UINT16 heap_end;
-        UINT8 ext_loader_ver;  /* Extended boot loader version */
-        UINT8 ext_loader_type; /* Extended boot loader ID */
-        UINT32 cmd_line_ptr;   /* 32-bit pointer to the kernel command line */
-        UINT32 ramdisk_max;    /* Highest legal initrd address */
-        UINT32 kernel_alignment; /* Physical addr alignment required for kernel */
-        UINT8 relocatable_kernel; /* Whether kernel is relocatable or not */
-        UINT8 min_alignment;
-        UINT16 xloadflags;
-        UINT32 cmdline_size;
-        UINT32 hardware_subarch;
-        UINT64 hardware_subarch_data;
-        UINT32 payload_offset;
-        UINT32 payload_length;
-        UINT64 setup_data;
-        UINT64 pref_address;
-        UINT32 init_size;
-        UINT32 handover_offset;
-} __attribute__((packed));
-
-struct efi_info {
-        UINT32 efi_loader_signature;
-        UINT32 efi_systab;
-        UINT32 efi_memdesc_size;
-        UINT32 efi_memdesc_version;
-        UINT32 efi_memmap;
-        UINT32 efi_memmap_size;
-        UINT32 efi_systab_hi;
-        UINT32 efi_memmap_hi;
-};
-
-struct e820_entry {
-        UINT64 addr;                /* start of memory segment */
-        UINT64 size;                /* size of memory segment */
-        UINT32 type;                /* type of memory segment */
-} __attribute__((packed));
-
-struct screen_info {
-        UINT8  orig_x;           /* 0x00 */
-        UINT8  orig_y;           /* 0x01 */
-        UINT16 ext_mem_k;        /* 0x02 */
-        UINT16 orig_video_page;  /* 0x04 */
-        UINT8  orig_video_mode;  /* 0x06 */
-        UINT8  orig_video_cols;  /* 0x07 */
-        UINT8  flags;            /* 0x08 */
-        UINT8  unused2;          /* 0x09 */
-        UINT16 orig_video_ega_bx;/* 0x0a */
-        UINT16 unused3;          /* 0x0c */
-        UINT8  orig_video_lines; /* 0x0e */
-        UINT8  orig_video_isVGA; /* 0x0f */
-        UINT16 orig_video_points;/* 0x10 */
-
-        /* VESA graphic mode -- linear frame buffer */
-        UINT16 lfb_width;        /* 0x12 */
-        UINT16 lfb_height;       /* 0x14 */
-        UINT16 lfb_depth;        /* 0x16 */
-        UINT32 lfb_base;         /* 0x18 */
-        UINT32 lfb_size;         /* 0x1c */
-        UINT16 cl_magic, cl_offset; /* 0x20 */
-        UINT16 lfb_linelength;   /* 0x24 */
-        UINT8  red_size;         /* 0x26 */
-        UINT8  red_pos;          /* 0x27 */
-        UINT8  green_size;       /* 0x28 */
-        UINT8  green_pos;        /* 0x29 */
-        UINT8  blue_size;        /* 0x2a */
-        UINT8  blue_pos;         /* 0x2b */
-        UINT8  rsvd_size;        /* 0x2c */
-        UINT8  rsvd_pos;         /* 0x2d */
-        UINT16 vesapm_seg;       /* 0x2e */
-        UINT16 vesapm_off;       /* 0x30 */
-        UINT16 pages;            /* 0x32 */
-        UINT16 vesa_attributes;  /* 0x34 */
-        UINT32 capabilities;     /* 0x36 */
-        UINT8  _reserved[6];     /* 0x3a */
-} __attribute__((packed));
-
-struct boot_params {
-        struct screen_info screen_info;
-        UINT8 apm_bios_info[0x14];
-        UINT8 _pad2[4];
-        UINT64 tboot_addr;
-        UINT8 ist_info[0x10];
-        UINT8 _pad3[16];
-        UINT8 hd0_info[16];
-        UINT8 hd1_info[16];
-        UINT8 sys_desc_table[0x10];
-        UINT8 olpc_ofw_header[0x10];
-        UINT8 _pad4[128];
-        UINT8 edid_info[0x80];
-        struct efi_info efi_info;
-        UINT32 alt_mem_k;
-        UINT32 scratch;
-        UINT8 e820_entries;
-        UINT8 eddbuf_entries;
-        UINT8 edd_mbr_sig_buf_entries;
-        UINT8 _pad6[6];
-        struct setup_header hdr;
-        UINT8 _pad7[0x290-0x1f1-sizeof(struct setup_header)];
-        UINT32 edd_mbr_sig_buffer[16];
-        struct e820_entry e820_map[128];
-        UINT8 _pad8[48];
-        UINT8 eddbuf[0x1ec];
-        UINT8 _pad9[276];
-};
 
 /* Bootloader Message
  *
@@ -311,25 +186,6 @@ static EFI_STATUS str_to_stra(CHAR8 *dst, CHAR16 *src, UINTN len)
         return EFI_SUCCESS;
 }
 
-
-static inline void memset(CHAR8 *dst, CHAR8 ch, UINTN size)
-{
-        UINTN i;
-
-        for (i = 0; i < size; i++)
-                dst[i] = ch;
-}
-
-
-static inline void memcpy(CHAR8 *dst, CHAR8 *src, UINTN size)
-{
-        UINTN i;
-
-        for (i = 0; i < size; i++)
-                *dst++ = *src++;
-}
-
-
 static UINT32 pages(struct boot_img_hdr *hdr, UINT32 blob_size)
 {
         return (blob_size + hdr->page_size - 1) / hdr->page_size;
@@ -351,9 +207,9 @@ static UINTN bootimage_size(struct boot_img_hdr *aosp_header,
         return size;
 }
 
-
 static EFI_STATUS verify_boot_image(UINT8 *bootimage)
 {
+#if USE_SHIM
         SHIM_LOCK *shim_lock;
         EFI_GUID shim_guid = SHIM_LOCK_GUID;
         EFI_STATUS ret;
@@ -381,6 +237,9 @@ static EFI_STATUS verify_boot_image(UINT8 *bootimage)
         if (EFI_ERROR(ret))
                 error(L"Boot image verification failed", ret);
         return ret;
+#else
+        return 0;
+#endif
 }
 
 
@@ -1025,159 +884,6 @@ out:
         return ret;
 }
 
-#define STATUS_CHECK_GUID  { 0x377cb2f9, 0x79dc, 0x4eb9, {0xb7, 0xde, 0x34, 0xd7, 0x35, 0x14, 0x75, 0xb5} }
-#define CAPSULE_UPDATE_STATUS_STRING L"CapsuleUpdateStatus"
-
-static EFI_STATUS push_capsule(
-                IN EFI_FILE *root_dir,
-                IN EFI_FILE_INFO *fi,
-                OUT EFI_RESET_TYPE *resetType)
-{
-        UINTN len;
-        UINT64 max = 0;
-        EFI_CAPSULE_HEADER *capHeader = NULL;
-        EFI_CAPSULE_HEADER **capHeaderArray;
-        EFI_CAPSULE_BLOCK_DESCRIPTOR *scatterList;
-        CHAR8 *content = NULL;
-        EFI_STATUS ret = EFI_LOAD_ERROR;
-        UINT32 attr = EFI_VARIABLE_NON_VOLATILE | EFI_VARIABLE_BOOTSERVICE_ACCESS;
-        EFI_GUID status_guid = STATUS_CHECK_GUID;
-        EFI_GUID data_guid;
-        UINTN guid_size;
-
-
-        debug ("Trying to load capsule:", fi->FileName);
-        len = file_read(root_dir, fi->FileName, &content);
-        //Some capsules might invoke reset during UpdateCapsule so delete the file now
-        file_delete(root_dir, fi->FileName);
-
-        capHeader = (EFI_CAPSULE_HEADER *) content;
-        capHeaderArray = AllocatePool(2*sizeof(EFI_CAPSULE_HEADER*)); /* not freed intendedly after use */
-        capHeaderArray[0] = capHeader;
-        capHeaderArray[1] = NULL;
-        if (len > 0){
-                debug("Querying capsule capabilities");
-                ret = uefi_call_wrapper(RT->QueryCapsuleCapabilities, 4, capHeaderArray, 1,  &max, resetType);
-                if (EFI_SUCCESS == ret){
-                        if (len > max){
-                                ret = EFI_BAD_BUFFER_SIZE;
-                                goto end;
-                        }
-                        scatterList = AllocatePool(2*sizeof(EFI_CAPSULE_BLOCK_DESCRIPTOR)); /* not freed intendedly after use */
-                        memset((CHAR8*)scatterList, 0x0, 2*sizeof(EFI_CAPSULE_BLOCK_DESCRIPTOR));
-                        scatterList->Length = len;
-                        scatterList->Union.DataBlock = (EFI_PHYSICAL_ADDRESS) (UINTN) capHeader;
-                        //Create NVRAM variable to hold GUID of update so we can check after reset
-                        data_guid = capHeader->CapsuleGuid;
-                        guid_size = sizeof(data_guid);
-                        ret =  uefi_call_wrapper(RT->SetVariable, 5, CAPSULE_UPDATE_STATUS_STRING , &status_guid, attr, guid_size, &data_guid);
-                        if (EFI_ERROR(ret)) {
-                                error(L"Couldn't set variable for capsule update in nvram",ret);
-                                goto end;
-                        }
-
-                        debug("Calling RT->UpdateCapsule");
-                        ret = uefi_call_wrapper(RT->UpdateCapsule, 3 ,  capHeaderArray, 1, (EFI_PHYSICAL_ADDRESS) (UINTN) scatterList);
-                } else {
-                        error(L"RT->QueryCapsuleCapabilities", ret);
-                }
-        } else {
-                Print(L"Couldn't load capsule data from disk\n");
-                ret = EFI_LOAD_ERROR;
-        }
-
-end:
-        return ret;
-}
-
-static EFI_STATUS check_capsule_status_per_guid(EFI_GUID *guid, BOOLEAN *status)
-{
-        EFI_STATUS ret = EFI_SUCCESS;
-        *status = TRUE;
-        return ret;
-}
-
-static EFI_STATUS check_capsule_status(VOID)
-{
-        EFI_GUID status_guid = STATUS_CHECK_GUID;
-        EFI_GUID nvram_guid;
-        EFI_STATUS status;
-        UINTN guid_size = sizeof(nvram_guid);
-        UINT32 attr=0;
-        BOOLEAN result=FALSE;
-        debug ("Checking the status of the previous update");
-        status =  uefi_call_wrapper(RT->GetVariable, 5, CAPSULE_UPDATE_STATUS_STRING,
-                                    &status_guid, &attr, &guid_size, &nvram_guid);
-        if (status == EFI_NOT_FOUND){
-                debug ("Did not find the variable so there were no updates");
-                return EFI_SUCCESS;
-        }
-        if (EFI_ERROR(status)){
-                return status;
-        }
-        status =  uefi_call_wrapper(RT->SetVariable, 5, CAPSULE_UPDATE_STATUS_STRING,
-                                    &status_guid, 0, 0, NULL);
-        if (EFI_ERROR(status)){
-                return status;
-        }
-        status = check_capsule_status_per_guid(&nvram_guid, &result);
-        if (EFI_ERROR(status)){
-                return status;
-        }
-        if (result){
-                return EFI_SUCCESS;
-        }
-
-        return EFI_DEVICE_ERROR;
-}
-
-
-
-EFI_STATUS stage_capsule(
-                IN EFI_FILE *capsule_dir,
-                IN UINTN bufferInputSize,
-                OUT CHAR16 *capsule_file,
-                OUT BOOLEAN *capsule_present)
-{
-        EFI_STATUS ret;
-        debug("Scanning for capsules");
-        *capsule_present = FALSE; 
-        for (;;) {
-                EFI_FILE_INFO *fi;
-                UINTN len;
-                UINTN bufsize = bufferInputSize;
-                ret = uefi_call_wrapper(capsule_dir->Read, 3, capsule_dir,
-                                &bufsize, capsule_file);
-                if (EFI_ERROR(ret)) {
-                        error(L"Couldn't read " FWUPDATE_DIR " directory contents",
-                                        ret);
-                        break;
-                }
-                if (bufsize == 0) {
-                        /* No more directory entries */
-                        debug("Finished scanning " FWUPDATE_DIR " directory contents");
-                        ret = EFI_SUCCESS;
-                        break;
-                }
-
-                fi = (EFI_FILE_INFO *)capsule_file;
-                len = StrLen(fi->FileName);
-                if (len < 5)
-                        continue;
-                if (StriCmp(fi->FileName + len - 4, L".cap") != 0)
-                        continue;
-
-                debug("Selected '%s' for update", fi->FileName);
-                *capsule_present=TRUE;
-                break;
-        }
-        debug("Scanning complete");
-
-        return ret;
-}
-
-
-
 EFI_STATUS read_bcb(
                 IN const EFI_GUID *bcb_guid,
                 OUT struct bootloader_message *bcb)
@@ -1257,81 +963,6 @@ VOID set_bcb(
         if (command)
                 str_to_stra(bcb->command, command, sizeof(bcb->command));
 }
-
-
-
-/* Look for any capsules in the capsule staging directory and applu
- * the first one we find. Modifies the BCB, so write it out afterwards.
- * If returns true, must reset the system with the provided reset type */
-static BOOLEAN update_firmware(
-                IN EFI_FILE *root_dir,
-                OUT struct bootloader_message *bcb,
-                IN BOOLEAN recovery_mode,
-                OUT EFI_RESET_TYPE *reset_type)
-{
-        CHAR16 capsule_file[256];
-        EFI_FILE_INFO *fi;
-        EFI_FILE *capsule_dir;
-        EFI_STATUS ret;
-        BOOLEAN capsule_present;
-
-        debug("Pushing update capsules and initiate reset");
-
-        /* We could have gotten here after resetting to apply a capsule.
-         * Check if it succeeded. Also returns success if we hadn't applied
-         * any capsules */
-        ret = check_capsule_status();
-        if (EFI_ERROR(ret)) {
-                if (recovery_mode)
-                        set_bcb(bcb, L"boot-recovery", L"FAILED (status)", ret);
-                goto out_err;
-        }
-        ret = uefi_call_wrapper(root_dir->Open, 5, root_dir, &capsule_dir,
-                        FWUPDATE_DIR, EFI_FILE_MODE_READ, 0);
-        if (EFI_ERROR(ret)) {
-                error(L"Couldn't open " FWUPDATE_DIR " directory", ret);
-                goto out_err;
-        }
-
-        /* Find the capsule in the staging directory
-         * and send the name to push_capsule() which will delete the file after
-         * copying the capsule to the memory */
-        ret = stage_capsule(capsule_dir, sizeof(capsule_file), capsule_file, &capsule_present);
-        if (EFI_ERROR(ret)) {
-                if (recovery_mode)
-                        set_bcb(bcb, L"boot-recovery", L"FAILED (stage)", ret);
-                goto close_capsule_dir;
-        }
-        fi = (EFI_FILE_INFO *)capsule_file;
-        if (!capsule_present) {
-                /* No capsules to apply */
-                if (recovery_mode)
-                        set_bcb(bcb, L"boot-recovery", L"OK", EFI_SUCCESS);
-                goto close_capsule_dir;
-        }
-
-        /* Next time we get here, see if the update succeeded */
-        ret = push_capsule(capsule_dir, fi, reset_type);
-        uefi_call_wrapper(capsule_dir->Close, 1, capsule_dir);
-        if (EFI_ERROR(ret)) {
-                /* Capsule update failed; boot into recovery indicating
-                 * failure so that it can freak out */
-                if (recovery_mode)
-                        set_bcb(bcb, L"boot-recovery", L"FAILED (push)", ret);
-                goto out_err;
-        }
-
-        return TRUE;
-close_capsule_dir:
-        uefi_call_wrapper(capsule_dir->Close, 1, capsule_dir);
-out_err:
-        /* If we're not in recovery moode, just clear the BCB and
-         * boot normally */
-        if (!recovery_mode)
-                bcb->command[0] = '\0';
-        return FALSE;
-}
-
 
 
 EFI_STATUS android_load_bcb(
