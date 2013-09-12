@@ -20,6 +20,7 @@ EFI_TARGET := efi-app-$(EFI_ARCH)
 
 LOCAL_C_INCLUDES := \
 	$(LOCAL_PATH)/loaders \
+	$(LOCAL_PATH)/android \
 	$(LOCAL_PATH)/fs
 
 LOCAL_SRC_FILES := \
@@ -29,7 +30,9 @@ LOCAL_SRC_FILES := \
 	malloc.c \
 	entry.c \
 	fs/fs.c \
-	android.c
+	android/recovery.c \
+	android/boot.c \
+	utils.c
 
 EFILINUX_VERSION_STRING := $(shell cd $(LOCAL_PATH) ; git describe --abbrev=8 --dirty --always)
 EFILINUX_VERSION_DATE := $(shell date -u)
