@@ -43,6 +43,16 @@
 
 #define EFILINUX_CONFIG	L"efilinux.cfg"
 
+#include "utils.h"
+
+#define debug(...)	{			\
+		CHAR16	*func = stra_to_str((CHAR8 *)__FUNCTION__);	\
+		Print(L"efilinux [%s:%d] ",func, __LINE__);	\
+		Print(L"" __VA_ARGS__);		\
+		Print(L"\n");		\
+		free(func);			\
+	}
+
 extern EFI_SYSTEM_TABLE *sys_table;
 extern EFI_BOOT_SERVICES *boot;
 extern EFI_RUNTIME_SERVICES *runtime;

@@ -7,7 +7,7 @@ extern void free(void *buf);
 extern EFI_STATUS emalloc(UINTN, UINTN, EFI_PHYSICAL_ADDRESS *);
 extern void efree(EFI_PHYSICAL_ADDRESS, UINTN);
 
-static inline void memset(char *dst, char ch, UINTN size)
+static inline void memset(CHAR8 *dst, CHAR8 ch, UINTN size)
 {
 	int i;
 
@@ -15,7 +15,7 @@ static inline void memset(char *dst, char ch, UINTN size)
 		dst[i] = ch;
 }
 
-static inline void memcpy(char *dst, char *src, UINTN size)
+static inline void memcpy(CHAR8 *dst, CHAR8 *src, UINTN size)
 {
 	int i;
 

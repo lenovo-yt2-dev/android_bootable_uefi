@@ -38,6 +38,7 @@
 #include "efilinux.h"
 
 EFI_STATUS str_to_stra(CHAR8 *dst, CHAR16 *src, UINTN len);
+CHAR16 *stra_to_str(CHAR8 *src);
 VOID error(CHAR16 *str, EFI_STATUS ret);
 VOID StrNCpy(OUT CHAR16 *dest, IN const CHAR16 *src, UINT32 n);
 UINT8 getdigit(IN CHAR16 *str);

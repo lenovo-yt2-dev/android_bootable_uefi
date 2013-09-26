@@ -49,6 +49,39 @@ EFI_STATUS str_to_stra(CHAR8 *dst, CHAR16 *src, UINTN len)
         return EFI_SUCCESS;
 }
 
+CHAR16 *stra_to_str(CHAR8 *src)
+{
+        UINTN i;
+	UINTN len;
+	CHAR16 *dst;
+
+        /* This is NOT how to do UTF16 to UTF8 conversion. For now we're just
+         * going to hope that nobody's putting non-ASCII characters in
+         * the source string! We'll at least abort with an error
+         * if we see any funny stuff */
+
+	len = strlena(src);
+	if (!len)
+		return NULL;
+
+	dst = malloc((len+1) * sizeof(CHAR16));
+	if (!dst)
+		return NULL;
+
+        for (i = 0; i <= len; i++) {
+                if (src[i] > 0x7F)
+			goto free;
+
+                dst[i] = (CHAR16)src[i];
+                if (!src[i])
+                        break;
+        }
+
+        return dst;
+free:
+	free(dst);
+        return NULL;
+}
 
 VOID error(CHAR16 *str, EFI_STATUS ret)
 {

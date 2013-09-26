@@ -35,7 +35,7 @@
 #include <efilib.h>
 #include <utils.h>
 #include <stdlib.h>
-#include <bzimage/bzimage.h>
+#include <asm/bootparam.h>
 
 #if USE_SHIM
 #include <shim.h>
@@ -51,6 +51,7 @@ typedef struct boot_img_hdr boot_img_hdr;
 #define BOOT_NAME_SIZE 16
 #define BOOT_ARGS_SIZE 512
 #define BOOT_EXTRA_ARGS_SIZE 1024
+#define SETUP_HDR		0x53726448	/* 0x53726448 == "HdrS" */
 
 struct boot_img_hdr
 {
@@ -190,7 +191,7 @@ static EFI_STATUS verify_boot_image(UINT8 *bootimage)
 }
 
 
-static EFI_STATUS setup_ramdisk(UINT8 *bootimage)
+static EFI_STATUS setup_ramdisk(CHAR8 *bootimage)
 {
         struct boot_img_hdr *aosp_header;
         struct boot_params *buf;
@@ -204,18 +205,18 @@ static EFI_STATUS setup_ramdisk(UINT8 *bootimage)
         roffset = (1 + pages(aosp_header, aosp_header->kernel_size))
                         * aosp_header->page_size;
         rsize = aosp_header->ramdisk_size;
-        buf->hdr.ramdisk_len = rsize;
+        buf->hdr.ramdisk_size = rsize;
         ret = emalloc(rsize, 0x1000, &ramdisk_addr);
         if (EFI_ERROR(ret))
                 return ret;
 
-        if ((UINTN)ramdisk_addr > buf->hdr.ramdisk_max) {
+        if ((UINTN)ramdisk_addr > buf->hdr.initrd_addr_max) {
                 Print(L"Ramdisk address is too high!\n");
                 ret = EFI_OUT_OF_RESOURCES;
                 goto out_error;
         }
         memcpy((VOID *)(UINTN)ramdisk_addr, bootimage + roffset, rsize);
-        buf->hdr.ramdisk_start = (UINT32)(UINTN)ramdisk_addr;
+        buf->hdr.ramdisk_image = (UINT32)(UINTN)ramdisk_addr;
         return EFI_SUCCESS;
 out_error:
         efree(ramdisk_addr, rsize);
@@ -382,13 +383,13 @@ static EFI_STATUS handover_kernel(CHAR8 *bootimage, EFI_HANDLE parent_image)
         buf = (struct boot_params *)(bootimage + aosp_header->page_size);
 
         koffset = aosp_header->page_size;
-        setup_sectors = buf->hdr.setup_secs;
+        setup_sectors = buf->hdr.setup_sects;
         setup_sectors++; /* Add boot sector */
         setup_size = (UINT32)setup_sectors * 512;
         ksize = aosp_header->kernel_size - setup_size;
         kernel_start = buf->hdr.pref_address;
         init_size = buf->hdr.init_size;
-        buf->hdr.loader_id = 0x1;
+        buf->hdr.type_of_loader = 0x1;
         memset((CHAR8 *)&buf->screen_info, 0x0, sizeof(buf->screen_info));
 
         ret = allocate_pages(AllocateAddress, EfiLoaderData,
@@ -544,7 +545,7 @@ EFI_STATUS android_image_start_file(
         }
         if (EFI_ERROR(ret)) {
                 error(L"GetInfo", ret);
-                goto out;
+                goto free_info;
         }
         buffersize = fileinfo->FileSize;
         bootimage = AllocatePool(buffersize);
@@ -586,12 +587,30 @@ EFI_STATUS android_image_start_file(
         }
 
         ret = android_image_start_buffer(parent_image, bootimage, install_id);
+
 out:
-        FreePool(fileinfo);
         FreePool(bootimage);
+free_info:
+        FreePool(fileinfo);
+
         return ret;
 }
 
+UINT8 is_secure_boot_enabled(void)
+{
+        UINT8 secure_boot;
+        UINTN size;
+        EFI_STATUS status;
+        EFI_GUID global_var_guid = EFI_GLOBAL_VARIABLE;
+
+        size = sizeof(secure_boot);
+        status = uefi_call_wrapper(RT->GetVariable, 5, L"SecureBoot", (EFI_GUID *)&global_var_guid, NULL, &size, (void*)&secure_boot);
+
+        if (EFI_ERROR(status))
+                secure_boot = 0;
+
+        return secure_boot;
+}
 
 EFI_STATUS android_image_start_buffer(
                 IN EFI_HANDLE parent_image,
@@ -606,7 +625,7 @@ EFI_STATUS android_image_start_buffer(
         buf = (struct boot_params *)(bootimage + aosp_header->page_size);
 
         /* Check boot sector signature */
-        if (buf->hdr.signature != 0xAA55) {
+        if (buf->hdr.boot_flag != 0xAA55) {
                 Print(L"bzImage kernel corrupt\n");
                 ret = EFI_INVALID_PARAMETER;
                 goto out_bootimage;
@@ -626,10 +645,11 @@ EFI_STATUS android_image_start_buffer(
         }
 
 #if __LP64__
-        if (!(buf->hdr.xloadflags & XLF_EFI_HANDOVER_64)) {
+        if (!(buf->hdr.xloadflags & XLF_EFI_HANDOVER_64))
 #else
-        if (!(buf->hdr.xloadflags & XLF_EFI_HANDOVER_32)) {
+        if (!(buf->hdr.xloadflags & XLF_EFI_HANDOVER_32))
 #endif
+	{
                 Print(L"EFI Handover protocol not supported\n");
                 ret = EFI_INVALID_PARAMETER;
                 goto out_bootimage;
@@ -668,7 +688,7 @@ EFI_STATUS android_image_start_buffer(
         ret = handover_kernel(bootimage, parent_image);
         error(L"handover_kernel", ret);
 
-        efree(buf->hdr.ramdisk_start, buf->hdr.ramdisk_len);
+        efree(buf->hdr.ramdisk_image, buf->hdr.ramdisk_size);
 out_cmdline:
         free_pages(buf->hdr.cmd_line_ptr,
                         strlena((CHAR8 *)(UINTN)buf->hdr.cmd_line_ptr) + 1);
@@ -676,30 +696,6 @@ out_bootimage:
         FreePool(bootimage);
         return ret;
 }
-
-
-
-static EFI_STATUS file_delete (
-                IN EFI_FILE *root_dir,
-                const CHAR16 *name)
-{
-        EFI_STATUS ret;
-        EFI_FILE *src;
-        ret = uefi_call_wrapper(root_dir->Open, 5, root_dir, &src, (CHAR16 *)name, EFI_FILE_MODE_READ | EFI_FILE_MODE_WRITE, 0);
-        if (EFI_ERROR(ret))
-                goto out;
-        ret = uefi_call_wrapper(src->Delete, 1, src);
-        if (EFI_ERROR(ret))
-                error(L"Couldn't delete source file", ret);
-        debug("Just deleted the file:%s", name);
-out:
-        return ret;
-}
-
-
-
-
-
 
 /* vim: softtabstop=8:shiftwidth=8:expandtab
  */

@@ -35,7 +35,7 @@ OBJCOPY=objcopy
 
 HOST  = $(shell $(CC) -dumpmachine | sed "s/\(-\).*$$//")
 ARCH := $(shell $(CC) -dumpmachine | sed "s/\(-\).*$$//")
-
+ARCH=ia32
 ifeq ($(ARCH),x86_64)
 	LIBDIR=/usr/lib64
 	FORMAT=efi-app-x86-64
@@ -45,13 +45,14 @@ else
 	FORMAT=efi-app-$(ARCH)
 endif
 
-INCDIR := /usr/include
+INCDIR := ../gnu-efi/inc
+LIBDIR := ../gnu-efi
 
 # gnuefi sometimes installs these under a gnuefi/ directory, and sometimes not
 CRT0 := $(shell find $(LIBDIR) -name crt0-efi-$(ARCH).o 2>/dev/null | tail -n1)
 LDSCRIPT := $(shell find $(LIBDIR) -name elf_$(ARCH)_efi.lds 2>/dev/null | tail -n1)
 
-CFLAGS=-I. -I$(INCDIR)/efi -I$(INCDIR)/efi/$(ARCH) \
+CFLAGS=-I. -I$(INCDIR) -I$(INCDIR)/$(ARCH) -Iandroid \
 		-DEFI_FUNCTION_WRAPPER -fPIC -fshort-wchar -ffreestanding \
 		-Wall -Ifs/ -Iloaders/ -D$(ARCH) -Werror
 
@@ -65,15 +66,11 @@ ifeq ($(ARCH),x86_64)
 endif
 
 LDFLAGS=-T $(LDSCRIPT) -Bsymbolic -shared -nostdlib -znocombreloc \
-		-L$(LIBDIR) $(CRT0)
+		-L$(LIBDIR)/gnuefi -L$(LIBDIR)/lib $(CRT0)
 
 IMAGE=efilinux.efi
-OBJS = entry.o malloc.o
+OBJS = entry.o malloc.o android/boot.o utils.o
 FS = fs/fs.o
-
-LOADERS = loaders/loader.o \
-	  loaders/bzimage/bzimage.o \
-	  loaders/bzimage/graphics.o
 
 all: $(IMAGE)
 

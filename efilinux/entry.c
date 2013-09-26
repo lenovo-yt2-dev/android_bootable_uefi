@@ -32,8 +32,8 @@
 #include "efilinux.h"
 #include "fs.h"
 #include "protocol.h"
-#include "loader.h"
 #include "stdlib.h"
+#include "android/boot.h"
 
 #define ERROR_STRING_LENGTH	32
 
@@ -294,7 +294,7 @@ get_path(EFI_LOADED_IMAGE *image, CHAR16 *path, UINTN len)
 		return FALSE;
 	}
 
-	memcpy((char *)buf, (char *)p, i * sizeof(CHAR16));
+	memcpy((CHAR8 *)buf, (CHAR8 *)p, i * sizeof(CHAR16));
 	FreePool(p);
 
 	buf[i] = '\0';
@@ -402,9 +402,10 @@ efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *_table)
 	WCHAR *error_buf;
 	EFI_STATUS err;
 	EFI_LOADED_IMAGE *info;
-	CHAR16 *name, *options;
+	CHAR16 *name = NULL;
+	CHAR16 *options;
 	UINT32 options_size;
-	char *cmdline;
+	char *cmdline = NULL;
 
 	InitializeLib(image, _table);
 	sys_table = _table;
@@ -450,15 +451,18 @@ efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *_table)
 			goto fs_deinit;
 	}
 
-	err = load_image(image, name, cmdline);
+	err = android_image_start_file(image, info->DeviceHandle, name, NULL);
+
 	if (err != EFI_SUCCESS)
 		goto free_args;
 
 	return EFI_SUCCESS;
 
 free_args:
-	free(cmdline);
-	free(name);
+	if (cmdline)
+		free(cmdline);
+	if (name)
+		free(name);
 fs_deinit:
 	fs_exit();
 failed:

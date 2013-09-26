@@ -6,9 +6,8 @@ ifeq ($(TARGET_ARCH),x86)
 	EFI_ARCH := ia32
 	SPECIFIC_GNU_EFI_SRC := ""
 	LOCAL_CFLAGS := \
-		-fPIC -fshort-wchar -ffreestanding -Wall -fno-stack-protector -mno-android -m32 \
-		-D$(EFI_ARCH) -DUSE_SHIM=0\
-		-DEFI_FUNCTION_WRAPPER
+		-fPIC -fshort-wchar -ffreestanding -Wall -fno-stack-protector -m32 \
+		-D$(EFI_ARCH) -DUSE_SHIM=0
 endif
 
 ifeq ($(TARGET_ARCH),x86-64)
@@ -19,20 +18,15 @@ endif
 EFI_TARGET := efi-app-$(EFI_ARCH)
 
 LOCAL_C_INCLUDES := \
-	$(LOCAL_PATH)/loaders \
 	$(LOCAL_PATH)/android \
 	$(LOCAL_PATH)/fs
 
 LOCAL_SRC_FILES := \
-	loaders/loader.c \
-	loaders/bzimage/bzimage.c \
-	loaders/bzimage/graphics.c \
 	malloc.c \
 	entry.c \
-	fs/fs.c \
-	android/recovery.c \
 	android/boot.c \
-	utils.c
+	utils.c \
+	fs/fs.c
 
 EFILINUX_VERSION_STRING := $(shell cd $(LOCAL_PATH) ; git describe --abbrev=8 --dirty --always)
 EFILINUX_VERSION_DATE := $(shell date -u)
@@ -50,6 +44,11 @@ LOCAL_MODULE_PATH := $(PRODUCT_OUT)
 LOCAL_MODULE_CLASS := EXECUTABLES
 LOCAL_FORCE_STATIC_EXECUTABLE := true
 
+LOCAL_CFLAGS  += -O2 -Wall -fshort-wchar -fno-strict-aliasing \
+           -fno-merge-constants -fno-stack-protector \
+           -fno-stack-check \
+	   -I/usr/include/x86_64-linux-gnu -I/usr/include # REVERTME: Waiting for kernel-headers integration in bionic/libc/kernel
+
 include $(BUILD_SYSTEM)/binary.mk
 
 $(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_TARGET_GLOBAL_CFLAGS :=
@@ -61,7 +60,7 @@ $(LOCAL_BUILT_MODULE) : EFILINUX_OBJS := $(addprefix $(intermediates)/, $(EFILIN
 $(LOCAL_BUILT_MODULE): $(TARGET_LIBGCC) libgnuefi elf_$(EFI_ARCH)_efi.lds $(all_objects)
 	@mkdir -p $(dir $@)
 	@echo "linking $@"
-	$(TARGET_LD) \
+	$(TARGET_LD).bfd \
 		-Bsymbolic \
 		-shared \
 		-nostdlib \
