@@ -19,6 +19,7 @@ EFI_TARGET := efi-app-$(EFI_ARCH)
 
 LOCAL_C_INCLUDES := \
 	$(LOCAL_PATH)/android \
+	$(LOCAL_PATH)/loaders \
 	$(LOCAL_PATH)/fs
 
 LOCAL_SRC_FILES := \

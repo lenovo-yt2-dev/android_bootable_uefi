@@ -37,6 +37,12 @@
 #include <stdlib.h>
 #include <asm/bootparam.h>
 
+#ifdef x86_64
+#include "bzimage/x86_64.h"
+#else
+#include "bzimage/i386.h"
+#endif
+
 #if USE_SHIM
 #include <shim.h>
 #endif
@@ -52,6 +58,14 @@ typedef struct boot_img_hdr boot_img_hdr;
 #define BOOT_ARGS_SIZE 512
 #define BOOT_EXTRA_ARGS_SIZE 1024
 #define SETUP_HDR		0x53726448	/* 0x53726448 == "HdrS" */
+
+typedef struct {
+	UINT16 limit;
+	UINT64 *base;
+} __attribute__((packed)) dt_addr_t;
+
+dt_addr_t gdt = { 0x800, (UINT64 *)0 };
+dt_addr_t idt = { 0, 0 };
 
 struct boot_img_hdr
 {
@@ -114,25 +128,6 @@ struct boot_img_hdr
 **    present. signature type specified by bootloader
 */
 
-typedef void(*handover_func)(void *, EFI_SYSTEM_TABLE *, struct boot_params *) \
-            __attribute__((regparm(0)));
-
-static inline void handover_jump(EFI_HANDLE image, struct boot_params *bp,
-                                 EFI_PHYSICAL_ADDRESS kernel_start)
-{
-        UINTN offset = bp->hdr.handover_offset;
-        handover_func hf;
-
-        asm volatile ("cli");
-
-#if __LP64__
-        /* The 64-bit kernel entry is 512 bytes after the start. */
-        kernel_start += 512;
-#endif
-
-        hf = (handover_func)((UINTN)kernel_start + offset);
-        hf(image, ST, bp);
-}
 
 static UINT32 pages(struct boot_img_hdr *hdr, UINT32 blob_size)
 {
@@ -217,6 +212,7 @@ static EFI_STATUS setup_ramdisk(CHAR8 *bootimage)
         }
         memcpy((VOID *)(UINTN)ramdisk_addr, bootimage + roffset, rsize);
         buf->hdr.ramdisk_image = (UINT32)(UINTN)ramdisk_addr;
+	debug("Ramdisk copied into address 0x%x", ramdisk_addr);
         return EFI_SUCCESS;
 out_error:
         efree(ramdisk_addr, rsize);
@@ -356,6 +352,7 @@ static EFI_STATUS setup_command_line(UINT8 *bootimage,
         }
 
         buf->hdr.cmd_line_ptr = (UINT32)(UINTN)cmdline;
+	buf->hdr.cmdline_size = cmdlen + 1;
         ret = EFI_SUCCESS;
 out:
         FreePool(cmdline16);
@@ -364,6 +361,134 @@ out:
         return ret;
 }
 
+static EFI_STATUS setup_idt_gdt(void)
+{
+	EFI_STATUS err;
+
+	err = emalloc(gdt.limit, 8, (EFI_PHYSICAL_ADDRESS *)&gdt.base);
+	if (err != EFI_SUCCESS)
+		return err;
+
+	memset((CHAR8 *)gdt.base, 0x0, gdt.limit);
+
+	/*
+	 * 4Gb - (0x100000*0x1000 = 4Gb)
+	 * base address=0
+	 * code read/exec
+	 * granularity=4096, 386 (+5th nibble of limit)
+	 */
+	gdt.base[2] = 0x00cf9a000000ffff;
+
+	/*
+	 * 4Gb - (0x100000*0x1000 = 4Gb)
+	 * base address=0
+	 * data read/write
+	 * granularity=4096, 386 (+5th nibble of limit)
+	 */
+	gdt.base[3] = 0x00cf92000000ffff;
+
+	/* Task segment value */
+	gdt.base[4] = 0x0080890000000000;
+
+
+	return EFI_SUCCESS;
+}
+
+static void setup_e820_map(struct boot_params *boot_params,
+			   EFI_MEMORY_DESCRIPTOR *map_buf,
+			   UINTN map_size,
+			   UINTN desc_size)
+{
+	struct e820entry *e820_map = &boot_params->e820_map[0];
+	/*
+	 * Convert the EFI memory map to E820.
+	 */
+	int i, j = 0;
+	for (i = 0; i < map_size / desc_size; i++) {
+		EFI_MEMORY_DESCRIPTOR *d;
+		unsigned int e820_type = 0;
+
+		d = (EFI_MEMORY_DESCRIPTOR *)((unsigned long)map_buf + (i * desc_size));
+		switch(d->Type) {
+		case EfiReservedMemoryType:
+		case EfiRuntimeServicesCode:
+		case EfiRuntimeServicesData:
+		case EfiMemoryMappedIO:
+		case EfiMemoryMappedIOPortSpace:
+		case EfiPalCode:
+			e820_type = E820_RESERVED;
+			break;
+
+		case EfiUnusableMemory:
+			e820_type = E820_UNUSABLE;
+			break;
+
+		case EfiACPIReclaimMemory:
+			e820_type = E820_ACPI;
+			break;
+
+		case EfiLoaderCode:
+		case EfiLoaderData:
+		case EfiBootServicesCode:
+		case EfiBootServicesData:
+		case EfiConventionalMemory:
+			e820_type = E820_RAM;
+			break;
+
+		case EfiACPIMemoryNVS:
+			e820_type = E820_NVS;
+			break;
+
+		default:
+			continue;
+		}
+
+		if (j && e820_map[j-1].type == e820_type &&
+			(e820_map[j-1].addr + e820_map[j-1].size) == d->PhysicalStart) {
+			e820_map[j-1].size += d->NumberOfPages << EFI_PAGE_SHIFT;
+		} else {
+			e820_map[j].addr = d->PhysicalStart;
+			e820_map[j].size = d->NumberOfPages << EFI_PAGE_SHIFT;
+			e820_map[j].type = e820_type;
+			j++;
+		}
+	}
+
+	boot_params->e820_entries = j;
+}
+
+static EFI_STATUS setup_efi_memory_map(struct boot_params *boot_params, UINTN *map_key)
+
+{
+	UINTN map_size = 0;
+	EFI_STATUS ret = EFI_SUCCESS;
+	EFI_MEMORY_DESCRIPTOR *map_buf;
+	UINTN descr_size;
+	UINT32 descr_version;
+	struct efi_info *efi = &boot_params->efi_info;
+
+	ret = memory_map(&map_buf, &map_size, map_key, &descr_size, &descr_version);
+	if (ret != EFI_SUCCESS)
+		goto out;
+
+	efi->efi_systab = (UINT32)(UINTN)sys_table;
+	efi->efi_memdesc_size = descr_size;
+	efi->efi_memdesc_version = descr_version;
+	efi->efi_memmap = (UINT32)(UINTN)map_buf;
+	efi->efi_memmap_size = map_size;
+#ifdef x86_64
+	efi->efi_systab_hi = (unsigned long)sys_table >> 32;
+	efi->efi_memmap_hi = (unsigned long)map_buf >> 32;
+#endif
+
+	memcpy((CHAR8 *)&efi->efi_loader_signature,
+	       (CHAR8 *)EFI_LOADER_SIGNATURE, sizeof(UINT32));
+
+	setup_e820_map(boot_params, map_buf, map_size, descr_size);
+
+out:
+	return ret;
+}
 
 static EFI_STATUS handover_kernel(CHAR8 *bootimage, EFI_HANDLE parent_image)
 {
@@ -389,7 +514,8 @@ static EFI_STATUS handover_kernel(CHAR8 *bootimage, EFI_HANDLE parent_image)
         ksize = aosp_header->kernel_size - setup_size;
         kernel_start = buf->hdr.pref_address;
         init_size = buf->hdr.init_size;
-        buf->hdr.type_of_loader = 0x1;
+        buf->hdr.type_of_loader = 0xff;
+
         memset((CHAR8 *)&buf->screen_info, 0x0, sizeof(buf->screen_info));
 
         ret = allocate_pages(AllocateAddress, EfiLoaderData,
@@ -403,6 +529,7 @@ static EFI_STATUS handover_kernel(CHAR8 *bootimage, EFI_HANDLE parent_image)
                 if (EFI_ERROR(ret))
                         return ret;
         }
+	debug("kernel_start = 0x%x", kernel_start);
 
         memcpy((CHAR8 *)(UINTN)kernel_start, bootimage + koffset + setup_size, ksize);
 
@@ -420,11 +547,29 @@ static EFI_STATUS handover_kernel(CHAR8 *bootimage, EFI_HANDLE parent_image)
         boot_params->hdr.code32_start = (UINT32)((UINT64)kernel_start);
 
         ret = EFI_LOAD_ERROR;
-        handover_jump(parent_image, boot_params, kernel_start);
+
+	ret = setup_idt_gdt();
+	if (EFI_ERROR(ret))
+		goto out;
+
+	UINTN map_key;
+	ret = setup_efi_memory_map(boot_params, &map_key);
+	if (EFI_ERROR(ret))
+		goto out;
+
+	ret = exit_boot_services(bootimage, map_key);
+	if (EFI_ERROR(ret))
+		goto out;
+
+	asm volatile ("lidt %0" :: "m" (idt));
+	asm volatile ("lgdt %0" :: "m" (gdt));
+
+	kernel_jump(kernel_start, boot_params);
         /* Shouldn't get here */
 
         free_pages(boot_addr, EFI_SIZE_TO_PAGES(16384));
 out:
+	debug("Can't boot kernel");
         efree(kernel_start, ksize);
         return ret;
 }
@@ -640,17 +785,6 @@ EFI_STATUS android_image_start_buffer(
         if (buf->hdr.version < 0x20c) {
                 /* Protocol 2.12, kernel 3.8 required */
                 Print(L"Kernel header version %x too old\n", buf->hdr.version);
-                ret = EFI_INVALID_PARAMETER;
-                goto out_bootimage;
-        }
-
-#if __LP64__
-        if (!(buf->hdr.xloadflags & XLF_EFI_HANDOVER_64))
-#else
-        if (!(buf->hdr.xloadflags & XLF_EFI_HANDOVER_32))
-#endif
-	{
-                Print(L"EFI Handover protocol not supported\n");
                 ret = EFI_INVALID_PARAMETER;
                 goto out_bootimage;
         }
