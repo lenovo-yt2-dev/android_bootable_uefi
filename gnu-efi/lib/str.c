@@ -20,8 +20,8 @@ Revision History
 
 INTN
 StrCmp (
-    IN CHAR16   *s1,
-    IN CHAR16   *s2
+    IN CONST CHAR16   *s1,
+    IN CONST CHAR16   *s2
     )
 // compare strings
 {
@@ -30,8 +30,8 @@ StrCmp (
 
 INTN
 StrnCmp (
-    IN CHAR16   *s1,
-    IN CHAR16   *s2,
+    IN CONST CHAR16   *s1,
+    IN CONST CHAR16   *s2,
     IN UINTN    len
     )
 // compare strings
@@ -70,15 +70,15 @@ LibStubStrLwrUpr (
 
 INTN
 StriCmp (
-    IN CHAR16   *s1,
-    IN CHAR16   *s2
+    IN CONST CHAR16   *s1,
+    IN CONST CHAR16   *s2
     )
 // compare strings
 {
     if (UnicodeInterface == &LibStubUnicodeInterface)
-    	return UnicodeInterface->StriColl(UnicodeInterface, s1, s2);
+    	return UnicodeInterface->StriColl(UnicodeInterface, (CHAR16 *)s1, (CHAR16 *)s2);
     else
-	return uefi_call_wrapper(UnicodeInterface->StriColl, 3, UnicodeInterface, s1, s2);
+	return uefi_call_wrapper(UnicodeInterface->StriColl, 3, UnicodeInterface, (CHAR16 *)s1, (CHAR16 *)s2);
 }
 
 VOID
@@ -106,7 +106,7 @@ StrUpr (
 VOID
 StrCpy (
     IN CHAR16   *Dest,
-    IN CHAR16   *Src
+    IN CONST CHAR16   *Src
     )
 // copy strings
 {
@@ -116,7 +116,7 @@ StrCpy (
 VOID
 StrCat (
     IN CHAR16   *Dest,
-    IN CHAR16   *Src
+    IN CONST CHAR16   *Src
     )
 {   
     RtStrCat(Dest, Src);
@@ -124,7 +124,7 @@ StrCat (
 
 UINTN
 StrLen (
-    IN CHAR16   *s1
+    IN CONST CHAR16   *s1
     )
 // string length
 {
@@ -133,7 +133,7 @@ StrLen (
 
 UINTN
 StrSize (
-    IN CHAR16   *s1
+    IN CONST CHAR16   *s1
     )
 // string size
 {
@@ -142,7 +142,7 @@ StrSize (
 
 CHAR16 *
 StrDuplicate (
-    IN CHAR16   *Src
+    IN CONST CHAR16   *Src
     )
 // duplicate a string
 {
@@ -159,7 +159,7 @@ StrDuplicate (
 
 UINTN
 strlena (
-    IN CHAR8    *s1
+    IN CONST CHAR8    *s1
     )
 // string length
 {
@@ -171,8 +171,8 @@ strlena (
 
 UINTN
 strcmpa (
-    IN CHAR8    *s1,
-    IN CHAR8    *s2
+    IN CONST CHAR8    *s1,
+    IN CONST CHAR8    *s2
     )
 // compare strings
 {
@@ -190,8 +190,8 @@ strcmpa (
 
 UINTN
 strncmpa (
-    IN CHAR8    *s1,
-    IN CHAR8    *s2,
+    IN CONST CHAR8    *s1,
+    IN CONST CHAR8    *s2,
     IN UINTN    len
     )
 // compare strings
@@ -213,7 +213,7 @@ strncmpa (
 
 UINTN
 xtoi (
-    CHAR16  *str
+    CONST CHAR16  *str
     )
 // convert hex string to uint
 {
@@ -244,7 +244,7 @@ xtoi (
 
 UINTN
 Atoi (
-    CHAR16  *str
+    CONST CHAR16  *str
     )
 // convert hex string to uint
 {

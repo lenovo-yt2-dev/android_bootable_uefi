@@ -23,8 +23,8 @@ Revision History
 INTN
 RUNTIMEFUNCTION
 RtStrCmp (
-    IN CHAR16   *s1,
-    IN CHAR16   *s2
+    IN CONST CHAR16   *s1,
+    IN CONST CHAR16   *s2
     )
 // compare strings
 {
@@ -47,7 +47,7 @@ VOID
 RUNTIMEFUNCTION
 RtStrCpy (
     IN CHAR16   *Dest,
-    IN CHAR16   *Src
+    IN CONST CHAR16   *Src
     )
 // copy strings
 {
@@ -64,7 +64,7 @@ VOID
 RUNTIMEFUNCTION
 RtStrCat (
     IN CHAR16   *Dest,
-    IN CHAR16   *Src
+    IN CONST CHAR16   *Src
     )
 {   
     RtStrCpy(Dest+StrLen(Dest), Src);
@@ -76,7 +76,7 @@ RtStrCat (
 UINTN
 RUNTIMEFUNCTION
 RtStrLen (
-    IN CHAR16   *s1
+    IN CONST CHAR16   *s1
     )
 // string length
 {
@@ -92,7 +92,7 @@ RtStrLen (
 UINTN
 RUNTIMEFUNCTION
 RtStrSize (
-    IN CHAR16   *s1
+    IN CONST CHAR16   *s1
     )
 // string size
 {

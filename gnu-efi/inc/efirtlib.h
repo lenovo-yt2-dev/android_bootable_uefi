@@ -42,23 +42,23 @@ VOID
 RUNTIMEFUNCTION
 RtCopyMem (
     IN VOID     *Dest,
-    IN VOID     *Src,
+    IN CONST VOID     *Src,
     IN UINTN    len
     );
 
 INTN
 RUNTIMEFUNCTION
 RtCompareMem (
-    IN VOID     *Dest,
-    IN VOID     *Src,
+    IN CONST VOID     *Dest,
+    IN CONST VOID     *Src,
     IN UINTN    len
     );
 
 INTN
 RUNTIMEFUNCTION
 RtStrCmp (
-    IN CHAR16   *s1,
-    IN CHAR16   *s2
+    IN CONST CHAR16   *s1,
+    IN CONST CHAR16   *s2
     );
 
 
@@ -66,26 +66,26 @@ VOID
 RUNTIMEFUNCTION
 RtStrCpy (
     IN CHAR16   *Dest,
-    IN CHAR16    *Src
+    IN CONST CHAR16    *Src
     );
 
 VOID
 RUNTIMEFUNCTION
 RtStrCat (
     IN CHAR16   *Dest,
-    IN CHAR16   *Src
+    IN CONST CHAR16   *Src
     );
 
 UINTN
 RUNTIMEFUNCTION
 RtStrLen (
-    IN CHAR16   *s1
+    IN CONST CHAR16   *s1
     );
 
 UINTN
 RUNTIMEFUNCTION
 RtStrSize (
-    IN CHAR16   *s1
+    IN CONST CHAR16   *s1
     );
 
 INTN

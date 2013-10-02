@@ -62,7 +62,8 @@ FORMAT		= efi-app-$(ARCH)
 
 TARGET_APPS = t.efi t2.efi t3.efi t4.efi t5.efi t6.efi \
 	      printenv.efi t7.efi tcc.efi modelist.efi \
-	      route80h.efi drv0_use.efi
+	      route80h.efi drv0_use.efi AllocPages.efi \
+	      FreePages.efi
 TARGET_BSDRIVERS = drv0.efi
 TARGET_RTDRIVERS =
 

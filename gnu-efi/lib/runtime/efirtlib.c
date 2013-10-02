@@ -64,14 +64,13 @@ VOID
 RUNTIMEFUNCTION
 RtCopyMem (
     IN VOID     *Dest,
-    IN VOID     *Src,
+    IN CONST VOID     *Src,
     IN UINTN    len
     )
 {
-    CHAR8    *d, *s;
-
+    CHAR8   *d;
+    CONST CHAR8 *s = Src;
     d = Dest;
-    s = Src;
     while (len--) {
         *(d++) = *(s++);
     }
@@ -83,15 +82,12 @@ RtCopyMem (
 INTN
 RUNTIMEFUNCTION
 RtCompareMem (
-    IN VOID     *Dest,
-    IN VOID     *Src,
+    IN CONST VOID     *Dest,
+    IN CONST VOID     *Src,
     IN UINTN    len
     )
 {
-    CHAR8    *d, *s;
-
-    d = Dest;
-    s = Src;
+    CONST CHAR8    *d = Dest, *s = Src;
     while (len--) {
         if (*d != *s) {
             return *d - *s;

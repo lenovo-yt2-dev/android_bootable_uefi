@@ -23,7 +23,9 @@ Revision History
 typedef UINT16          CHAR16;
 typedef UINT8           CHAR8;
 typedef UINT8           BOOLEAN;
-
+#ifndef CONST
+   #define CONST const
+#endif
 #ifndef TRUE
     #define TRUE    ((BOOLEAN) 1)
     #define FALSE   ((BOOLEAN) 0)
