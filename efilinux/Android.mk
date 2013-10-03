@@ -47,8 +47,7 @@ LOCAL_FORCE_STATIC_EXECUTABLE := true
 
 LOCAL_CFLAGS  += -O2 -Wall -fshort-wchar -fno-strict-aliasing \
            -fno-merge-constants -fno-stack-protector \
-           -fno-stack-check \
-	   -I/usr/include/x86_64-linux-gnu -I/usr/include # REVERTME: Waiting for kernel-headers integration in bionic/libc/kernel
+           -fno-stack-check
 
 include $(BUILD_SYSTEM)/binary.mk
 

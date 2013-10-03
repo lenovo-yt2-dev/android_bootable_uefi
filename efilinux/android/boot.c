@@ -36,6 +36,7 @@
 #include <utils.h>
 #include <stdlib.h>
 #include <asm/bootparam.h>
+#include <fs.h>
 
 #ifdef x86_64
 #include "bzimage/x86_64.h"
@@ -552,6 +553,8 @@ static EFI_STATUS handover_kernel(CHAR8 *bootimage, EFI_HANDLE parent_image)
 	if (EFI_ERROR(ret))
 		goto out;
 
+	fs_close();
+
 	UINTN map_key;
 	ret = setup_efi_memory_map(boot_params, &map_key);
 	if (EFI_ERROR(ret))
@@ -778,13 +781,6 @@ EFI_STATUS android_image_start_buffer(
 
         if (buf->hdr.header != SETUP_HDR) {
                 Print(L"Setup code version is invalid\n");
-                ret = EFI_INVALID_PARAMETER;
-                goto out_bootimage;
-        }
-
-        if (buf->hdr.version < 0x20c) {
-                /* Protocol 2.12, kernel 3.8 required */
-                Print(L"Kernel header version %x too old\n", buf->hdr.version);
                 ret = EFI_INVALID_PARAMETER;
                 goto out_bootimage;
         }

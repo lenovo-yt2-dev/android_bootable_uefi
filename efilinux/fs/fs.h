@@ -98,11 +98,14 @@ extern EFI_STATUS file_open(EFI_LOADED_IMAGE *image, CHAR16 *name, struct file *
 extern EFI_STATUS file_close(struct file *f);
 
 extern void list_boot_devices(void);
+extern void list_blk_devices(void);
 extern int handle_to_dev(EFI_HANDLE *handle);
 
 extern void fs_close(void);
 
 extern EFI_STATUS fs_init(void);
+extern EFI_STATUS blk_init(void);
 extern void fs_exit(void);
+extern void blk_exit(void);
 
 #endif /* __FS_H__ */

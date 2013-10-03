@@ -41,7 +41,9 @@ struct fs_device {
 };
 
 static struct fs_device *fs_devices;
+static EFI_FILE_HANDLE *blk_devices;
 static UINTN nr_fs_devices;
+static UINTN nr_blk_devices;
 
 /**
  * handle_to_dev - Return the device number for a handle
@@ -174,18 +176,17 @@ file_close(struct file *f)
 /**
  * list_boot_devices - Print a list of all disks with filesystems
  */
-void list_boot_devices(void)
+void list_blk_devices(void)
 {
 	int i;
 
 	Print(L"Devices:\n\n");
 
-	for (i = 0; i < nr_fs_devices; i++) {
+	for (i = 0; i < nr_blk_devices; i++) {
 		EFI_DEVICE_PATH *path;
 		EFI_HANDLE dev_handle;
 		CHAR16 *dev;
-
-		dev_handle = fs_devices[i].handle;
+		dev_handle = blk_devices[i];
 
 		path = DevicePathFromHandle(dev_handle);
 		dev = DevicePathToStr(path);
@@ -193,8 +194,6 @@ void list_boot_devices(void)
 		Print(L"\t%d. \"%s\"\n", i, dev);
 		free_pool(dev);
 	}
-
-	Print(L"\n");
 }
 
 /*
@@ -235,7 +234,6 @@ fs_init(void)
 		EFI_FILE_IO_INTERFACE *io;
 		EFI_FILE_HANDLE fh;
 		EFI_HANDLE dev_handle;
-
 		dev_handle = buf[i];
 		err = handle_protocol(dev_handle, &FileSystemProtocol,
 				      (void **)&io);
@@ -245,7 +243,6 @@ fs_init(void)
 		err = volume_open(io, &fh);
 		if (err != EFI_SUCCESS)
 			goto close_handles;
-
 		fs_devices[i].handle = dev_handle;
 		fs_devices[i].fh = fh;
 	}
@@ -266,6 +263,43 @@ close_handles:
 	goto out;
 }
 
+/*
+ * Initialise blk protocol.
+ */
+EFI_STATUS
+blk_init(void)
+{
+	EFI_STATUS err;
+	UINTN size = 0;
+
+	size = 0;
+	err = locate_handle(ByProtocol, &DiskIoProtocol,
+			    NULL, &size, NULL);
+
+	if (err != EFI_SUCCESS && size == 0) {
+		Print(L"No devices support filesystems\n");
+		return err;
+	}
+
+	blk_devices = malloc(size);
+	if (!blk_devices)
+		return EFI_OUT_OF_RESOURCES;
+
+	nr_blk_devices = size / sizeof(*blk_devices);
+
+	err = locate_handle(ByProtocol, &DiskIoProtocol,
+			    NULL, &size, (void **)blk_devices);
+	if (err != EFI_SUCCESS)
+		goto free_blk;
+
+	return EFI_SUCCESS;
+
+free_blk:
+	free(blk_devices);
+
+	return err;
+}
+
 void fs_close(void)
 {
 	int i;
@@ -282,4 +316,9 @@ void fs_exit(void)
 {
 	fs_close();
 	free(fs_devices);
+}
+
+void blk_exit(void)
+{
+	free(blk_devices);
 }

@@ -43,6 +43,33 @@ EFI_SYSTEM_TABLE *sys_table;
 EFI_BOOT_SERVICES *boot;
 EFI_RUNTIME_SERVICES *runtime;
 
+struct name_guid {
+	CHAR16 *name;
+	EFI_GUID guid;
+};
+#define BOOT_GUID	{0x80868086, 0x8086, 0x8086, {0x80, 0x86, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00}}
+#define RECOVERY_GUID	{0x80868086, 0x8086, 0x8086, {0x80, 0x86, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01}}
+#define FASTBOOT_GUID	{0x80868086, 0x8086, 0x8086, {0x80, 0x86, 0x00, 0x00, 0x00, 0x00, 0x01, 0x02}}
+#define TEST_GUID	{0x80868086, 0x8086, 0x8086, {0x80, 0x86, 0x00, 0x00, 0x00, 0x00, 0x01, 0x04}}
+
+static struct name_guid android_guids[4] = {
+	{L"boot"	, BOOT_GUID},
+	{L"recovery"	, RECOVERY_GUID},
+	{L"fastboot"	, FASTBOOT_GUID},
+	{L"test"	, TEST_GUID},
+};
+
+EFI_STATUS name_to_guid(CHAR16 *name, EFI_GUID *guid) {
+	int i;
+	for (i = 0; i < sizeof(android_guids); i++) {
+		if (!StrCmp(name, android_guids[i].name)) {
+			memcpy((CHAR8 *)guid, (CHAR8 *)&android_guids[i].guid, sizeof(EFI_GUID));
+			return EFI_SUCCESS;
+		}
+	}
+	return EFI_INVALID_PARAMETER;
+}
+
 /**
  * memory_map - Allocate and fill out an array of memory descriptors
  * @map_buf: buffer containing the memory map
@@ -155,10 +182,44 @@ static inline BOOLEAN isspace(CHAR16 ch)
 	return ((unsigned char)ch <= ' ');
 }
 
-static EFI_STATUS
-parse_args(CHAR16 *options, UINT32 size, CHAR16 **name, char **cmdline)
+static CHAR16 *get_argument(CHAR16 *n, CHAR16 **argument)
 {
-	CHAR16 *n, *o, *filename = NULL;
+	CHAR16 *word;
+	int i;
+	CHAR16 *o;
+
+	/* Skip whitespace */
+	while (isspace(*n))
+		n++;
+	word = n;
+	i = 0;
+	while (*n && !isspace(*n)) {
+		i++;
+		n++;
+	}
+	*n++ = '\0';
+
+	o = malloc(sizeof(*o) * (i + 1));
+	if (!o) {
+		Print(L"Unable to alloc argument memory\n");
+		goto error;
+	}
+	o[i--] = '\0';
+
+	StrCpy(o, word);
+
+	*argument = o;
+	goto out;
+error:
+	free(o);
+out:
+	return n;
+}
+
+static EFI_STATUS
+parse_args(CHAR16 *options, UINT32 size, CHAR16 *type, CHAR16 **name, char **cmdline)
+{
+	CHAR16 *n;
 	EFI_STATUS err;
 	int i = 0;
 
@@ -180,38 +241,30 @@ parse_args(CHAR16 *options, UINT32 size, CHAR16 **name, char **cmdline)
 			case 'h':
 				goto usage;
 			case 'f':
+				*type = *n;
 				n++;	/* Skip 'f' */
 
-				/* Skip whitespace */
-				while (isspace(*n))
-					n++;
-
-				filename = n;
-				i = 0;	
-				while (*n && !isspace(*n)) {
-					i++;
-					n++;
-				}
-				*n++ = '\0';
-
-				o = malloc(sizeof(*o) * (i + 1));
-				if (!o) {
-					Print(L"Unable to alloc filename memory\n");
-					err = EFI_OUT_OF_RESOURCES;
+				n = get_argument(n, name);
+				if (!*name)
 					goto out;
-				}
-				o[i--] = '\0';
-
-				StrCpy(o, filename);
-				*name = o;
 				break;
 			case 'l':
-				list_boot_devices();
+				blk_init();
+				list_blk_devices();
+				blk_exit();
 				goto fail;
 			case 'm':
 				print_memory_map();
 				n++;
 				goto fail;
+			case 'p':
+				*type = *n;
+				n++;	/* Skip 'p' */
+
+				n = get_argument(n, name);
+				if (!*name)
+					goto out;
+				break;
 			default:
 				Print(L"Unknown command-line switch\n");
 				goto usage;
@@ -228,7 +281,7 @@ parse_args(CHAR16 *options, UINT32 size, CHAR16 **name, char **cmdline)
 				err = EFI_OUT_OF_RESOURCES;
 				goto free_name;
 			}
-			
+
 			s1 = *cmdline;
 			s2 = n;
 
@@ -242,15 +295,16 @@ parse_args(CHAR16 *options, UINT32 size, CHAR16 **name, char **cmdline)
 		}
 	}
 
-	if (filename)
+	if (*name)
 		return EFI_SUCCESS;
 
 usage:
-	Print(L"usage: efilinux [-hlm] -f <filename> <args>\n\n");
+	Print(L"usage: efilinux [-hlm] [-f <filename> | -p <partname>] <args>\n\n");
 	Print(L"\t-h:             display this help menu\n");
 	Print(L"\t-l:             list boot devices\n");
 	Print(L"\t-m:             print memory map\n");
 	Print(L"\t-f <filename>:  image to load\n");
+	Print(L"\t-p <partname>:  partition to load\n");
 
 fail:
 	err = EFI_INVALID_PARAMETER;
@@ -406,6 +460,7 @@ efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *_table)
 	CHAR16 *options;
 	UINT32 options_size;
 	char *cmdline = NULL;
+	EFI_GUID part_guid;
 
 	InitializeLib(image, _table);
 	sys_table = _table;
@@ -438,8 +493,9 @@ efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *_table)
 		options_size -= i;
 	}
 
+	CHAR16 type = '\0';
 	if (options && options_size != 0) {
-		err = parse_args(options, options_size, &name, &cmdline);
+		err = parse_args(options, options_size, &type, &name, &cmdline);
 
 		/* We print the usage message in case of invalid args */
 		if (err == EFI_INVALID_PARAMETER) {
@@ -451,7 +507,20 @@ efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *_table)
 			goto fs_deinit;
 	}
 
-	err = android_image_start_file(image, info->DeviceHandle, name, NULL);
+	switch(type) {
+	case 'f':
+		Print(L"Starting file %s\n", name);
+		err = android_image_start_file(image, info->DeviceHandle, name, NULL);
+		break;
+	case 'p':
+		if ((err = name_to_guid(name, &part_guid)) != EFI_SUCCESS) {
+			Print(L"Unknown target name %s\n", name);
+			goto free_args;
+		}
+		Print(L"Starting partition %s\n", name);
+		err = android_image_start_partition(image, &part_guid, NULL);
+		break;
+	}
 
 	if (err != EFI_SUCCESS)
 		goto free_args;
