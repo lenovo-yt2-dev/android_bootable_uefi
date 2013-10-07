@@ -61,12 +61,12 @@ LOCAL_CFLAGS  += -g -Wall -fshort-wchar -fno-strict-aliasing \
 include $(BUILD_SYSTEM)/binary.mk
 
 $(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_TARGET_GLOBAL_CFLAGS :=
-$(LOCAL_BUILT_MODULE) : PRIVATE_EFI_FILE := $(PRODUCT_OUT)/$(PRIVATE_MODULE).efi
+$(LOCAL_BUILT_MODULE) : PRIVATE_EFI_FILE := $(PRODUCT_OUT)/esp/$(PRIVATE_MODULE).efi
 $(LOCAL_BUILT_MODULE) : EFILINUX_OBJS := $(patsubst %.c, %.o , $(LOCAL_SRC_FILES))
 $(LOCAL_BUILT_MODULE) : EFILINUX_OBJS := $(patsubst %.S, %.o , $(EFILINUX_OBJS))
 $(LOCAL_BUILT_MODULE) : EFILINUX_OBJS := $(addprefix $(intermediates)/, $(EFILINUX_OBJS))
 
-$(LOCAL_BUILT_MODULE): $(TARGET_LIBGCC) libgnuefi elf_$(EFI_ARCH)_efi.lds $(all_objects)
+$(LOCAL_BUILT_MODULE): $(PRODUCT_OUT)/esp $(TARGET_LIBGCC) libgnuefi elf_$(EFI_ARCH)_efi.lds $(all_objects)
 	@mkdir -p $(dir $@)
 	@echo "linking $@"
 	$(TARGET_LD).bfd \
