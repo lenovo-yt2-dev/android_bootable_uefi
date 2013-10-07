@@ -69,15 +69,16 @@ LDFLAGS=-T $(LDSCRIPT) -Bsymbolic -shared -nostdlib -znocombreloc \
 		-L$(LIBDIR)/gnuefi -L$(LIBDIR)/lib $(CRT0)
 
 IMAGE=efilinux.efi
-OBJS = entry.o malloc.o android/boot.o utils.o
+OBJS = entry.o malloc.o android/boot.o utils.o acpi.o bootlogic.o osnib.o intel_partitions.o
 FS = fs/fs.o
+PLATFORM = platform/platform.o platform/cherrytrail.o
 
 all: $(IMAGE)
 
 efilinux.efi: efilinux.so
 
-efilinux.so: $(OBJS) $(FS) $(LOADERS)
+efilinux.so: $(OBJS) $(FS) $(LOADERS) $(PLATFORM)
 	$(LD) $(LDFLAGS) -o $@ $^  -lgnuefi -lefi $(shell $(CC) $(CFLAGS) -print-libgcc-file-name)
 
 clean:
-	rm -f $(IMAGE) efilinux.so $(OBJS) $(FS) $(LOADERS)
+	rm -f $(IMAGE) efilinux.so $(OBJS) $(FS) $(LOADERS) $(PLATFORM)

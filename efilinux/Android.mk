@@ -27,6 +27,12 @@ LOCAL_SRC_FILES := \
 	entry.c \
 	android/boot.c \
 	utils.c \
+	acpi.c \
+	bootlogic.c \
+	osnib.c \
+	intel_partitions.c \
+	platform/platform.c \
+	platform/cherrytrail.c \
 	fs/fs.c
 
 EFILINUX_VERSION_STRING := $(shell cd $(LOCAL_PATH) ; git describe --abbrev=8 --dirty --always)

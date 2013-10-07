@@ -34,6 +34,10 @@
 #include "protocol.h"
 #include "stdlib.h"
 #include "android/boot.h"
+#include "acpi.h"
+#include "intel_partitions.h"
+#include "bootlogic.h"
+#include "platform/platform.h"
 
 #define ERROR_STRING_LENGTH	32
 
@@ -42,33 +46,6 @@ static CHAR16 *banner = L"efilinux loader %d.%d\n";
 EFI_SYSTEM_TABLE *sys_table;
 EFI_BOOT_SERVICES *boot;
 EFI_RUNTIME_SERVICES *runtime;
-
-struct name_guid {
-	CHAR16 *name;
-	EFI_GUID guid;
-};
-#define BOOT_GUID	{0x80868086, 0x8086, 0x8086, {0x80, 0x86, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00}}
-#define RECOVERY_GUID	{0x80868086, 0x8086, 0x8086, {0x80, 0x86, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01}}
-#define FASTBOOT_GUID	{0x80868086, 0x8086, 0x8086, {0x80, 0x86, 0x00, 0x00, 0x00, 0x00, 0x01, 0x02}}
-#define TEST_GUID	{0x80868086, 0x8086, 0x8086, {0x80, 0x86, 0x00, 0x00, 0x00, 0x00, 0x01, 0x04}}
-
-static struct name_guid android_guids[4] = {
-	{L"boot"	, BOOT_GUID},
-	{L"recovery"	, RECOVERY_GUID},
-	{L"fastboot"	, FASTBOOT_GUID},
-	{L"test"	, TEST_GUID},
-};
-
-EFI_STATUS name_to_guid(CHAR16 *name, EFI_GUID *guid) {
-	int i;
-	for (i = 0; i < sizeof(android_guids); i++) {
-		if (!StrCmp(name, android_guids[i].name)) {
-			memcpy((CHAR8 *)guid, (CHAR8 *)&android_guids[i].guid, sizeof(EFI_GUID));
-			return EFI_SUCCESS;
-		}
-	}
-	return EFI_INVALID_PARAMETER;
-}
 
 /**
  * memory_map - Allocate and fill out an array of memory descriptors
@@ -231,8 +208,10 @@ parse_args(CHAR16 *options, UINT32 size, CHAR16 *type, CHAR16 **name, char **cmd
 		     ;
 
 	/* No arguments */
-	if (i == size)
-		goto usage;
+	if (i == size) {
+		debug(L"No args\n");
+		return EFI_SUCCESS;
+	}
 
 	n = &options[i];
 	while (n <= &options[size]) {
@@ -265,6 +244,9 @@ parse_args(CHAR16 *options, UINT32 size, CHAR16 *type, CHAR16 **name, char **cmd
 				if (!*name)
 					goto out;
 				break;
+			case 'a':
+				list_acpi_tables();
+				goto fail;
 			default:
 				Print(L"Unknown command-line switch\n");
 				goto usage;
@@ -295,14 +277,14 @@ parse_args(CHAR16 *options, UINT32 size, CHAR16 *type, CHAR16 **name, char **cmd
 		}
 	}
 
-	if (*name)
-		return EFI_SUCCESS;
+	return EFI_SUCCESS;
 
 usage:
-	Print(L"usage: efilinux [-hlm] [-f <filename> | -p <partname>] <args>\n\n");
+	Print(L"usage: efilinux [-hlma] [-f <filename> | -p <partname>] <args>\n\n");
 	Print(L"\t-h:             display this help menu\n");
 	Print(L"\t-l:             list boot devices\n");
 	Print(L"\t-m:             print memory map\n");
+	Print(L"\t-a:             ACPI variables\n");
 	Print(L"\t-f <filename>:  image to load\n");
 	Print(L"\t-p <partname>:  partition to load\n");
 
@@ -520,12 +502,18 @@ efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *_table)
 		Print(L"Starting partition %s\n", name);
 		err = android_image_start_partition(image, &part_guid, NULL);
 		break;
+	default:
+		err = init_platform_functions();
+		if (EFI_ERROR(err)) {
+			error(L"Failed to initialize platform\n", err);
+			goto free_args;
+		}
+		err = start_boot_logic();
+		if (EFI_ERROR(err)) {
+			error(L"Boot logic failed\n", err);
+			goto free_args;
+		}
 	}
-
-	if (err != EFI_SUCCESS)
-		goto free_args;
-
-	return EFI_SUCCESS;
 
 free_args:
 	if (cmdline)
