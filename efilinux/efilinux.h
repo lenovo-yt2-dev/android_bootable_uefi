@@ -46,11 +46,8 @@
 #include "utils.h"
 
 #define debug(...)	{			\
-		CHAR16	*func = stra_to_str((CHAR8 *)__FUNCTION__);	\
-		Print(L"efilinux [%s:%d] ",func, __LINE__);	\
-		Print(L"" __VA_ARGS__);		\
-		Print(L"\n");		\
-		free(func);			\
+	Print(L"efilinux [%a:%d] ",__func__, __LINE__); \
+	Print("" __VA_ARGS__);	\
 	}
 
 extern EFI_SYSTEM_TABLE *sys_table;

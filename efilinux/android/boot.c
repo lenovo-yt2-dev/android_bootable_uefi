@@ -213,7 +213,7 @@ static EFI_STATUS setup_ramdisk(CHAR8 *bootimage)
         }
         memcpy((VOID *)(UINTN)ramdisk_addr, bootimage + roffset, rsize);
         buf->hdr.ramdisk_image = (UINT32)(UINTN)ramdisk_addr;
-	debug("Ramdisk copied into address 0x%x", ramdisk_addr);
+	debug(L"Ramdisk copied into address 0x%x\n", ramdisk_addr);
         return EFI_SUCCESS;
 out_error:
         efree(ramdisk_addr, rsize);
@@ -530,7 +530,7 @@ static EFI_STATUS handover_kernel(CHAR8 *bootimage, EFI_HANDLE parent_image)
                 if (EFI_ERROR(ret))
                         return ret;
         }
-	debug("kernel_start = 0x%x", kernel_start);
+	debug(L"kernel_start = 0x%x\n", kernel_start);
 
         memcpy((CHAR8 *)(UINTN)kernel_start, bootimage + koffset + setup_size, ksize);
 
@@ -572,7 +572,7 @@ static EFI_STATUS handover_kernel(CHAR8 *bootimage, EFI_HANDLE parent_image)
 
         free_pages(boot_addr, EFI_SIZE_TO_PAGES(16384));
 out:
-	debug("Can't boot kernel");
+	debug(L"Can't boot kernel\n");
         efree(kernel_start, ksize);
         return ret;
 }
@@ -591,12 +591,12 @@ EFI_STATUS android_image_start_partition(
         EFI_STATUS ret;
         struct boot_img_hdr aosp_header;
 
-        debug("Locating boot image");
+        debug(L"Locating boot image\n");
         ret = open_partition(guid, &MediaId, &BlockIo, &DiskIo);
         if (EFI_ERROR(ret))
                 return ret;
 
-        debug("Reading boot image header");
+        debug(L"Reading boot image header\n");
         ret = uefi_call_wrapper(DiskIo->ReadDisk, 5, DiskIo, MediaId, 0,
                         sizeof(aosp_header), &aosp_header);
         if (EFI_ERROR(ret)) {
@@ -613,7 +613,7 @@ EFI_STATUS android_image_start_partition(
         if (!bootimage)
                 return EFI_OUT_OF_RESOURCES;
 
-        debug("Reading full boot image");
+        debug(L"Reading full boot image\n");
         ret = uefi_call_wrapper(DiskIo->ReadDisk, 5, DiskIo, MediaId, 0,
                         img_size, bootimage);
         if (EFI_ERROR(ret)) {
@@ -646,7 +646,7 @@ EFI_STATUS android_image_start_file(
         struct boot_img_hdr *aosp_header;
         UINTN bsize;
 
-        debug("Locating boot image from file %s", loader);
+        debug(L"Locating boot image from file %s\n", loader);
         path = FileDevicePath(device, loader);
         if (!path) {
                 Print(L"Error getting device path.");
@@ -792,7 +792,7 @@ EFI_STATUS android_image_start_buffer(
         }
 
         if (is_secure_boot_enabled()) {
-                debug("Verifying the boot image");
+                debug(L"Verifying the boot image\n");
                 ret = verify_boot_image(bootimage);
                 if (EFI_ERROR(ret)) {
                         error(L"boot image digital signature verification failed", ret);
@@ -800,21 +800,21 @@ EFI_STATUS android_image_start_buffer(
                 }
         }
 
-        debug("Creating command line");
+        debug(L"Creating command line\n");
         ret = setup_command_line(bootimage, install_id);
         if (EFI_ERROR(ret)) {
                 error(L"setup_command_line", ret);
                 goto out_bootimage;
         }
 
-        debug("Loading the ramdisk");
+        debug(L"Loading the ramdisk\n");
         ret = setup_ramdisk(bootimage);
         if (EFI_ERROR(ret)) {
                 error(L"setup_ramdisk", ret);
                 goto out_cmdline;
         }
 
-        debug("Loading the kernel");
+        debug(L"Loading the kernel\n");
         ret = handover_kernel(bootimage, parent_image);
         error(L"handover_kernel", ret);
 

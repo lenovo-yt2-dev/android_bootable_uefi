@@ -59,7 +59,7 @@ EFI_STATUS android_load_bcb(
         if (!strncmpa(bcb.command, (CHAR8 *)"boot-", 5)) {
                 *var = stra_to_str(bcb.command + 5);
                 outval = EFI_SUCCESS;
-                debug("BCB boot target: '%s'", *var);
+                debug(L"BCB boot target: '%s'\n", *var);
         }
 
         ret = write_bcb(bcb_guid, &bcb);
@@ -85,19 +85,19 @@ EFI_STATUS write_bcb(
         EFI_DISK_IO *DiskIo;
         UINT32 MediaId;
 
-        debug("Locating BCB");
+        debug(L"Locating BCB\n");
         ret = open_partition(bcb_guid, &MediaId, &BlockIo, &DiskIo);
         if (EFI_ERROR(ret))
                 return EFI_INVALID_PARAMETER;
 
-        debug("Writing BCB");
+        debug(L"Writing BCB\n");
         ret = uefi_call_wrapper(DiskIo->WriteDisk, 5, DiskIo, MediaId, 0,
                         sizeof(*bcb), bcb);
         if (EFI_ERROR(ret)) {
                 error(L"WriteDisk (bcb)", ret);
                 return ret;
         }
-        debug("BCB written successfully");
+        debug(L"BCB written successfully\n");
 
         return EFI_SUCCESS;
 }
@@ -135,12 +135,12 @@ EFI_STATUS read_bcb(
         EFI_DISK_IO *DiskIo;
         UINT32 MediaId;
 
-        debug("Locating BCB");
+        debug(L"Locating BCB\n");
         ret = open_partition(bcb_guid, &MediaId, &BlockIo, &DiskIo);
         if (EFI_ERROR(ret))
                 return EFI_INVALID_PARAMETER;
 
-        debug("Reading BCB");
+        debug(L"Reading BCB\n");
         ret = uefi_call_wrapper(DiskIo->ReadDisk, 5, DiskIo, MediaId, 0,
                         sizeof(*bcb), bcb);
         if (EFI_ERROR(ret)) {
@@ -149,7 +149,7 @@ EFI_STATUS read_bcb(
         }
         bcb->command[31] = '\0';
         bcb->status[31] = '\0';
-        debug("BCB read completed successfully");
+        debug(L"BCB read completed successfully\n");
 
         return EFI_SUCCESS;
 }
