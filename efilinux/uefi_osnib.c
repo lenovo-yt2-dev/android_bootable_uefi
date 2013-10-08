@@ -27,14 +27,41 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _OSNIB_H_
-#define _OSNIB_H_
+#include <efi.h>
+#include <efilib.h>
+#include "efilinux.h"
+#include "uefi_osnib.h"
 
-struct osnib_header {
-	CHAR8 magic[4];
-	CHAR8 version_major;
-	CHAR8 version_minor;
-	CHAR8 reserved[2];
-} __attribute__ ((packed));
+#define INTEL_OSNIB_GUID	{0x80868086, 0x8086, 0x8086, {0x80, 0x86, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00}}
+#define INTEL_OSNIB_VARNAME	L"IntelOsnib"
 
-#endif /* _OSNIB_H_ */
+int uefi_is_osnib_corrupted(void)
+{
+	/* TODO */
+	debug(L"TO BE IMPLEMENTED\n");
+	return 0;
+}
+
+void uefi_reset_osnib(void)
+{
+	/* TODO */
+	debug(L"TO BE IMPLEMENTED\n");
+	return;
+}
+
+EFI_STATUS get_osnib(VOID **osnib, UINTN *size)
+{
+	EFI_GUID osnib_guid = INTEL_OSNIB_GUID;
+
+	*osnib = LibGetVariableAndSize(INTEL_OSNIB_VARNAME, &osnib_guid, size);
+	if (!*osnib)
+		return EFI_NOT_FOUND;
+	return EFI_SUCCESS;
+}
+
+EFI_STATUS set_osnib(VOID *osnib, UINTN size)
+{
+	EFI_GUID osnib_guid = INTEL_OSNIB_GUID;
+
+	return LibSetNVVariable(INTEL_OSNIB_VARNAME, &osnib_guid, size, osnib);
+}

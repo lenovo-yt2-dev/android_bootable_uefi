@@ -69,9 +69,9 @@ LDFLAGS=-T $(LDSCRIPT) -Bsymbolic -shared -nostdlib -znocombreloc \
 		-L$(LIBDIR)/gnuefi -L$(LIBDIR)/lib $(CRT0)
 
 IMAGE=efilinux.efi
-OBJS = entry.o malloc.o android/boot.o utils.o acpi.o bootlogic.o osnib.o intel_partitions.o
+OBJS = entry.o malloc.o android/boot.o utils.o acpi.o bootlogic.o osnib.o intel_partitions.o uefi_osnib.o
 FS = fs/fs.o
-PLATFORM = platform/platform.o platform/cherrytrail.o
+PLATFORM = platform/platform.o platform/cherrytrail.o platform/x86.o
 
 all: $(IMAGE)
 

@@ -39,9 +39,15 @@ struct osloader_ops {
 	void (*do_cold_off)(void);
 	EFI_STATUS (*populate_indicators)(void);
 	EFI_STATUS (*load_target)(enum targets);
+	enum wake_sources (*get_wake_source)(void);
+	enum reset_sources (*get_reset_source)(void);
+	enum shutdown_sources (*get_shutdown_source)(void);
+	int (*is_osnib_corrupted)(void);
+	void (*reset_osnib)(void);
+	enum batt_levels (*get_batt_level)(void);
 };
 
-struct osloader_ops loader_ops;
+extern struct osloader_ops loader_ops;
 
 EFI_STATUS init_platform_functions(void);
 

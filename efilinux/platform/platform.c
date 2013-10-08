@@ -59,3 +59,84 @@ EFI_STATUS init_platform_functions(void)
 	}
 	return ret;
 }
+
+/* Stub implementation of loader ops */
+static EFI_STATUS stub_check_partition_table(void)
+{
+	debug(L"WARNING: stubbed!\n");
+	return EFI_SUCCESS;
+}
+
+static enum flow_types stub_read_flow_type(void)
+{
+	debug(L"WARNING: stubbed!\n");
+	return FLOW_UNKNOWN;
+}
+
+static void stub_do_cold_off(void)
+{
+	debug(L"WARNING: stubbed!\n");
+	return;
+}
+
+static EFI_STATUS stub_populate_indicators(void)
+{
+	debug(L"WARNING: stubbed!\n");
+	return EFI_SUCCESS;
+}
+
+static EFI_STATUS stub_load_target(enum targets target)
+{
+	debug(L"WARNING: stubbed!\n");
+	return EFI_LOAD_ERROR;
+}
+
+static enum wake_sources stub_get_wake_source(void)
+{
+	debug(L"WARNING: stubbed!\n");
+	return WAKE_NOT_APPLICABLE;
+}
+
+static enum reset_sources stub_get_reset_source(void)
+{
+	debug(L"WARNING: stubbed!\n");
+	return WAKE_NOT_APPLICABLE;
+}
+
+static enum shutdown_sources stub_get_shutdown_source(void)
+{
+	debug(L"WARNING: stubbed!\n");
+	return SHTDWN_NOT_APPLICABLE;
+}
+
+static int stub_is_osnib_corrupted(void)
+{
+	debug(L"WARNING: stubbed!\n");
+	return 0;
+}
+
+static void stub_reset_osnib(void)
+{
+	debug(L"WARNING: stubbed!\n");
+	return;
+}
+
+static enum batt_levels stub_get_batt_level(void)
+{
+	debug(L"WARNING: stubbed!\n");
+	return BATT_BOOT_OS;
+}
+
+struct osloader_ops loader_ops = {
+	.check_partition_table = stub_check_partition_table,
+	.read_flow_type = stub_read_flow_type,
+	.do_cold_off = stub_do_cold_off,
+	.populate_indicators = stub_populate_indicators,
+	.load_target = stub_load_target,
+	.get_wake_source = stub_get_wake_source,
+	.get_reset_source = stub_get_reset_source,
+	.get_shutdown_source = stub_get_shutdown_source,
+	.is_osnib_corrupted = stub_is_osnib_corrupted,
+	.reset_osnib = stub_reset_osnib,
+	.get_batt_level = stub_get_batt_level,
+};

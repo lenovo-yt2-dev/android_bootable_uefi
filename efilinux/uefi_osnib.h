@@ -27,14 +27,10 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _OSNIB_H_
-#define _OSNIB_H_
+#ifndef __UEFI_OSNIB_H__
+#define __UEFI_OSNIB_H__
 
-struct osnib_header {
-	CHAR8 magic[4];
-	CHAR8 version_major;
-	CHAR8 version_minor;
-	CHAR8 reserved[2];
-} __attribute__ ((packed));
+int uefi_is_osnib_corrupted(void);
+void uefi_reset_osnib(void);
 
-#endif /* _OSNIB_H_ */
+#endif /* __UEFI_OSNIB_H__ */

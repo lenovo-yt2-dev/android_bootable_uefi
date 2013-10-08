@@ -31,8 +31,10 @@ LOCAL_SRC_FILES := \
 	bootlogic.c \
 	osnib.c \
 	intel_partitions.c \
+	uefi_osnib.c \
 	platform/platform.c \
 	platform/cherrytrail.c \
+	platform/x86.c \
 	fs/fs.c
 
 EFILINUX_VERSION_STRING := $(shell cd $(LOCAL_PATH) ; git describe --abbrev=8 --dirty --always)

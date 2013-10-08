@@ -30,15 +30,6 @@
 #ifndef __X86_H__
 #define __X86_H__
 
-#include "intel_partitions.h"
-#include "acpi.h"
-
-struct osloader_ops x86_ops = {
-	.check_partition_table = check_gpt,
-	.read_flow_type = acpi_read_flow_type,
-	.do_cold_off = acpi_cold_off,
-	.populate_indicators = rsci_populate_indicators,
-	.load_target = intel_load_target,
-};
+void x86_ops(struct osloader_ops *ops);
 
 #endif /* __X86_H__ */

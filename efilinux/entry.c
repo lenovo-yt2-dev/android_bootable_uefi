@@ -505,12 +505,12 @@ efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *_table)
 	default:
 		err = init_platform_functions();
 		if (EFI_ERROR(err)) {
-			error(L"Failed to initialize platform\n", err);
+			error(L"Failed to initialize platform: %r\n", err);
 			goto free_args;
 		}
 		err = start_boot_logic();
 		if (EFI_ERROR(err)) {
-			error(L"Boot logic failed\n", err);
+			error(L"Boot logic failed: %r\n", err);
 			goto free_args;
 		}
 	}

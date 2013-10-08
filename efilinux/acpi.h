@@ -33,11 +33,6 @@
 
 #include "bootlogic.h"
 
-#define RSDT_SIG "RSDT"
-#define PIDV_SIG "PIDV"
-#define RSCI_SIG "RSCI"
-#define RSDP_SIG "RSD PTR "
-
 /** Generic ACPI table header **/
 struct ACPI_DESC_HEADER {
 	CHAR8   signature[4];		/* ASCII Table identifier */
@@ -111,5 +106,8 @@ EFI_STATUS get_acpi_table(CHAR8 *signature, VOID **table);
 enum flow_types acpi_read_flow_type(void);
 void acpi_cold_off(void);
 EFI_STATUS rsci_populate_indicators(void);
+enum wake_sources rsci_get_wake_source(void);
+enum reset_sources rsci_get_reset_source(void);
+enum shutdown_sources rsci_get_shutdown_source(void);
 
 #endif /* __ACPI_H__ */

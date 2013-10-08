@@ -50,6 +50,10 @@
 	Print("" __VA_ARGS__);	\
 	}
 
+#define error(...) { \
+        Print(L"ERROR:" __VA_ARGS__); \
+	}
+
 extern EFI_SYSTEM_TABLE *sys_table;
 extern EFI_BOOT_SERVICES *boot;
 extern EFI_RUNTIME_SERVICES *runtime;

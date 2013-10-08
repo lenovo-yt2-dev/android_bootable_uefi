@@ -32,6 +32,14 @@
 #include "acpi.h"
 #include "utils.h"
 
+struct PIDV_TABLE *pidv_table = NULL;
+struct RSCI_TABLE *rsci_table = NULL;
+
+#define RSDT_SIG "RSDT"
+#define PIDV_SIG "PIDV"
+#define RSCI_SIG "RSCI"
+#define RSDP_SIG "RSD PTR "
+
 EFI_STATUS get_rsdt_table(struct RSDT_TABLE **rsdt)
 {
 	EFI_GUID acpi2_guid = ACPI_20_TABLE_GUID;
@@ -133,37 +141,83 @@ EFI_STATUS rsci_populate_indicators(void)
 	return EFI_SUCCESS;
 }
 
+EFI_STATUS get_rsci_table(void)
+{
+	EFI_STATUS ret = EFI_SUCCESS;
+	if (!rsci_table) {
+		ret = get_acpi_table((CHAR8 *)RSCI_SIG, (VOID **)&rsci_table);
+		if (EFI_ERROR(ret))
+			error(L"Failed to retrieve RSCI table: %r", ret);
+	}
+	return ret;
+}
+
+enum wake_sources rsci_get_wake_source(void)
+{
+	EFI_STATUS ret;
+	if (!rsci_table) {
+		ret = get_acpi_table((CHAR8 *)RSCI_SIG, (VOID **)&rsci_table);
+		if (EFI_ERROR(ret)) {
+			error(L"Failed to retrieve RSCI table: %r", ret);
+			return WAKE_ERROR;
+		}
+	}
+
+	return rsci_table->wake_source;
+}
+
+enum reset_sources rsci_get_reset_source(void)
+{
+	EFI_STATUS ret;
+	if (!rsci_table) {
+		ret = get_acpi_table((CHAR8 *)RSCI_SIG, (VOID **)&rsci_table);
+		if (EFI_ERROR(ret)) {
+			error(L"Failed to retrieve RSCI table: %r", ret);
+			return WAKE_ERROR;
+		}
+	}
+
+	return rsci_table->reset_source;
+}
+
+enum shutdown_sources rsci_get_shutdown_source(void)
+{
+	/* TODO */
+	debug(L"TO BE IMPLEMENTED\n");
+	return SHTDWN_NOT_APPLICABLE;
+}
+
 void print_pidv(struct PIDV_TABLE *pidv)
 {
 	int i;
-	Print(L"part_number      	=");
+	debug(L"part_number      	=");
 	for (i				= 0; i < sizeof(pidv->part_number); i++)
-		Print(L"%x", pidv->part_number[i]);
-	Print(L"\n");
-	Print(L"ext_id_1 x_id1:\n");
-	Print(L"customer		=0x%x\n",pidv->x_id1.customer);
-	Print(L"vendor			=0x%x\n",pidv->x_id1.vendor);
-	Print(L"device_manufacturer	=0x%x\n",pidv->x_id1.device_manufacturer);
-	Print(L"platform_family		=0x%x\n",pidv->x_id1.platform_family);
-	Print(L"product_line		=0x%x\n",pidv->x_id1.product_line);
-	Print(L"hardware		=0x%x\n",pidv->x_id1.hardware);
-	Print(L"spid_checksum		=0x%x\n",pidv->x_id1.spid_checksum);
-	Print(L"fru			=0x%x\n",pidv->x_id1.fru);
-	Print(L"fru_checksum		=0x%x\n",pidv->x_id1.fru_checksum);
-	Print(L"reserved		=0x%x\n",pidv->x_id1.reserved);
-	Print(L"data1			=0x%x\n", pidv->x_id2.data1);
-	Print(L"data2			=0x%x\n", pidv->x_id2.data2);
-	Print(L"data3			=0x%x\n", pidv->x_id2.data3);
-	Print(L"data4			=0x%x\n", pidv->x_id2.data4);
-	Print(L"ext_id_2 x_id2:\n");
-	Print(L"system_uuid		=0x%x\n", pidv->system_uuid);
+		debug(L"%x", pidv->part_number[i]);
+	debug(L"\n");
+	debug(L"ext_id_1 x_id1:\n");
+	debug(L"customer		=0x%x\n",pidv->x_id1.customer);
+	debug(L"vendor			=0x%x\n",pidv->x_id1.vendor);
+	debug(L"device_manufacturer	=0x%x\n",pidv->x_id1.device_manufacturer);
+	debug(L"platform_family		=0x%x\n",pidv->x_id1.platform_family);
+	debug(L"product_line		=0x%x\n",pidv->x_id1.product_line);
+	debug(L"hardware		=0x%x\n",pidv->x_id1.hardware);
+	debug(L"spid_checksum		=0x%x\n",pidv->x_id1.spid_checksum);
+	debug(L"fru			=0x%x\n",pidv->x_id1.fru);
+	debug(L"fru_checksum		=0x%x\n",pidv->x_id1.fru_checksum);
+	debug(L"reserved		=0x%x\n",pidv->x_id1.reserved);
+	debug(L"data1			=0x%x\n", pidv->x_id2.data1);
+	debug(L"data2			=0x%x\n", pidv->x_id2.data2);
+	debug(L"data3			=0x%x\n", pidv->x_id2.data3);
+	debug(L"data4			=0x%x\n", pidv->x_id2.data4);
+	debug(L"ext_id_2 x_id2:\n");
+	debug(L"system_uuid		=0x%x\n", pidv->system_uuid);
 }
 
 void print_rsci(struct RSCI_TABLE *rsci)
 {
-	Print(L"wake_source	=0x%x\n", rsci->wake_source);
-	Print(L"reset_source	=0x%x\n", rsci->reset_source);
-	Print(L"reset_type	=0x%x\n", rsci->reset_type);
-	Print(L"shutdown_source	=0x%x\n", rsci->shutdown_source);
-	Print(L"indicators	=0x%x\n", rsci->indicators);
+	debug(L"wake_source	=0x%x\n", rsci->wake_source);
+	debug(L"reset_source	=0x%x\n", rsci->reset_source);
+	debug(L"reset_type	=0x%x\n", rsci->reset_type);
+	debug(L"shutdown_source	=0x%x\n", rsci->shutdown_source);
+	debug(L"indicators	=0x%x\n", rsci->indicators);
 }

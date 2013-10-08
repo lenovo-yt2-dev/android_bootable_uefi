@@ -33,22 +33,7 @@
 #include "osnib.h"
 #include "osnib_v1_0.h"
 
-EFI_STATUS get_osnib(VOID **osnib, UINTN *size)
-{
-	EFI_GUID osnib_guid = INTEL_OSNIB_GUID;
-
-	*osnib = LibGetVariableAndSize(INTEL_OSNIB_VARNAME, &osnib_guid, size);
-	if (!*osnib)
-		return EFI_NOT_FOUND;
-	return EFI_SUCCESS;
-}
-
-EFI_STATUS set_osnib(VOID *osnib, UINTN size)
-{
-	EFI_GUID osnib_guid = INTEL_OSNIB_GUID;
-
-	return LibSetNVVariable(INTEL_OSNIB_VARNAME, &osnib_guid, size, osnib);
-}
+#define OSNIB_MAGIC		"NIB"
 
 EFI_STATUS init_osnib(VOID *buffer, CHAR8 version_major, CHAR8 version_minor)
 {

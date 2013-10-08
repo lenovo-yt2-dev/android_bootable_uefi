@@ -83,12 +83,6 @@ free:
         return NULL;
 }
 
-VOID error(CHAR16 *str, EFI_STATUS ret)
-{
-        Print(L"ERROR %s: %r\n", str, ret);
-        uefi_call_wrapper(BS->Stall, 1, 2 * 1000 * 1000);
-}
-
 VOID StrNCpy(OUT CHAR16 *dest, IN const CHAR16 *src, UINT32 n)
 {
         UINT32 i;

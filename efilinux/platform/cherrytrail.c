@@ -32,5 +32,5 @@
 
 void init_cherrytrail(void)
 {
-	loader_ops = x86_ops;
+	x86_ops(&loader_ops);
 }
