@@ -37,6 +37,8 @@
 
 #include "efilinux.h"
 
+#define offsetof(TYPE, MEMBER) ((UINTN) &((TYPE *)0)->MEMBER)
+
 EFI_STATUS str_to_stra(CHAR8 *dst, CHAR16 *src, UINTN len);
 CHAR16 *stra_to_str(CHAR8 *src);
 VOID StrNCpy(OUT CHAR16 *dest, IN const CHAR16 *src, UINT32 n);

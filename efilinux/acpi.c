@@ -32,13 +32,44 @@
 #include "acpi.h"
 #include "utils.h"
 
-struct PIDV_TABLE *pidv_table = NULL;
-struct RSCI_TABLE *rsci_table = NULL;
+static struct RSCI_TABLE *RSCI_table = NULL;
 
 #define RSDT_SIG "RSDT"
 #define PIDV_SIG "PIDV"
 #define RSCI_SIG "RSCI"
 #define RSDP_SIG "RSD PTR "
+
+/* This macro is defined to get a specified field from an acpi table
+ * which will be loader if necessary.
+ * <table> parameter is the name of the requested table passed as-is.
+ *
+ * Example: get_acpi_field(RSCI, wake_source)
+ *
+ * In this example, the macro requires that :
+ *
+ *  - RSCI_SIG is a define of the RSCI table signature,
+ *  - RSCI_table is a global variable which will contains the table data,
+ *  - struct RSCI_TABLE is the type of the requested table.
+ */
+#define get_acpi_field(table, field)				\
+	(typeof(table##_table->field))				\
+	_get_acpi_field((CHAR8 *)table##_SIG,			\
+			#table,					\
+			(VOID **)&table##_table,		\
+			offsetof(struct table##_TABLE, field))
+
+static UINT64 _get_acpi_field(CHAR8 *signature, char *name, VOID **var, UINTN offset)
+{
+	if (!*var) {
+		EFI_STATUS ret = get_acpi_table(signature, (VOID **)var);
+		if (EFI_ERROR(ret)) {
+			error(L"Failed to retrieve %a table: %r\n", name, ret);
+			return -1;
+		}
+	}
+
+	return *((CHAR8 *)*var + offset);
+}
 
 EFI_STATUS get_rsdt_table(struct RSDT_TABLE **rsdt)
 {
@@ -110,7 +141,7 @@ EFI_STATUS get_acpi_table(CHAR8 *signature, VOID **table)
 		header = (struct ACPI_DESC_HEADER *)rsdt->entry[i];
 		if (!strncmpa(header->signature, signature, strlena(signature))) {
 			debug(L"Found %c%c%c%c table\n", signature[0], signature[1], signature[2], signature[3]);
-			*table = (struct PIDV_TABLE *)header;
+			*table = header;
 			ret = EFI_SUCCESS;
 			break;
 		}
@@ -118,7 +149,6 @@ EFI_STATUS get_acpi_table(CHAR8 *signature, VOID **table)
 out:
 	return ret;
 }
-
 
 enum flow_types acpi_read_flow_type(void)
 {
@@ -141,50 +171,19 @@ EFI_STATUS rsci_populate_indicators(void)
 	return EFI_SUCCESS;
 }
 
-EFI_STATUS get_rsci_table(void)
-{
-	EFI_STATUS ret = EFI_SUCCESS;
-	if (!rsci_table) {
-		ret = get_acpi_table((CHAR8 *)RSCI_SIG, (VOID **)&rsci_table);
-		if (EFI_ERROR(ret))
-			error(L"Failed to retrieve RSCI table: %r", ret);
-	}
-	return ret;
-}
-
 enum wake_sources rsci_get_wake_source(void)
 {
-	EFI_STATUS ret;
-	if (!rsci_table) {
-		ret = get_acpi_table((CHAR8 *)RSCI_SIG, (VOID **)&rsci_table);
-		if (EFI_ERROR(ret)) {
-			error(L"Failed to retrieve RSCI table: %r", ret);
-			return WAKE_ERROR;
-		}
-	}
-
-	return rsci_table->wake_source;
+        return get_acpi_field(RSCI, wake_source);
 }
 
 enum reset_sources rsci_get_reset_source(void)
 {
-	EFI_STATUS ret;
-	if (!rsci_table) {
-		ret = get_acpi_table((CHAR8 *)RSCI_SIG, (VOID **)&rsci_table);
-		if (EFI_ERROR(ret)) {
-			error(L"Failed to retrieve RSCI table: %r", ret);
-			return WAKE_ERROR;
-		}
-	}
-
-	return rsci_table->reset_source;
+        return get_acpi_field(RSCI, reset_source);
 }
 
 enum shutdown_sources rsci_get_shutdown_source(void)
 {
-	/* TODO */
-	debug(L"TO BE IMPLEMENTED\n");
-	return SHTDWN_NOT_APPLICABLE;
+        return get_acpi_field(RSCI, shutdown_source);
 }
 
 void print_pidv(struct PIDV_TABLE *pidv)

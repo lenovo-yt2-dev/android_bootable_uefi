@@ -41,7 +41,7 @@ enum wake_sources {
 	WAKE_POWER_BUTTON_PRESSED,
 	WAKE_RTC_TIMER,
 	WAKE_BATTERY_REACHED_IA_THRESHOLD,
-	WAKE_ERROR,
+	WAKE_ERROR = -1,
 };
 
 /* Reset sources */
@@ -56,7 +56,7 @@ enum reset_sources {
 	RESET_PMC_WATCHDOG,
 	RESET_EC_WATCHDOG,
 	RESET_PLATFORM_WATCHDOG,
-	RESET_ERROR,
+	RESET_ERROR = -1,
 };
 
 /* Reset type */
@@ -80,7 +80,7 @@ enum shutdown_sources {
 	SHTDWN_SECURITY_WATCHDOG,
 	SHTDWN_SECURITY_INITIATED,
 	SHTDWN_PMC_WATCHDOG,
-	SHTDWN_ERROR,
+	SHTDWN_ERROR = -1,
 };
 
 /* Indicators */
@@ -110,7 +110,7 @@ enum batt_levels {
 	BATT_LOW,
 	BATT_BOOT_CHARGING,
 	BATT_BOOT_OS,
-	BATT_ERROR,
+	BATT_ERROR = -1,
 };
 
 EFI_STATUS start_boot_logic(void);
