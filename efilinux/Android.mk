@@ -35,6 +35,7 @@ LOCAL_SRC_FILES := \
 	platform/platform.c \
 	platform/cherrytrail.c \
 	platform/x86.c \
+	uefi_keys.c \
 	fs/fs.c
 
 EFILINUX_VERSION_STRING := $(shell cd $(LOCAL_PATH) ; git describe --abbrev=8 --dirty --always)
@@ -53,7 +54,7 @@ LOCAL_MODULE_PATH := $(PRODUCT_OUT)
 LOCAL_MODULE_CLASS := EXECUTABLES
 LOCAL_FORCE_STATIC_EXECUTABLE := true
 
-LOCAL_CFLAGS  += -O2 -Wall -fshort-wchar -fno-strict-aliasing \
+LOCAL_CFLAGS  += -g -Wall -fshort-wchar -fno-strict-aliasing \
            -fno-merge-constants -fno-stack-protector \
            -fno-stack-check
 

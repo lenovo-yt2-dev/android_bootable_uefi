@@ -44,6 +44,7 @@ char *target_strings[TARGET_UNKNOWN + 1] = {
 	STRINGIZE(TARGET_CHARGING),
 	STRINGIZE(TARGET_UNKNOWN),
 };
+
 int batt_boot_os(void)
 {
 	/* TODO */
@@ -60,8 +61,19 @@ enum targets boot_forced_shutdown(enum wake_sources ws)
 
 enum targets boot_fastboot_combo(enum wake_sources ws)
 {
-	/* TODO */
-	debug(L"TO BE IMPLEMENTED\n");
+	if (!loader_ops.combo_key(COMBO_FASTBOOT_MODE))
+		return TARGET_UNKNOWN;
+
+	switch(loader_ops.get_batt_level()) {
+	case BATT_ERROR:
+		error(L"Failed to get battery level. Booting.\n");
+	case BATT_BOOT_OS:
+	case BATT_BOOT_CHARGING:
+		return TARGET_FASTBOOT;
+	case BATT_LOW:
+		return TARGET_COLD_OFF;
+	}
+
 	return TARGET_UNKNOWN;
 }
 
@@ -72,7 +84,7 @@ enum targets boot_power_key(enum wake_sources ws)
 
 	switch(loader_ops.get_batt_level()) {
 	case BATT_ERROR:
-		error(L"Failed to get battery level. Booting in MOS\n");
+		error(L"Failed to get battery level. Booting\n");
 	case BATT_BOOT_OS:
 		return TARGET_BOOT;
 	case BATT_BOOT_CHARGING:
@@ -137,16 +149,17 @@ enum targets target_from_off(enum wake_sources ws)
 
 enum targets boot_fw_update(enum reset_sources rs)
 {
-	/* TODO */
-	debug(L"TO BE IMPLEMENTED\n");
-	return TARGET_UNKNOWN;
+	return rs == RESET_FW_UPDATE ? TARGET_BOOT : TARGET_UNKNOWN;
 }
+
 enum targets boot_reset(enum reset_sources rs)
 {
-	/* TODO */
-	debug(L"TO BE IMPLEMENTED\n");
-	return TARGET_UNKNOWN;
+	if (rs == RESET_OS_INITIATED || rs == RESET_FORCED)
+		return loader_ops.get_target_mode();
+	else
+		return TARGET_UNKNOWN;
 }
+
 enum targets boot_watchdog(enum reset_sources rs)
 {
 	/* TODO */
@@ -180,11 +193,21 @@ enum targets target_from_inputs(enum flow_types flow_type)
 
 	ws = loader_ops.get_wake_source();
 	debug(L"Wake source = 0x%x\n", ws);
+	if (ws == WAKE_ERROR) {
+		error(L"Wake source couldn't be retrieved. Falling back in TARGET_BOOT\n");
+		return TARGET_BOOT;
+	}
+
 	if (ws != WAKE_NOT_APPLICABLE)
 		return target_from_off(ws);
 
 	rs = loader_ops.get_reset_source();
 	debug(L"Reset source = 0x%x\n", rs);
+	if (rs == RESET_ERROR) {
+		error(L"Reset source couldn't be retrieved. Falling back in TARGET_BOOT\n");
+		return TARGET_BOOT;
+	}
+
 	if (rs != RESET_NOT_APPLICABLE)
 		return target_from_reset(rs);
 

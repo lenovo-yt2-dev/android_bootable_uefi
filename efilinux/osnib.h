@@ -37,4 +37,6 @@ struct osnib_header {
 	CHAR8 reserved[2];
 } __attribute__ ((packed));
 
+enum targets osnib_get_target_mode(void);
+
 #endif /* _OSNIB_H_ */

@@ -32,6 +32,8 @@
 #include "intel_partitions.h"
 #include "acpi.h"
 #include "uefi_osnib.h"
+#include "osnib.h"
+#include "uefi_keys.h"
 
 void x86_ops(struct osloader_ops *ops)
 {
@@ -45,4 +47,6 @@ void x86_ops(struct osloader_ops *ops)
 	ops->get_shutdown_source = rsci_get_shutdown_source;
 	ops->is_osnib_corrupted = uefi_is_osnib_corrupted;
 	ops->reset_osnib = uefi_reset_osnib;
+	ops->get_target_mode = osnib_get_target_mode;
+	ops->combo_key = uefi_combo_key;
 }

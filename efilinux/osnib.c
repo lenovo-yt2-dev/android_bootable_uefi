@@ -32,6 +32,7 @@
 #include "efilinux.h"
 #include "osnib.h"
 #include "osnib_v1_0.h"
+#include "bootlogic.h"
 
 #define OSNIB_MAGIC		"NIB"
 
@@ -55,4 +56,11 @@ EFI_STATUS init_osnib(VOID *buffer, CHAR8 version_major, CHAR8 version_minor)
 	}
 
 	return ret;
+}
+
+enum targets osnib_get_target_mode(void)
+{
+	/* TODO */
+	debug(L"TO BE IMPLEMENTED\n");
+	return TARGET_BOOT;
 }

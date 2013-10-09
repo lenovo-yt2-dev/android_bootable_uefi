@@ -113,6 +113,12 @@ enum batt_levels {
 	BATT_ERROR = -1,
 };
 
+enum combo_keys {
+	COMBO_FASTBOOT_MODE,
+	COMBO_SAFE_MODE,
+	COMBO_ERROR = -1,
+};
+
 EFI_STATUS start_boot_logic(void);
 
 #endif /* _BOOTLOGIC_H_ */

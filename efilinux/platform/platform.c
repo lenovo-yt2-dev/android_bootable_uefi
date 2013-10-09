@@ -127,6 +127,18 @@ static enum batt_levels stub_get_batt_level(void)
 	return BATT_BOOT_OS;
 }
 
+static enum targets stub_get_target_mode(void)
+{
+	debug(L"WARNING: stubbed!\n");
+	return BATT_BOOT_OS;
+}
+
+static int stub_combo_key(enum combo_keys combo)
+{
+	debug(L"WARNING: stubbed!\n");
+	return 0;
+}
+
 struct osloader_ops loader_ops = {
 	.check_partition_table = stub_check_partition_table,
 	.read_flow_type = stub_read_flow_type,
@@ -139,4 +151,6 @@ struct osloader_ops loader_ops = {
 	.is_osnib_corrupted = stub_is_osnib_corrupted,
 	.reset_osnib = stub_reset_osnib,
 	.get_batt_level = stub_get_batt_level,
+	.get_target_mode = stub_get_target_mode,
+	.combo_key = stub_combo_key,
 };

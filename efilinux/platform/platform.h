@@ -45,6 +45,8 @@ struct osloader_ops {
 	int (*is_osnib_corrupted)(void);
 	void (*reset_osnib)(void);
 	enum batt_levels (*get_batt_level)(void);
+	enum targets (*get_target_mode)(void);
+	int (*combo_key)(enum combo_keys);
 };
 
 extern struct osloader_ops loader_ops;
