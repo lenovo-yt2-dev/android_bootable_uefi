@@ -37,6 +37,15 @@ struct osnib_header {
 	CHAR8 reserved[2];
 } __attribute__ ((packed));
 
+/* Generic structure which can store all versions of osnib */
+struct osnib_generic {
+	struct osnib_header header;
+	UINT64 wdt_counter;
+	UINT64 target_mode;
+	UINT64 rtc_alarm_charging;
+};
+
 enum targets osnib_get_target_mode(void);
+EFI_STATUS osnib_write(void);
 
 #endif /* _OSNIB_H_ */

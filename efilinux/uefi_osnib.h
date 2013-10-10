@@ -32,5 +32,7 @@
 
 int uefi_is_osnib_corrupted(void);
 void uefi_reset_osnib(void);
+void *uefi_get_osnib(void);
+void uefi_set_osnib(void *, int);
 
 #endif /* __UEFI_OSNIB_H__ */

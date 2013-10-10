@@ -36,7 +36,7 @@
 #define OSNIB_V1_0_DEBUG_SIZE		15
 #define OSNIB_V1_0_FW_RSVD_SIZE		3
 
-struct OSNIB_V1_0 {
+struct osnib_v1_0 {
 	struct osnib_header header;
 	CHAR8 bootflow;
 	struct {
