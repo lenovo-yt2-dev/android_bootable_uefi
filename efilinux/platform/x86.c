@@ -45,8 +45,12 @@ void x86_ops(struct osloader_ops *ops)
 	ops->get_wake_source = rsci_get_wake_source;
 	ops->get_reset_source = rsci_get_reset_source;
 	ops->get_shutdown_source = rsci_get_shutdown_source;
-	ops->is_osnib_corrupted = uefi_is_osnib_corrupted;
-	ops->reset_osnib = uefi_reset_osnib;
-	ops->get_target_mode = osnib_get_target_mode;
+	ops->get_target_mode = uefi_get_target_mode;
 	ops->combo_key = uefi_combo_key;
+	ops->set_target_mode = uefi_set_target_mode;
+	ops->set_rtc_alarm_charging = uefi_set_rtc_alarm_charging;
+	ops->set_wdt_counter = uefi_set_wdt_counter;
+	ops->get_target_mode = uefi_get_target_mode;
+	ops->get_rtc_alarm_charging = uefi_get_rtc_alarm_charging;
+	ops->get_wdt_counter = uefi_get_wdt_counter;
 }

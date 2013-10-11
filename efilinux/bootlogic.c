@@ -132,9 +132,10 @@ enum targets target_from_off(enum wake_sources ws)
 
 	shutdown_source = loader_ops.get_shutdown_source();
 
-	if (shutdown_source == SHTDWN_POWER_BUTTON_OVERRIDE ||
-	    loader_ops.is_osnib_corrupted()) {
-		loader_ops.reset_osnib();
+	if (shutdown_source == SHTDWN_POWER_BUTTON_OVERRIDE) {
+		loader_ops.set_target_mode(TARGET_BOOT);
+		loader_ops.set_rtc_alarm_charging(0);
+		loader_ops.set_wdt_counter(0);
 	}
 
 	int i;
@@ -264,6 +265,8 @@ EFI_STATUS start_boot_logic(void)
 	ret = loader_ops.populate_indicators();
 	if (EFI_ERROR(ret))
 		goto error;
+
+	debug(L"Booting target %a\n", target_strings[target]);
 
 	ret = loader_ops.load_target(target);
 	/* This code shouldn't be reached! */

@@ -97,6 +97,7 @@ enum targets {
 	TARGET_COLD_OFF,
 	TARGET_CHARGING,
 	TARGET_UNKNOWN,
+	TARGET_ERROR = -1,
 };
 extern char *target_strings[];
 

@@ -30,7 +30,13 @@
 #ifndef __UEFI_OSNIB_H__
 #define __UEFI_OSNIB_H__
 
-int uefi_is_osnib_corrupted(void);
-void uefi_reset_osnib(void);
+#include "bootlogic.h"
+
+EFI_STATUS uefi_set_target_mode(enum targets);
+EFI_STATUS uefi_set_rtc_alarm_charging(int);
+EFI_STATUS uefi_set_wdt_counter(int);
+enum targets uefi_get_target_mode(void);
+int uefi_get_rtc_alarm_charging(void);
+int uefi_get_wdt_counter(void);
 
 #endif /* __UEFI_OSNIB_H__ */

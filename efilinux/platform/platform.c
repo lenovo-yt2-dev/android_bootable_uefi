@@ -115,25 +115,49 @@ static int stub_is_osnib_corrupted(void)
 	return 0;
 }
 
-static void stub_reset_osnib(void)
-{
-	debug(L"WARNING: stubbed!\n");
-	return;
-}
-
 static enum batt_levels stub_get_batt_level(void)
 {
 	debug(L"WARNING: stubbed!\n");
 	return BATT_BOOT_OS;
 }
 
+static int stub_combo_key(enum combo_keys combo)
+{
+	debug(L"WARNING: stubbed!\n");
+	return 0;
+}
+
+static EFI_STATUS stub_set_target_mode(enum targets target)
+{
+	debug(L"WARNING: stubbed!\n");
+	return EFI_SUCCESS;
+}
+
+static EFI_STATUS stub_set_rtc_alarm_charging(int val)
+{
+	debug(L"WARNING: stubbed!\n");
+	return EFI_SUCCESS;
+}
+
+static EFI_STATUS stub_set_wdt_counter(int val)
+{
+	debug(L"WARNING: stubbed!\n");
+	return EFI_SUCCESS;
+}
+
 static enum targets stub_get_target_mode(void)
 {
 	debug(L"WARNING: stubbed!\n");
-	return BATT_BOOT_OS;
+	return TARGET_BOOT;
 }
 
-static int stub_combo_key(enum combo_keys combo)
+static int stub_get_rtc_alarm_charging(void)
+{
+	debug(L"WARNING: stubbed!\n");
+	return 0;
+}
+
+static int stub_get_wdt_counter(void)
 {
 	debug(L"WARNING: stubbed!\n");
 	return 0;
@@ -149,8 +173,12 @@ struct osloader_ops loader_ops = {
 	.get_reset_source = stub_get_reset_source,
 	.get_shutdown_source = stub_get_shutdown_source,
 	.is_osnib_corrupted = stub_is_osnib_corrupted,
-	.reset_osnib = stub_reset_osnib,
 	.get_batt_level = stub_get_batt_level,
-	.get_target_mode = stub_get_target_mode,
 	.combo_key = stub_combo_key,
+	.set_target_mode = stub_set_target_mode,
+	.set_rtc_alarm_charging = stub_set_rtc_alarm_charging,
+	.set_wdt_counter = stub_set_wdt_counter,
+	.get_target_mode = stub_get_target_mode,
+	.get_rtc_alarm_charging = stub_get_rtc_alarm_charging,
+	.get_wdt_counter = stub_get_wdt_counter,
 };

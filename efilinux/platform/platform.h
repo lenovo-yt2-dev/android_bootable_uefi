@@ -43,10 +43,14 @@ struct osloader_ops {
 	enum reset_sources (*get_reset_source)(void);
 	enum shutdown_sources (*get_shutdown_source)(void);
 	int (*is_osnib_corrupted)(void);
-	void (*reset_osnib)(void);
 	enum batt_levels (*get_batt_level)(void);
-	enum targets (*get_target_mode)(void);
 	int (*combo_key)(enum combo_keys);
+	EFI_STATUS (*set_target_mode)(enum targets);
+	EFI_STATUS (*set_rtc_alarm_charging)(int);
+	EFI_STATUS (*set_wdt_counter)(int);
+	enum targets (*get_target_mode)(void);
+	int (*get_rtc_alarm_charging)(void);
+	int (*get_wdt_counter)(void);
 };
 
 extern struct osloader_ops loader_ops;

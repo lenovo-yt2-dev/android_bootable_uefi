@@ -31,37 +31,78 @@
 #include <efilib.h>
 #include "efilinux.h"
 #include "uefi_osnib.h"
+#include "bootlogic.h"
 
 #define INTEL_OSNIB_GUID	{0x80868086, 0x8086, 0x8086, {0x80, 0x86, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00}}
-#define INTEL_OSNIB_VARNAME	L"IntelOsnib"
 
-int uefi_is_osnib_corrupted(void)
+static EFI_GUID osnib_guid = INTEL_OSNIB_GUID;
+
+/* Warning: These macros requires that the data is a contained in a BYTE ! */
+#define set_osnib_var(var)					\
+	uefi_set_simple_var(#var, &osnib_guid, 1, &var)
+
+#define get_osnib_var(var)			\
+	uefi_get_simple_var(#var, &osnib_guid)
+
+static EFI_STATUS uefi_set_simple_var(char *name, EFI_GUID *guid, int size, void *data)
 {
-	/* TODO */
-	debug(L"TO BE IMPLEMENTED\n");
-	return 0;
+	EFI_STATUS ret;
+	CHAR16 *name16 = stra_to_str((CHAR8 *)name);
+
+	ret = LibSetNVVariable(name16, guid, size, data);
+	free(name16);
+	return ret;
 }
 
-void uefi_reset_osnib(void)
+static CHAR8 uefi_get_simple_var(char *name, EFI_GUID *guid)
 {
-	/* TODO */
-	debug(L"TO BE IMPLEMENTED\n");
-	return;
+	void *buffer;
+	UINT64 ret;
+	UINTN size;
+	CHAR16 *name16 = stra_to_str((CHAR8 *)name);
+	buffer = LibGetVariableAndSize(name16, guid, &size);
+	free(name16);
+
+	if (size > sizeof(ret)) {
+		error(L"Tried to get UEFI variable larger than %d bytes (%d bytes)."
+		      " Please use an appropriate retrieve method.\n", sizeof(ret), size);
+		ret = -1;
+		goto out;
+	}
+
+	ret = *(CHAR8 *)buffer;
+out:
+	free(buffer);
+	return ret;
 }
 
-EFI_STATUS get_osnib(VOID **osnib, UINTN *size)
+EFI_STATUS uefi_set_target_mode(enum targets target_mode)
 {
-	EFI_GUID osnib_guid = INTEL_OSNIB_GUID;
-
-	*osnib = LibGetVariableAndSize(INTEL_OSNIB_VARNAME, &osnib_guid, size);
-	if (!*osnib)
-		return EFI_NOT_FOUND;
-	return EFI_SUCCESS;
+	return set_osnib_var(target_mode);
 }
 
-EFI_STATUS set_osnib(VOID *osnib, UINTN size)
+EFI_STATUS uefi_set_rtc_alarm_charging(int rtc_alarm_charging)
 {
-	EFI_GUID osnib_guid = INTEL_OSNIB_GUID;
-
-	return LibSetNVVariable(INTEL_OSNIB_VARNAME, &osnib_guid, size, osnib);
+	return set_osnib_var(rtc_alarm_charging);
 }
+
+EFI_STATUS uefi_set_wdt_counter(int wdt_counter)
+{
+	return set_osnib_var(wdt_counter);
+}
+
+enum targets uefi_get_target_mode(void)
+{
+	return get_osnib_var(target_mode);
+}
+
+int uefi_get_rtc_alarm_charging(void)
+{
+	return get_osnib_var(rtc_alarm_charging);
+}
+
+int uefi_get_wdt_counter(void)
+{
+	return get_osnib_var(wdt_counter);
+}
+
