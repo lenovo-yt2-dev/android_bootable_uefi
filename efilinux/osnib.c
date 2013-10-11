@@ -68,10 +68,14 @@ static int osnib_command(UINT16 version, VOID *osnib, enum osnib_command command
 			osnib_gen.wdt_counter = nib->wdt_counter;
 			osnib_gen.target_mode = nib->target_mode;
 			osnib_gen.rtc_alarm_charging = nib->rtc_alarm_charging;
+			break;
 		case OSNIB_POPULATE_PLATFORM:
 			nib->wdt_counter = osnib_gen.wdt_counter;
 			nib->target_mode = osnib_gen.target_mode;
 			nib->rtc_alarm_charging = osnib_gen.rtc_alarm_charging;
+			break;
+		default:
+			error(L"Unknown OSNIB command 0x%x\n", command);
 		}
 		break;
 	}

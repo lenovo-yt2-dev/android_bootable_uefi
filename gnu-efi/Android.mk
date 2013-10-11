@@ -55,7 +55,7 @@ COMMON_GNU_EFI_SRC := \
 	gnuefi/setjmp_$(EFI_ARCH).S \
 	gnuefi/crt0-efi-$(EFI_ARCH).S
 
-LOCAL_CFLAGS += -fno-stack-protector
+LOCAL_CFLAGS += -fno-stack-protector -fshort-wchar
 
 LOCAL_SRC_FILES := \
 	$(COMMON_GNU_EFI_SRC) \
