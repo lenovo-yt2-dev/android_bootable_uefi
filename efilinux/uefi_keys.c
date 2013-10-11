@@ -44,6 +44,7 @@ int is_key_pressed(UINT16 scancode)
 {
 	EFI_INPUT_KEY key;
 	while (!EFI_ERROR(uefi_get_key(&key))) {
+		debug(L"Key pressed: scan=0x%x char=%c\n", key.ScanCode, key.UnicodeChar);
 		if (key.ScanCode == scancode)
 			return 1;
 	}
