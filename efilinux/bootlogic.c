@@ -154,10 +154,8 @@ enum targets boot_fw_update(enum reset_sources rs)
 
 enum targets boot_reset(enum reset_sources rs)
 {
-	if (rs == RESET_OS_INITIATED || rs == RESET_FORCED) {
-		enum targets target = loader_ops.get_target_mode();
-		return (target == TARGET_ERROR) ? TARGET_BOOT : target;
-	}
+	if (rs == RESET_OS_INITIATED || rs == RESET_FORCED)
+		return loader_ops.get_target_mode();
 	else
 		return TARGET_UNKNOWN;
 }
@@ -266,10 +264,6 @@ EFI_STATUS start_boot_logic(void)
 	ret = loader_ops.populate_indicators();
 	if (EFI_ERROR(ret))
 		goto error;
-
-	loader_ops.hook_bootlogic_end();
-
-	debug(L"Booting target %a\n", target_strings[target]);
 
 	ret = loader_ops.load_target(target);
 	/* This code shouldn't be reached! */

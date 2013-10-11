@@ -49,18 +49,19 @@ void uefi_reset_osnib(void)
 	return;
 }
 
-void *uefi_get_osnib(void)
+EFI_STATUS get_osnib(VOID **osnib, UINTN *size)
 {
 	EFI_GUID osnib_guid = INTEL_OSNIB_GUID;
-	return LibGetVariable(INTEL_OSNIB_VARNAME, &osnib_guid);
+
+	*osnib = LibGetVariableAndSize(INTEL_OSNIB_VARNAME, &osnib_guid, size);
+	if (!*osnib)
+		return EFI_NOT_FOUND;
+	return EFI_SUCCESS;
 }
 
-void uefi_set_osnib(VOID *osnib, int size)
+EFI_STATUS set_osnib(VOID *osnib, UINTN size)
 {
 	EFI_GUID osnib_guid = INTEL_OSNIB_GUID;
-	EFI_STATUS ret;
 
-	ret = LibSetNVVariable(INTEL_OSNIB_VARNAME, &osnib_guid, size, osnib);
-	if (EFI_ERROR(ret))
-		error(L"Failed to store OSNIB in NVRAM: %r\n", ret);
+	return LibSetNVVariable(INTEL_OSNIB_VARNAME, &osnib_guid, size, osnib);
 }

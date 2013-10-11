@@ -139,28 +139,6 @@ static int stub_combo_key(enum combo_keys combo)
 	return 0;
 }
 
-static void *stub_get_osnib(void)
-{
-	debug(L"WARNING: stubbed!\n");
-	return NULL;
-}
-
-static void stub_set_osnib(void * buffer, int size)
-{
-	debug(L"WARNING: stubbed!\n");
-}
-
-static UINT16 stub_get_osnib_default_version(void)
-{
-	debug(L"WARNING: stubbed!\n");
-	return 0x0200;
-}
-
-static void stub_hook_bootlogic_end(void)
-{
-	debug(L"WARNING: stubbed!\n");
-}
-
 struct osloader_ops loader_ops = {
 	.check_partition_table = stub_check_partition_table,
 	.read_flow_type = stub_read_flow_type,
@@ -175,8 +153,4 @@ struct osloader_ops loader_ops = {
 	.get_batt_level = stub_get_batt_level,
 	.get_target_mode = stub_get_target_mode,
 	.combo_key = stub_combo_key,
-	.get_osnib = stub_get_osnib,
-	.set_osnib = stub_set_osnib,
-	.get_osnib_default_version = stub_get_osnib_default_version,
-	.hook_bootlogic_end = stub_hook_bootlogic_end,
 };

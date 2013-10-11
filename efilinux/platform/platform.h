@@ -47,10 +47,6 @@ struct osloader_ops {
 	enum batt_levels (*get_batt_level)(void);
 	enum targets (*get_target_mode)(void);
 	int (*combo_key)(enum combo_keys);
-	void* (*get_osnib)(void);
-	void (*set_osnib)(void *, int);
-	UINT16 (*get_osnib_default_version)(void);
-	void (*hook_bootlogic_end)(void);
 };
 
 extern struct osloader_ops loader_ops;

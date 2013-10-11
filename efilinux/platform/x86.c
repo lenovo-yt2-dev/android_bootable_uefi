@@ -35,16 +35,6 @@
 #include "osnib.h"
 #include "uefi_keys.h"
 
-UINT16 x86_get_osnib_default_version(void)
-{
-	return 0x0200;
-}
-
-void x86_hook_bootlogic_end(void)
-{
-	osnib_write();
-}
-
 void x86_ops(struct osloader_ops *ops)
 {
 	ops->check_partition_table = check_gpt;
@@ -59,8 +49,4 @@ void x86_ops(struct osloader_ops *ops)
 	ops->reset_osnib = uefi_reset_osnib;
 	ops->get_target_mode = osnib_get_target_mode;
 	ops->combo_key = uefi_combo_key;
-	ops->get_osnib = uefi_get_osnib;
-	ops->set_osnib = uefi_set_osnib;
-	ops->get_osnib_default_version = x86_get_osnib_default_version;
-	ops->hook_bootlogic_end = x86_hook_bootlogic_end;
 }
