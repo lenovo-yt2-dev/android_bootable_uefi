@@ -41,7 +41,19 @@
 
 #define ERROR_STRING_LENGTH	32
 
-static CHAR16 *banner = L"efilinux loader %d.%d\n";
+#ifndef EFILINUX_BUILD_STRING
+#define EFILINUX_BUILD_STRING L"undef"
+#endif
+
+#ifndef EFILINUX_VERSION_STRING
+#define EFILINUX_VERSION_STRING L"undef"
+#endif
+
+#ifndef EFILINUX_VERSION_DATE
+#define EFILINUX_VERSION_DATE L"undef"
+#endif
+
+static CHAR16 *banner = L"efilinux loader %d.%d %s %s %s\n";
 
 EFI_SYSTEM_TABLE *sys_table;
 EFI_BOOT_SERVICES *boot;
@@ -452,7 +464,9 @@ efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *_table)
 	if (CheckCrc(sys_table->Hdr.HeaderSize, &sys_table->Hdr) != TRUE)
 		return EFI_LOAD_ERROR;
 
-	Print(banner, EFILINUX_VERSION_MAJOR, EFILINUX_VERSION_MINOR);
+	Print(banner, EFILINUX_VERSION_MAJOR, EFILINUX_VERSION_MINOR,
+		EFILINUX_BUILD_STRING, EFILINUX_VERSION_STRING,
+		EFILINUX_VERSION_DATE);
 
 	err = fs_init();
 	if (err != EFI_SUCCESS)
