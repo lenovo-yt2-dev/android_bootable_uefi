@@ -52,9 +52,10 @@ LIBDIR := ../gnu-efi
 CRT0 := $(shell find $(LIBDIR) -name crt0-efi-$(ARCH).o 2>/dev/null | tail -n1)
 LDSCRIPT := $(shell find $(LIBDIR) -name elf_$(ARCH)_efi.lds 2>/dev/null | tail -n1)
 
+OSLOADER_FILE_PATH := EFI/BOOT/boot$(ARCH).efi
 CFLAGS=-I. -I$(INCDIR) -I$(INCDIR)/$(ARCH) -Iandroid \
 		-DEFI_FUNCTION_WRAPPER -fPIC -fshort-wchar -ffreestanding \
-		-Wall -Ifs/ -Iloaders/ -D$(ARCH) -Werror
+		-Wall -Ifs/ -Iloaders/ -D$(ARCH) -Werror -DOSLOADER_FILE_PATH=L'"$(OSLOADER_FILE_PATH)"'
 
 ifeq ($(ARCH),ia32)
 	ifeq ($(HOST),x86_64)
@@ -70,7 +71,7 @@ LDFLAGS=-T $(LDSCRIPT) -Bsymbolic -shared -nostdlib -znocombreloc \
 
 IMAGE=efilinux.efi
 OBJS = entry.o malloc.o android/boot.o utils.o acpi.o bootlogic.o	\
-	osnib.o intel_partitions.o uefi_osnib.o uefi_keys.o
+	intel_partitions.o uefi_osnib.o uefi_keys.o uefi_boot.o
 FS = fs/fs.o
 PLATFORM = platform/platform.o platform/cherrytrail.o platform/x86.o
 

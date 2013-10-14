@@ -51,6 +51,7 @@ struct osloader_ops {
 	enum targets (*get_target_mode)(void);
 	int (*get_rtc_alarm_charging)(void);
 	int (*get_wdt_counter)(void);
+	void (*hook_bootlogic_begin)(void);
 };
 
 extern struct osloader_ops loader_ops;

@@ -184,6 +184,7 @@ enum targets target_from_reset(enum reset_sources rs)
 			break;
 	}
 
+	debug(L"target=0x%x\n", target);
 	return target;
 }
 
@@ -241,6 +242,8 @@ EFI_STATUS start_boot_logic(void)
 	EFI_STATUS ret;
 	enum flow_types flow_type;
 	enum targets target;
+
+	loader_ops.hook_bootlogic_begin();
 
 	ret = loader_ops.check_partition_table();
 	if (EFI_ERROR(ret))

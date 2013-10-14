@@ -40,43 +40,58 @@
 #define TEST_GUID	{0x80868086, 0x8086, 0x8086, {0x80, 0x86, 0x00, 0x00, 0x00, 0x00, 0x01, 0x04}}
 #define NULL_GUID	{0}
 
-struct name_guid {
+struct target_entry {
+	enum targets target;
 	CHAR16 *name;
 	EFI_GUID guid;
 };
 
-static struct name_guid android_guids[TARGET_UNKNOWN + 1] = {
-	{L"boot"	, BOOT_GUID},
-	{L"recovery"	, RECOVERY_GUID},
-	{L"fastboot"	, FASTBOOT_GUID},
-	{L"test"	, TEST_GUID},
-	{NULL           , NULL_GUID},
-	{NULL           , NULL_GUID},
+static struct target_entry android_entries[] = {
+	{TARGET_BOOT		, L"boot"	, BOOT_GUID},
+	{TARGET_RECOVERY	, L"recovery"	, RECOVERY_GUID},
+	{TARGET_FASTBOOT	, L"fastboot"	, FASTBOOT_GUID},
+	{TARGET_TEST		, L"test"	, TEST_GUID},
+	{TARGET_CHARGING	, L"charging"	, BOOT_GUID},
+	{TARGET_ERROR		, NULL		, NULL_GUID},
+	{TARGET_ERROR		, NULL		, NULL_GUID},
 };
 
-int is_loadable_target(enum targets target)
+struct target_entry *get_target_entry(enum targets target)
 {
-	return android_guids[target].name != NULL;
+	UINTN i;
+	for (i = 0; i < sizeof(android_entries) / sizeof(*android_entries); i++)
+		if (android_entries[i].target == target)
+			return &android_entries[i];
+	return NULL;
+}
+
+int is_loadable_target(struct target_entry *entry)
+{
+	return entry->name != NULL;
 }
 
 EFI_STATUS intel_load_target(enum targets target)
 {
-	EFI_GUID part_guid;
-	debug(L"Loading target %a\n", target_strings[target]);
+	struct target_entry *entry = get_target_entry(target);
+	if (!entry) {
+		error(L"Target 0x%x not supported\n", target);
+		return EFI_UNSUPPORTED;
+	}
 
-	if (!is_loadable_target(target))
+
+	if (!is_loadable_target(entry))
 	    return EFI_INVALID_PARAMETER;
 
-	part_guid = android_guids[target].guid;
+	debug(L"Loading target %s\n", entry->name);
 
-	return android_image_start_partition(NULL, &part_guid, NULL);
+	return android_image_start_partition(NULL, &entry->guid, NULL);
 }
 
 EFI_STATUS name_to_guid(CHAR16 *name, EFI_GUID *guid) {
 	int i;
-	for (i = 0; i < sizeof(android_guids); i++) {
-		if (!StrCmp(name, android_guids[i].name)) {
-			memcpy((CHAR8 *)guid, (CHAR8 *)&android_guids[i].guid, sizeof(EFI_GUID));
+	for (i = 0; i < sizeof(android_entries) / sizeof(*android_entries); i++) {
+		if (!StrCmp(name, android_entries[i].name)) {
+			memcpy((CHAR8 *)guid, (CHAR8 *)&android_entries[i].guid, sizeof(EFI_GUID));
 			return EFI_SUCCESS;
 		}
 	}

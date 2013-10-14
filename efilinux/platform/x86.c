@@ -32,8 +32,13 @@
 #include "intel_partitions.h"
 #include "acpi.h"
 #include "uefi_osnib.h"
-#include "osnib.h"
 #include "uefi_keys.h"
+#include "uefi_boot.h"
+
+static void x86_hook_bootlogic_begin()
+{
+	uefi_init_boot_options();
+}
 
 void x86_ops(struct osloader_ops *ops)
 {
@@ -50,7 +55,8 @@ void x86_ops(struct osloader_ops *ops)
 	ops->set_target_mode = uefi_set_target_mode;
 	ops->set_rtc_alarm_charging = uefi_set_rtc_alarm_charging;
 	ops->set_wdt_counter = uefi_set_wdt_counter;
-	ops->get_target_mode = uefi_get_target_mode;
+	ops->get_target_mode = uefi_boot_current;
 	ops->get_rtc_alarm_charging = uefi_get_rtc_alarm_charging;
 	ops->get_wdt_counter = uefi_get_wdt_counter;
+	ops->hook_bootlogic_begin = x86_hook_bootlogic_begin;
 }

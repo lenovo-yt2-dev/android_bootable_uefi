@@ -215,4 +215,11 @@ out:
         return ret;
 }
 
-
+void path_to_dos(CHAR16 *path)
+{
+	while (*path) {
+		if (*path == '/')
+			*path = '\\';
+		path++;
+	}
+}

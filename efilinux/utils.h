@@ -52,5 +52,5 @@ EFI_STATUS open_partition(
                 OUT UINT32 *MediaIdPtr,
                 OUT EFI_BLOCK_IO **BlockIoPtr,
                 OUT EFI_DISK_IO **DiskIoPtr);
-
+void path_to_dos(CHAR16 *path);
 #endif
