@@ -206,7 +206,7 @@ out:
 }
 
 static EFI_STATUS
-parse_args(CHAR16 *options, UINT32 size, CHAR16 *type, CHAR16 **name, char **cmdline)
+parse_args(CHAR16 *options, UINT32 size, CHAR16 *type, CHAR16 **name, CHAR8 **cmdline)
 {
 	CHAR16 *n;
 	EFI_STATUS err;
@@ -267,7 +267,7 @@ parse_args(CHAR16 *options, UINT32 size, CHAR16 *type, CHAR16 **name, char **cmd
 				goto usage;
 			}
 		} else {
-			char *s1;
+			CHAR8 *s1;
 			CHAR16 *s2;
 			int j;
 
@@ -456,7 +456,7 @@ efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *_table)
 	CHAR16 *name = NULL;
 	CHAR16 *options;
 	UINT32 options_size;
-	char *cmdline = NULL;
+	CHAR8 *cmdline = NULL;
 	EFI_GUID part_guid;
 
 	InitializeLib(image, _table);
@@ -515,7 +515,7 @@ efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *_table)
 	switch(type) {
 	case 'f':
 		Print(L"Starting file %s\n", name);
-		err = android_image_start_file(image, info->DeviceHandle, name, NULL);
+		err = android_image_start_file(image, info->DeviceHandle, name, cmdline);
 		break;
 	case 'p':
 		if ((err = name_to_guid(name, &part_guid)) != EFI_SUCCESS) {
@@ -523,7 +523,7 @@ efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *_table)
 			goto free_args;
 		}
 		Print(L"Starting partition %s\n", name);
-		err = android_image_start_partition(image, &part_guid, NULL);
+		err = android_image_start_partition(image, &part_guid, cmdline);
 		break;
 	default:
 		err = start_boot_logic();

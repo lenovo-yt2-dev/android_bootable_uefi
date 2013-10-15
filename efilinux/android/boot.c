@@ -220,67 +220,21 @@ out_error:
         return ret;
 }
 
-
-static CHAR16 *get_serial_number(void)
-{
-        /* Per Android CDD, the value must be 7-bit ASCII and
-         * match the regex ^[a-zA-Z0-9](0,20)$ */
-        CHAR8 *tmp, *pos;
-        CHAR16 *ret;
-        CHAR8 *serialno;
-        EFI_GUID guid;
-        UINTN len;
-
-        if (EFI_ERROR(LibGetSmbiosSystemGuidAndSerialNumber(&guid,
-                        &serialno)))
-                return NULL;
-
-        len = strlena(serialno);
-        tmp = AllocatePool(len + 1);
-        if (!tmp)
-                return NULL;
-        tmp[len] = '\0';
-        memcpy(tmp, serialno, strlena(serialno));
-
-        pos = tmp;
-        while (*pos) {
-                /* Truncate if greater than 20 chars */
-                if ((pos - tmp) >= 20) {
-                        *pos = '\0';
-                        break;
-                }
-                /* Replace foreign characters with zeroes */
-                if (!((*pos >= '0' && *pos <= '9') ||
-                            (*pos >= 'a' && *pos <= 'z') ||
-                            (*pos >= 'A' && *pos <= 'Z')))
-                        *pos = '0';
-                pos++;
-        }
-        ret = stra_to_str(tmp);
-        FreePool(tmp);
-        return ret;
-}
-
-
 static EFI_STATUS setup_command_line(UINT8 *bootimage,
-                CHAR16 *install_id)
+                CHAR8 *append)
 {
-        CHAR16 *cmdline16 = NULL;
-        CHAR16 *serialno;
-        CHAR16 *tmp;
-
         EFI_PHYSICAL_ADDRESS cmdline_addr;
         CHAR8 *full_cmdline;
-        CHAR8 *cmdline;
         UINTN cmdlen;
         EFI_STATUS ret;
         struct boot_img_hdr *aosp_header;
         struct boot_params *buf;
+	UINTN cmdline_pool_size = BOOT_ARGS_SIZE + BOOT_EXTRA_ARGS_SIZE;
 
         aosp_header = (struct boot_img_hdr *)bootimage;
         buf = (struct boot_params *)(bootimage + aosp_header->page_size);
 
-        full_cmdline = AllocatePool(BOOT_ARGS_SIZE + BOOT_EXTRA_ARGS_SIZE);
+        full_cmdline = AllocatePool(cmdline_pool_size);
         if (!full_cmdline) {
                 ret = EFI_OUT_OF_RESOURCES;
                 goto out;
@@ -291,72 +245,41 @@ static EFI_STATUS setup_command_line(UINT8 *bootimage,
                                 aosp_header->extra_cmdline,
                                 BOOT_EXTRA_ARGS_SIZE);
         }
-        cmdline16 = stra_to_str(full_cmdline);
-        if (!cmdline16) {
-                ret = EFI_OUT_OF_RESOURCES;
-                goto out;
-        }
+	cmdlen = strlena(full_cmdline);
 
-        /* Append serial number from DMI */
-        serialno = get_serial_number();
-        if (serialno) {
-                tmp = cmdline16;
-                cmdline16 = PoolPrint(L"%s androidboot.serialno=%s",
-                        cmdline16, serialno);
-                FreePool(tmp);
-                FreePool(serialno);
-                if (!cmdline16) {
-                        ret = EFI_OUT_OF_RESOURCES;
-                        goto out;
-                }
-        }
+        if (append) {
+		UINTN append_len = strlena(append);
+		UINTN new_size = cmdlen + append_len + 2;
+		if (new_size >= cmdline_pool_size) {
+			full_cmdline = ReallocatePool(full_cmdline, cmdline_pool_size, new_size);
+			if (!full_cmdline) {
+				error(L"Failed to reallocate cmdline\n");
+				ret = EFI_OUT_OF_RESOURCES;
+				goto out;
+			}
+			cmdline_pool_size = new_size;
+		}
 
-        if (install_id) {
-                CHAR16 *pos = install_id;
-
-                /* install_id should be a hex sequence and nothing else */
-                while (*pos) {
-                        if (!((*pos >= '0' && *pos <= '9') ||
-                                    (*pos >= 'a' && *pos <= 'f') ||
-                                    (*pos >= 'A' && *pos <= 'F'))) {
-                                ret = EFI_INVALID_PARAMETER;
-                                goto out;
-                        }
-                        pos++;
-                }
-                tmp = cmdline16;
-                cmdline16 = PoolPrint(L"%s androidboot.install_id=ANDROID!%s",
-                        cmdline16, install_id);
-                FreePool(tmp);
-                if (!cmdline16) {
-                        ret = EFI_OUT_OF_RESOURCES;
-                        goto out;
-                }
+		full_cmdline[cmdlen] = ' ';
+                memcpy(full_cmdline + cmdlen + 1, append, append_len + 1);
+		cmdlen = strlena(full_cmdline);
         }
 
         /* Documentation/x86/boot.txt: "The kernel command line can be located
          * anywhere between the end of the setup heap and 0xA0000" */
         cmdline_addr = 0xA0000;
-        cmdlen = StrLen(cmdline16);
         ret = allocate_pages(AllocateMaxAddress, EfiLoaderData,
                              EFI_SIZE_TO_PAGES(cmdlen + 1),
                              &cmdline_addr);
         if (EFI_ERROR(ret))
                 goto out;
 
-        cmdline = (CHAR8 *)(UINTN)cmdline_addr;
-        ret = str_to_stra(cmdline, cmdline16, cmdlen + 1);
-        if (EFI_ERROR(ret)) {
-                Print(L"Non-ascii characters in command line\n");
-                free_pages(cmdline_addr, EFI_SIZE_TO_PAGES(cmdlen + 1));
-                goto out;
-        }
+        memcpy((CHAR8 *)(UINTN)cmdline_addr, full_cmdline, cmdlen + 1);
 
-        buf->hdr.cmd_line_ptr = (UINT32)(UINTN)cmdline;
+        buf->hdr.cmd_line_ptr = (UINT32) full_cmdline;
 	buf->hdr.cmdline_size = cmdlen + 1;
         ret = EFI_SUCCESS;
 out:
-        FreePool(cmdline16);
         FreePool(full_cmdline);
 
         return ret;
@@ -581,7 +504,7 @@ out:
 EFI_STATUS android_image_start_partition(
                 IN EFI_HANDLE parent_image,
                 IN const EFI_GUID *guid,
-                IN CHAR16 *install_id)
+                IN CHAR8 *cmdline)
 {
         EFI_BLOCK_IO *BlockIo;
         EFI_DISK_IO *DiskIo;
@@ -621,7 +544,7 @@ EFI_STATUS android_image_start_partition(
                 goto out;
         }
 
-        ret = android_image_start_buffer(parent_image, bootimage, install_id);
+        ret = android_image_start_buffer(parent_image, bootimage, cmdline);
 out:
         FreePool(bootimage);
         return ret;
@@ -632,7 +555,7 @@ EFI_STATUS android_image_start_file(
                 IN EFI_HANDLE parent_image,
                 IN EFI_HANDLE device,
                 IN CHAR16 *loader,
-                IN CHAR16 *install_id)
+                IN CHAR8 *cmdline)
 {
         EFI_STATUS ret;
         VOID *bootimage;
@@ -734,7 +657,7 @@ EFI_STATUS android_image_start_file(
                 goto out;
         }
 
-        ret = android_image_start_buffer(parent_image, bootimage, install_id);
+        ret = android_image_start_buffer(parent_image, bootimage, cmdline);
 
 out:
         FreePool(bootimage);
@@ -763,7 +686,7 @@ UINT8 is_secure_boot_enabled(void)
 EFI_STATUS android_image_start_buffer(
                 IN EFI_HANDLE parent_image,
                 IN VOID *bootimage,
-                IN CHAR16 *install_id)
+                IN CHAR8 *cmdline)
 {
         struct boot_img_hdr *aosp_header;
         struct boot_params *buf;
@@ -801,7 +724,7 @@ EFI_STATUS android_image_start_buffer(
         }
 
         debug(L"Creating command line\n");
-        ret = setup_command_line(bootimage, install_id);
+        ret = setup_command_line(bootimage, cmdline);
         if (EFI_ERROR(ret)) {
                 error(L"setup_command_line", ret);
                 goto out_bootimage;

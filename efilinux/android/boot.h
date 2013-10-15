@@ -28,18 +28,18 @@
 EFI_STATUS android_image_start_buffer(
                 IN EFI_HANDLE parent_image,
                 IN VOID *bootimage,
-                IN CHAR16 *install_id);
+                IN CHAR8 *install_id);
 
 EFI_STATUS android_image_start_file(
                 IN EFI_HANDLE parent_image,
                 IN EFI_HANDLE device,
                 IN CHAR16 *loader,
-                IN CHAR16 *install_id);
+                IN CHAR8 *install_id);
 
 EFI_STATUS android_image_start_partition(
                 IN EFI_HANDLE parent_image,
                 IN const EFI_GUID *guid,
-                IN CHAR16 *install_id);
+                IN CHAR8 *install_id);
 
 /* Load the next boot target if specified in the BCB partition,
  * which we specify by partition GUID. Place the value in var,
