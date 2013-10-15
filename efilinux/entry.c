@@ -259,6 +259,9 @@ parse_args(CHAR16 *options, UINT32 size, CHAR16 *type, CHAR16 **name, char **cmd
 			case 'a':
 				list_acpi_tables();
 				goto fail;
+			case 'b':
+				loader_ops.update_boot();
+				goto fail;
 			default:
 				Print(L"Unknown command-line switch\n");
 				goto usage;
@@ -489,6 +492,12 @@ efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *_table)
 		options_size -= i;
 	}
 
+	err = init_platform_functions();
+	if (EFI_ERROR(err)) {
+		error(L"Failed to initialize platform: %r\n", err);
+		goto fs_deinit;
+	}
+
 	CHAR16 type = '\0';
 	if (options && options_size != 0) {
 		err = parse_args(options, options_size, &type, &name, &cmdline);
@@ -517,11 +526,6 @@ efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *_table)
 		err = android_image_start_partition(image, &part_guid, NULL);
 		break;
 	default:
-		err = init_platform_functions();
-		if (EFI_ERROR(err)) {
-			error(L"Failed to initialize platform: %r\n", err);
-			goto free_args;
-		}
 		err = start_boot_logic();
 		if (EFI_ERROR(err)) {
 			error(L"Boot logic failed: %r\n", err);

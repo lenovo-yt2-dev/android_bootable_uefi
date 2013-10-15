@@ -52,6 +52,7 @@ struct osloader_ops {
 	int (*get_rtc_alarm_charging)(void);
 	int (*get_wdt_counter)(void);
 	void (*hook_bootlogic_begin)(void);
+	EFI_STATUS (*update_boot)(void);
 };
 
 extern struct osloader_ops loader_ops;

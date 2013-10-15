@@ -168,6 +168,12 @@ static void stub_hook_bootlogic_begin(void)
 	debug(L"WARNING: stubbed!\n");
 }
 
+EFI_STATUS stub_update_boot(void)
+{
+	debug(L"WARNING: stubbed!\n");
+	return EFI_SUCCESS;
+}
+
 struct osloader_ops loader_ops = {
 	.check_partition_table = stub_check_partition_table,
 	.read_flow_type = stub_read_flow_type,
@@ -187,4 +193,5 @@ struct osloader_ops loader_ops = {
 	.get_rtc_alarm_charging = stub_get_rtc_alarm_charging,
 	.get_wdt_counter = stub_get_wdt_counter,
 	.hook_bootlogic_begin = stub_hook_bootlogic_begin,
+	.update_boot = stub_update_boot,
 };

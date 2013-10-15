@@ -27,36 +27,11 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <efi.h>
-#include "platform.h"
-#include "intel_partitions.h"
-#include "acpi.h"
-#include "uefi_osnib.h"
-#include "uefi_keys.h"
-#include "uefi_boot.h"
+#ifndef __UEFI_BOOT_H__
+#define __UEFI_BOOT_H__
 
-static void x86_hook_bootlogic_begin()
-{
-	uefi_init_boot_options();
-}
+EFI_STATUS uefi_init_boot_options(void);
+EFI_STATUS uefi_update_boot(void);
+enum targets uefi_boot_current(void);
 
-void x86_ops(struct osloader_ops *ops)
-{
-	ops->check_partition_table = check_gpt;
-	ops->read_flow_type = acpi_read_flow_type;
-	ops->do_cold_off = acpi_cold_off;
-	ops->populate_indicators = rsci_populate_indicators;
-	ops->load_target = intel_load_target;
-	ops->get_wake_source = rsci_get_wake_source;
-	ops->get_reset_source = rsci_get_reset_source;
-	ops->get_shutdown_source = rsci_get_shutdown_source;
-	ops->combo_key = uefi_combo_key;
-	ops->set_target_mode = uefi_set_target_mode;
-	ops->set_rtc_alarm_charging = uefi_set_rtc_alarm_charging;
-	ops->set_wdt_counter = uefi_set_wdt_counter;
-	ops->get_target_mode = uefi_boot_current;
-	ops->get_rtc_alarm_charging = uefi_get_rtc_alarm_charging;
-	ops->get_wdt_counter = uefi_get_wdt_counter;
-	ops->hook_bootlogic_begin = x86_hook_bootlogic_begin;
-	ops->update_boot = uefi_update_boot;
-}
+#endif /* __UEFI_BOOT_H__ */
