@@ -210,10 +210,9 @@ enum targets target_from_inputs(enum flow_types flow_type)
 		return TARGET_BOOT;
 	}
 
-	if (rs != RESET_NOT_APPLICABLE)
-		return target_from_reset(rs);
-
-	return TARGET_UNKNOWN;
+	if (rs == RESET_NOT_APPLICABLE)
+		rs = RESET_OS_INITIATED;
+	return target_from_reset(rs);
 }
 
 void display_splash(void)
