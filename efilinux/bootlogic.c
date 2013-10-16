@@ -252,8 +252,8 @@ EFI_STATUS start_boot_logic(void)
 
 	target = target_from_inputs(flow_type);
 	if (target == TARGET_UNKNOWN) {
-		ret = EFI_LOAD_ERROR;
-		goto error;
+		error(L"No valid target found. Fallbacking to MOS\n");
+		target = TARGET_BOOT;
 	}
 
 	if (target == TARGET_COLD_OFF)
