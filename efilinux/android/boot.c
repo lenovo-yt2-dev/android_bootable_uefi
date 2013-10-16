@@ -276,7 +276,7 @@ static EFI_STATUS setup_command_line(UINT8 *bootimage,
 
         memcpy((CHAR8 *)(UINTN)cmdline_addr, full_cmdline, cmdlen + 1);
 
-        buf->hdr.cmd_line_ptr = (UINT32) full_cmdline;
+        buf->hdr.cmd_line_ptr = (UINT32) cmdline_addr;
 	buf->hdr.cmdline_size = cmdlen + 1;
         ret = EFI_SUCCESS;
 out:
