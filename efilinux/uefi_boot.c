@@ -203,6 +203,7 @@ static EFI_STATUS get_osloader_device_path(EFI_DEVICE_PATH **device)
 
 	if (no_handles == 0) {
 		error(L"Can't find loader partition!\n");
+		ret = EFI_NOT_FOUND;
 		goto out;
 	}
 	if (no_handles > 1) {
