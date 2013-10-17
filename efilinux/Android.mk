@@ -48,7 +48,7 @@ LOCAL_CFLAGS +=  -DEFILINUX_VERSION_DATE='L"$(EFILINUX_VERSION_DATE)"'
 LOCAL_CFLAGS +=  -DEFILINUX_BUILD_STRING='L"$(BUILD_NUMBER) $(PRODUCT_NAME)"'
 
 OSLOADER_FILE_PATH := EFI/BOOT/boot$(EFI_ARCH).efi
-PRIVATE_EFI_FILE := $(PRODUCT_OUT)/esp/$(OSLOADER_FILE_PATH)
+PRIVATE_EFI_FILE := $(PRODUCT_OUT)/efilinux.efi
 LOCAL_CFLAGS +=  -DOSLOADER_FILE_PATH='L"$(OSLOADER_FILE_PATH)"'
 
 LOCAL_STATIC_LIBRARY := libgnuefi
@@ -74,9 +74,8 @@ $(LOCAL_BUILT_MODULE) : EFILINUX_OBJS := $(patsubst %.S, %.o , $(EFILINUX_OBJS))
 $(LOCAL_BUILT_MODULE) : EFILINUX_OBJS := $(addprefix $(intermediates)/, $(EFILINUX_OBJS))
 $(LOCAL_BUILT_MODULE) : SPLASH_OBJ := $(addprefix $(intermediates)/, splash_bmp.o)
 
-$(LOCAL_BUILT_MODULE): $(PRODUCT_OUT)/esp $(TARGET_LIBGCC) libgnuefi elf_$(EFI_ARCH)_efi.lds $(all_objects)
+$(LOCAL_BUILT_MODULE): $(PRODUCT_OUT) $(TARGET_LIBGCC) libgnuefi elf_$(EFI_ARCH)_efi.lds $(all_objects)
 	@mkdir -p $(dir $@)
-	@mkdir -p $(dir $(PRIVATE_EFI_FILE))
 	bin-to-hex splash_bmp < $(SPLASH_BMP) | $(TARGET_CC) -x c - -c $(TARGET_GLOBAL_CFLAGS) -o $(SPLASH_OBJ)
 	@echo "linking $@"
 	$(TARGET_LD).bfd \
