@@ -36,7 +36,10 @@ LOCAL_SRC_FILES := \
 	platform/x86.c \
 	uefi_keys.c \
 	uefi_boot.c \
+	uefi_utils.c \
 	fs/fs.c
+
+SPLASH_BMP := $(LOCAL_PATH)/splash.bmp
 
 EFILINUX_VERSION_STRING := $(shell cd $(LOCAL_PATH) ; git describe --abbrev=8 --dirty --always)
 EFILINUX_VERSION_DATE := $(shell date -u)
@@ -69,10 +72,12 @@ $(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_TARGET_GLOBAL_CFLAGS :=
 $(LOCAL_BUILT_MODULE) : EFILINUX_OBJS := $(patsubst %.c, %.o , $(LOCAL_SRC_FILES))
 $(LOCAL_BUILT_MODULE) : EFILINUX_OBJS := $(patsubst %.S, %.o , $(EFILINUX_OBJS))
 $(LOCAL_BUILT_MODULE) : EFILINUX_OBJS := $(addprefix $(intermediates)/, $(EFILINUX_OBJS))
+$(LOCAL_BUILT_MODULE) : SPLASH_OBJ := $(addprefix $(intermediates)/, splash_bmp.o)
 
 $(LOCAL_BUILT_MODULE): $(PRODUCT_OUT)/esp $(TARGET_LIBGCC) libgnuefi elf_$(EFI_ARCH)_efi.lds $(all_objects)
 	@mkdir -p $(dir $@)
 	@mkdir -p $(dir $(PRIVATE_EFI_FILE))
+	bin-to-hex splash_bmp < $(SPLASH_BMP) | $(TARGET_CC) -x c - -c $(TARGET_GLOBAL_CFLAGS) -o $(SPLASH_OBJ)
 	@echo "linking $@"
 	$(TARGET_LD).bfd \
 		-Bsymbolic \
@@ -83,6 +88,7 @@ $(LOCAL_BUILT_MODULE): $(PRODUCT_OUT)/esp $(TARGET_LIBGCC) libgnuefi elf_$(EFI_A
 		-L$(call intermediates-dir-for, STATIC_LIBRARIES, libgnuefi) \
 		-T $(PRODUCT_OUT)/elf_$(EFI_ARCH)_efi.lds \
 		$(EFILINUX_OBJS) \
+		$(SPLASH_OBJ) \
 		$(call intermediates-dir-for, STATIC_LIBRARIES, libgnuefi)/gnuefi/crt0-efi-$(EFI_ARCH).o -lgnuefi -lgcc -o $@
 	@echo "checking symbols in $@"
 	$(shell if [ `nm -u $@ | wc -l` -ne 0 ] ; then exit -1 ; fi )

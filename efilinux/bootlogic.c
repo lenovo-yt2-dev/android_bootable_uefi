@@ -259,7 +259,7 @@ EFI_STATUS start_boot_logic(void)
 	if (target == TARGET_COLD_OFF)
 		loader_ops.do_cold_off();
 
-	display_splash();
+	loader_ops.display_splash();
 
 	while (check_target(target))
 		target = fallback_target(target);

@@ -59,4 +59,5 @@ void x86_ops(struct osloader_ops *ops)
 	ops->get_wdt_counter = uefi_get_wdt_counter;
 	ops->hook_bootlogic_begin = x86_hook_bootlogic_begin;
 	ops->update_boot = uefi_update_boot;
+	ops->display_splash = uefi_display_splash;
 }

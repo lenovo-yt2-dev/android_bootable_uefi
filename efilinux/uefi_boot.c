@@ -31,6 +31,9 @@
 #include <efilib.h>
 #include "efilinux.h"
 #include "bootlogic.h"
+#include "protocol.h"
+#include "uefi_utils.h"
+#include "splash.h"
 
 #define ANDROID_PREFIX		0x0100
 #define BOOT_OPTION_NAME_LENGTH 10
@@ -47,28 +50,6 @@ struct android_boot_option {
 	{ANDROID_PREFIX + TARGET_TEST, L"Android Test OS"},
 	{ANDROID_PREFIX + TARGET_CHARGING, L"Android Charging OS"},
 };
-
-EFI_STATUS find_device_partition(const EFI_GUID *guid, EFI_HANDLE **handles, UINTN *no_handles)
-{
-	EFI_STATUS ret;
-	*handles = NULL;
-
-	ret = LibLocateHandleByDiskSignature(
-		MBR_TYPE_EFI_PARTITION_TABLE_HEADER,
-		SIGNATURE_TYPE_GUID,
-		(void *)guid,
-		no_handles,
-		handles);
-	if (EFI_ERROR(ret) || *no_handles == 0)
-		error(L"Failed to found partition %g\n", guid);
-	return ret;
-}
-
-struct EFI_LOAD_OPTION {
-	UINT32 Attributes;
-	UINT16 FilePathListLength;
-} __attribute__((packed));
-
 
 static EFI_STATUS update_boot_order(void)
 {
@@ -120,7 +101,6 @@ free_current_boot_order:
 out:
 	return ret;
 }
-
 
 static void *create_load_option(UINTN size, CHAR16 *desc, EFI_DEVICE_PATH *device, UINTN device_length)
 {
@@ -177,12 +157,13 @@ out:
 	return ret;
 }
 
-static EFI_STATUS get_osloader_device_path(EFI_DEVICE_PATH **device)
+static EFI_STATUS get_esp_handle(EFI_HANDLE **esp)
 {
-	EFI_STATUS ret = EFI_SUCCESS;
-	EFI_HANDLE *handles;
+	EFI_STATUS ret;
 	UINTN no_handles;
+	EFI_HANDLE *handles;
 	CHAR16 *description;
+	EFI_DEVICE_PATH *device;
 
 	ret = find_device_partition(&EfiPartTypeSystemPartitionGuid, &handles, &no_handles);
 	if (EFI_ERROR(ret)) {
@@ -194,8 +175,8 @@ static EFI_STATUS get_osloader_device_path(EFI_DEVICE_PATH **device)
 		UINTN i;
 		debug(L"Found %d devices\n", no_handles);
 		for (i = 0; i < no_handles; i++) {
-			*device = DevicePathFromHandle(handles[i]);
-			description = DevicePathToStr(*device);
+			device = DevicePathFromHandle(handles[i]);
+			description = DevicePathToStr(device);
 			debug(L"Device : %s\n", description);
 			free_pool(description);
 		}
@@ -210,13 +191,36 @@ static EFI_STATUS get_osloader_device_path(EFI_DEVICE_PATH **device)
 		error(L"Multiple loader partition found!\n");
 		goto free_handles;
 	}
+	*esp = handles[0];
+	return EFI_SUCCESS;
 
+free_handles:
+	if (handles)
+		free(handles);
+out:
+	return ret;
+}
+
+static EFI_STATUS get_osloader_device_path(EFI_DEVICE_PATH **device)
+{
+	EFI_STATUS ret = EFI_SUCCESS;
 	CHAR16 *path = OSLOADER_FILE_PATH;
+	EFI_HANDLE *esp;
+	CHAR16 *description;
+
+
+	ret = get_esp_handle(&esp);
+	if (EFI_ERROR(ret)) {
+		error(L"Failed to get ESP partition: %r\n", ret);
+		goto out;
+	}
+
 	path_to_dos(path);
-	*device = FileDevicePath(handles[0], path);
+	*device = FileDevicePath(esp, path);
 	if (!*device) {
 		error(L"Failed to build osloader filepath\n");
-		goto free_handles;
+		ret = EFI_NOT_FOUND;
+		goto out;
 	}
 
 	if (LOGLEVEL(DEBUG)) {
@@ -224,11 +228,9 @@ static EFI_STATUS get_osloader_device_path(EFI_DEVICE_PATH **device)
 		debug(L"Os Loader path: %s\n", description);
 		free_pool(description);
 	}
-
-free_handles:
-	if (handles)
-		free(handles);
 out:
+	if (esp)
+		free(esp);
 	return ret;
 }
 
@@ -291,4 +293,31 @@ EFI_STATUS uefi_init_boot_options(void)
 		return EFI_ALREADY_STARTED;
 
 	return uefi_update_boot();
+}
+
+EFI_STATUS uefi_display_splash(void)
+{
+	EFI_STATUS ret;
+	EFI_GRAPHICS_OUTPUT_BLT_PIXEL *Blt;
+	UINTN blt_size;
+	UINTN height;
+	UINTN width;
+
+	Blt = NULL;
+	ret = ConvertBmpToGopBlt(splash_bmp, splash_bmp_size, (void **)&Blt, &blt_size, &height, &width);
+ 	if (EFI_ERROR(ret)) {
+		error(L"Failed to convert bmp to blt: %r\n", ret);
+		goto error;
+	}
+
+	ret = gop_display_blt(Blt, blt_size, height, width);
+ 	if (EFI_ERROR(ret)) {
+		error(L"Failed to display blt: %r\n", ret);
+		goto error;
+	}
+
+error:
+	if (EFI_ERROR(ret))
+		error(L"Failed to display splash:%r\n", ret);
+	return ret;
 }

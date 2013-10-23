@@ -71,16 +71,21 @@ LDFLAGS=-T $(LDSCRIPT) -Bsymbolic -shared -nostdlib -znocombreloc \
 
 IMAGE=efilinux.efi
 OBJS = entry.o malloc.o android/boot.o utils.o acpi.o bootlogic.o	\
-	intel_partitions.o uefi_osnib.o uefi_keys.o uefi_boot.o
+	intel_partitions.o uefi_osnib.o uefi_keys.o uefi_boot.o \
+	uefi_utils.o
 FS = fs/fs.o
 PLATFORM = platform/platform.o platform/cherrytrail.o platform/x86.o
-
+SPLASH_BMP = splash.bmp
+SPLASH_OBJ = splash_bmp.o
 all: $(IMAGE)
 
 efilinux.efi: efilinux.so
 
-efilinux.so: $(OBJS) $(FS) $(LOADERS) $(PLATFORM)
+$(SPLASH_OBJ): $(SPLASH_BMP)
+	../../../out/host/linux-x86/bin/bin-to-hex splash_bmp < $^ | $(CC) -x c - -c $(CFLAGS) -o $@
+
+efilinux.so: $(OBJS) $(FS) $(LOADERS) $(PLATFORM) $(SPLASH_OBJ)
 	$(LD) $(LDFLAGS) -o $@ $^  -lgnuefi -lefi $(shell $(CC) $(CFLAGS) -print-libgcc-file-name)
 
 clean:
-	rm -f $(IMAGE) efilinux.so $(OBJS) $(FS) $(LOADERS) $(PLATFORM)
+	rm -f $(IMAGE) efilinux.so $(OBJS) $(FS) $(LOADERS) $(PLATFORM) $(SPLASH_OBJ)

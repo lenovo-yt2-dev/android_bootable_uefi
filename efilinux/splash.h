@@ -27,37 +27,14 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _PLATFORM_H_
-#define _PLATFORM_H_
+#ifndef __SPLASH_BMP_H__
+#define __SPLASH_BMP_H__
 
-#include <efi.h>
-#include "bootlogic.h"
+/* splash_bmp is a bmp file content built at compile time using
+ * bin-to-hex utility.  The original image file must be BMP format
+ * without compression and in 24bits format R8 G8 B8.
+ */
+extern char splash_bmp[];
+extern UINTN splash_bmp_size;
 
-struct osloader_ops {
-	EFI_STATUS (*check_partition_table)(void);
-	enum flow_types (*read_flow_type)(void);
-	void (*do_cold_off)(void);
-	EFI_STATUS (*populate_indicators)(void);
-	EFI_STATUS (*load_target)(enum targets);
-	enum wake_sources (*get_wake_source)(void);
-	enum reset_sources (*get_reset_source)(void);
-	enum shutdown_sources (*get_shutdown_source)(void);
-	int (*is_osnib_corrupted)(void);
-	enum batt_levels (*get_batt_level)(void);
-	int (*combo_key)(enum combo_keys);
-	EFI_STATUS (*set_target_mode)(enum targets);
-	EFI_STATUS (*set_rtc_alarm_charging)(int);
-	EFI_STATUS (*set_wdt_counter)(int);
-	enum targets (*get_target_mode)(void);
-	int (*get_rtc_alarm_charging)(void);
-	int (*get_wdt_counter)(void);
-	void (*hook_bootlogic_begin)(void);
-	EFI_STATUS (*update_boot)(void);
-	EFI_STATUS (*display_splash)(void);
-};
-
-extern struct osloader_ops loader_ops;
-
-EFI_STATUS init_platform_functions(void);
-
-#endif /* _PLATFORM_H_ */
+#endif /* __SPLASH_BMP_H__ */
