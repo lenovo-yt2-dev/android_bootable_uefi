@@ -72,7 +72,7 @@ LDFLAGS=-T $(LDSCRIPT) -Bsymbolic -shared -nostdlib -znocombreloc \
 IMAGE=efilinux.efi
 OBJS = entry.o malloc.o android/boot.o utils.o acpi.o bootlogic.o	\
 	intel_partitions.o uefi_osnib.o uefi_keys.o uefi_boot.o \
-	uefi_utils.o
+	uefi_utils.o commands.o
 FS = fs/fs.o
 PLATFORM = platform/platform.o platform/cherrytrail.o platform/x86.o
 SPLASH_BMP = splash.bmp
