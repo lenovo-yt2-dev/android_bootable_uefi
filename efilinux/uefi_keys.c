@@ -35,19 +35,41 @@
 #define VOLUME_UP	0x1
 #define VOLUME_DOWN	0x2
 
+struct _pressed_scancodes {
+	UINT16 scancode;
+	CHAR8 pressed;
+};
+
+static struct _pressed_scancodes pressed_scancodes[] = {
+	{VOLUME_UP, 0},
+	{VOLUME_DOWN, 0},
+};
+
 EFI_STATUS uefi_get_key(EFI_INPUT_KEY *key)
 {
 	return uefi_call_wrapper(ST->ConIn->ReadKeyStroke, 2, ST->ConIn, key);
 }
 
-int is_key_pressed(UINT16 scancode)
+void get_key_pressed(void)
 {
 	EFI_INPUT_KEY key;
-	while (!EFI_ERROR(uefi_get_key(&key))) {
-		debug(L"Key pressed: scan=0x%x char=%c\n", key.ScanCode, key.UnicodeChar);
-		if (key.ScanCode == scancode)
-			return 1;
-	}
+	UINTN i;
+	while (!EFI_ERROR(uefi_get_key(&key)))
+		for (i = 0 ; i < sizeof(pressed_scancodes) / sizeof(*pressed_scancodes); i++)
+			if (key.ScanCode == pressed_scancodes[i].scancode) {
+				pressed_scancodes[i].pressed = 1;
+				break;
+			}
+}
+
+int is_key_pressed(int key)
+{
+	int i;
+	get_key_pressed();
+
+	for (i = 0; i < sizeof(pressed_scancodes) / sizeof(*pressed_scancodes); i++)
+		if (pressed_scancodes[i].scancode == key)
+			return pressed_scancodes[i].pressed;
 	return 0;
 }
 
