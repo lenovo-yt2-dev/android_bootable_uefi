@@ -25,23 +25,16 @@
  * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
  */
 
-#include <efi.h>
-#include <efilib.h>
-#include "efilinux.h"
-#include "platform/platform.h"
+#ifndef __UEFI_EM_H__
+#define __UEFI_EM_H__
 
-void dump_infos(void)
-{
-	Print(L"Wake source = 0x%x\n", loader_ops.get_wake_source());
-	Print(L"Reset source = 0x%x\n", loader_ops.get_reset_source());
-	Print(L"Shutdown source = 0x%x\n", loader_ops.get_shutdown_source());
-	Print(L"Batt level = 0x%x\n", loader_ops.get_battery_level());
-	Print(L"Batt status = 0x%x\n", loader_ops.is_battery_ok());
-	loader_ops.print_battery_infos();
-	Print(L"COMBO_SAFE_MODE = 0x%x\n", loader_ops.combo_key(COMBO_SAFE_MODE));
-	Print(L"COMBO_FASTBOOT_MODE = 0x%x\n", loader_ops.combo_key(COMBO_FASTBOOT_MODE));
-	Print(L"Target mode = 0x%x\n", loader_ops.get_target_mode());
-	Print(L"Wdt counter = 0x%x\n", loader_ops.get_wdt_counter());
-}
+#include "bootlogic.h"
+
+enum batt_levels uefi_get_battery_level(void);
+int uefi_is_battery_ok(void);
+void uefi_print_battery_infos(void);
+
+#endif /* __UEFI_EM_H__ */

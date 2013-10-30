@@ -63,6 +63,11 @@ static CHAR8 uefi_get_simple_var(char *name, EFI_GUID *guid)
 	buffer = LibGetVariableAndSize(name16, guid, &size);
 	free(name16);
 
+	if (buffer == NULL) {
+		error(L"Failed to get variable %s\n", name16);
+		return -1;
+	}
+
 	if (size > sizeof(ret)) {
 		error(L"Tried to get UEFI variable larger than %d bytes (%d bytes)."
 		      " Please use an appropriate retrieve method.\n", sizeof(ret), size);

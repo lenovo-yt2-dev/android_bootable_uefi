@@ -180,6 +180,17 @@ EFI_STATUS stub_display_splash(void)
 	return EFI_SUCCESS;
 }
 
+int stub_is_battery_ok(void)
+{
+	debug(L"WARNING: stubbed!\n");
+	return 1;
+}
+
+void stub_print_battery_infos(void)
+{
+	debug(L"WARNING: stubbed!\n");
+}
+
 struct osloader_ops loader_ops = {
 	.check_partition_table = stub_check_partition_table,
 	.read_flow_type = stub_read_flow_type,
@@ -190,7 +201,7 @@ struct osloader_ops loader_ops = {
 	.get_reset_source = stub_get_reset_source,
 	.get_shutdown_source = stub_get_shutdown_source,
 	.is_osnib_corrupted = stub_is_osnib_corrupted,
-	.get_batt_level = stub_get_batt_level,
+	.get_battery_level = stub_get_batt_level,
 	.combo_key = stub_combo_key,
 	.set_target_mode = stub_set_target_mode,
 	.set_rtc_alarm_charging = stub_set_rtc_alarm_charging,
@@ -201,4 +212,6 @@ struct osloader_ops loader_ops = {
 	.hook_bootlogic_begin = stub_hook_bootlogic_begin,
 	.update_boot = stub_update_boot,
 	.display_splash = stub_display_splash,
+	.is_battery_ok = stub_is_battery_ok,
+	.print_battery_infos = stub_print_battery_infos,
 };

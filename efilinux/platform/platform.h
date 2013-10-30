@@ -43,7 +43,8 @@ struct osloader_ops {
 	enum reset_sources (*get_reset_source)(void);
 	enum shutdown_sources (*get_shutdown_source)(void);
 	int (*is_osnib_corrupted)(void);
-	enum batt_levels (*get_batt_level)(void);
+	enum batt_levels (*get_battery_level)(void);
+	int (*is_battery_ok)(void);
 	int (*combo_key)(enum combo_keys);
 	EFI_STATUS (*set_target_mode)(enum targets);
 	EFI_STATUS (*set_rtc_alarm_charging)(int);
@@ -54,6 +55,7 @@ struct osloader_ops {
 	void (*hook_bootlogic_begin)(void);
 	EFI_STATUS (*update_boot)(void);
 	EFI_STATUS (*display_splash)(void);
+	void (*print_battery_infos)(void);
 };
 
 extern struct osloader_ops loader_ops;

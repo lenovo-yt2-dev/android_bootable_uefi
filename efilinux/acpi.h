@@ -101,13 +101,27 @@ struct PIDV_TABLE {
 	UINT32 system_uuid;		/* Identify hardware platform */
 };
 
+#define EM_1_USE_IA_APPS_CAP 0
+#define EM_1_USE_IA_APPS_RUN 1
+struct EM_1_TABLE {
+	struct ACPI_DESC_HEADER header;/* System Description Table Header */
+	UINT16 ia_apps_run;	       /* Threshold voltage to boot the platform */
+	UINT8 ia_apps_cap;	       /* Threshold capacity to boot the platform */
+	UINT8 cap_or_volt;	       /* 0: use ia_apps_cap, 1: use ia_apps_run */
+};
+
 EFI_STATUS list_acpi_tables(void);
 EFI_STATUS get_acpi_table(CHAR8 *signature, VOID **table);
 enum flow_types acpi_read_flow_type(void);
 void acpi_cold_off(void);
+
 EFI_STATUS rsci_populate_indicators(void);
 enum wake_sources rsci_get_wake_source(void);
 enum reset_sources rsci_get_reset_source(void);
 enum shutdown_sources rsci_get_shutdown_source(void);
+
+UINT16 em1_get_ia_apps_run(void);
+UINT8 em1_get_ia_apps_cap(void);
+UINT8 em1_get_cap_or_volt(void);
 
 #endif /* __ACPI_H__ */

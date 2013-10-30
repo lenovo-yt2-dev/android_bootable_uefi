@@ -33,10 +33,9 @@
 #include "utils.h"
 
 static struct RSCI_TABLE *RSCI_table = NULL;
+static struct EM_1_TABLE *EM_1_table = NULL;
 
 #define RSDT_SIG "RSDT"
-#define PIDV_SIG "PIDV"
-#define RSCI_SIG "RSCI"
 #define RSDP_SIG "RSD PTR "
 
 /* This macro is defined to get a specified field from an acpi table
@@ -53,15 +52,14 @@ static struct RSCI_TABLE *RSCI_table = NULL;
  */
 #define get_acpi_field(table, field)				\
 	(typeof(table##_table->field))				\
-	_get_acpi_field((CHAR8 *)table##_SIG,			\
-			#table,					\
+	_get_acpi_field(#table,					\
 			(VOID **)&table##_table,		\
 			offsetof(struct table##_TABLE, field))
 
-static UINT64 _get_acpi_field(CHAR8 *signature, char *name, VOID **var, UINTN offset)
+static UINT64 _get_acpi_field(char *name, VOID **var, UINTN offset)
 {
 	if (!*var) {
-		EFI_STATUS ret = get_acpi_table(signature, (VOID **)var);
+		EFI_STATUS ret = get_acpi_table((CHAR8 *)name, (VOID **)var);
 		if (EFI_ERROR(ret)) {
 			error(L"Failed to retrieve %a table: %r\n", name, ret);
 			return -1;
@@ -184,6 +182,21 @@ enum reset_sources rsci_get_reset_source(void)
 enum shutdown_sources rsci_get_shutdown_source(void)
 {
         return get_acpi_field(RSCI, shutdown_source);
+}
+
+UINT16 em1_get_ia_apps_run(void)
+{
+	return get_acpi_field(EM_1, ia_apps_run);
+}
+
+UINT8 em1_get_ia_apps_cap(void)
+{
+	return get_acpi_field(EM_1, ia_apps_cap);
+}
+
+UINT8 em1_get_cap_or_volt(void)
+{
+	return get_acpi_field(EM_1, cap_or_volt);
 }
 
 void print_pidv(struct PIDV_TABLE *pidv)

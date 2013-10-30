@@ -38,6 +38,7 @@ LOCAL_SRC_FILES := \
 	uefi_boot.c \
 	uefi_utils.c \
 	commands.c \
+	uefi_em.c \
 	fs/fs.c
 
 SPLASH_BMP := $(LOCAL_PATH)/splash.bmp

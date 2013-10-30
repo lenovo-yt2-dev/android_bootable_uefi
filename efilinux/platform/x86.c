@@ -34,6 +34,7 @@
 #include "uefi_osnib.h"
 #include "uefi_keys.h"
 #include "uefi_boot.h"
+#include "uefi_em.h"
 
 static void x86_hook_bootlogic_begin()
 {
@@ -60,4 +61,7 @@ void x86_ops(struct osloader_ops *ops)
 	ops->hook_bootlogic_begin = x86_hook_bootlogic_begin;
 	ops->update_boot = uefi_update_boot;
 	ops->display_splash = uefi_display_splash;
+	ops->get_battery_level = uefi_get_battery_level;
+	ops->is_battery_ok = uefi_is_battery_ok;
+	ops->print_battery_infos = uefi_print_battery_infos;
 }
