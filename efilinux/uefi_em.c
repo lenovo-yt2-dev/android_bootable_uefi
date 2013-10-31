@@ -136,10 +136,13 @@ int uefi_is_battery_ok(void)
 	if (EFI_ERROR(ret))
 		goto error;
 
-	return status.BatteryPresent;
+	if (!status.BatteryPresent)
+		return 0;
+	return status.BatteryValid || em1_get_boot_on_invalid_batt();
+
 error:
 	error(L"Failed to get battery status: %r\n", ret);
-	return 0;
+	return em1_get_boot_on_invalid_batt();
 }
 
 void uefi_print_battery_infos(void)
@@ -161,5 +164,6 @@ void uefi_print_battery_infos(void)
 	Print(L"IA_APPS_CAP = 0x%x\n", em1_get_ia_apps_cap());
 	Print(L"CAP_OR_VOLT = 0x%x\n", em1_get_cap_or_volt());
 error:
-	error(L"Failed to get battery status: %r\n", ret);
+	if (EFI_ERROR(ret))
+	    error(L"Failed to get battery status: %r\n", ret);
 }

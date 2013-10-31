@@ -108,6 +108,7 @@ struct EM_1_TABLE {
 	UINT16 ia_apps_run;	       /* Threshold voltage to boot the platform */
 	UINT8 ia_apps_cap;	       /* Threshold capacity to boot the platform */
 	UINT8 cap_or_volt;	       /* 0: use ia_apps_cap, 1: use ia_apps_run */
+	UINT8 boot_on_invalid_batt;    /* Indicates if we should boot with invalid battery */
 };
 
 EFI_STATUS list_acpi_tables(void);
@@ -124,5 +125,6 @@ enum shutdown_sources rsci_get_shutdown_source(void);
 UINT16 em1_get_ia_apps_run(void);
 UINT8 em1_get_ia_apps_cap(void);
 UINT8 em1_get_cap_or_volt(void);
+UINT8 em1_get_boot_on_invalid_batt(void);
 
 #endif /* __ACPI_H__ */

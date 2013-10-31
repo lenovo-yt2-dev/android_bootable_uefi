@@ -204,6 +204,11 @@ UINT8 em1_get_cap_or_volt(void)
 	return get_acpi_field(EM_1, cap_or_volt);
 }
 
+UINT8 em1_get_boot_on_invalid_batt(void)
+{
+	return get_acpi_field(EM_1, boot_on_invalid_batt);
+}
+
 void print_pidv(struct PIDV_TABLE *pidv)
 {
 	int i;
