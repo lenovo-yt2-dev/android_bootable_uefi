@@ -36,7 +36,11 @@
 #include <utils.h>
 #include <stdlib.h>
 #include <asm/bootparam.h>
-#include <fs.h>
+#include <efilinux.h>
+#include "boot.h"
+#include "fs.h"
+#include "platform.h"
+#include "secure_boot.h"
 
 #ifdef x86_64
 #include "bzimage/x86_64.h"
@@ -48,8 +52,10 @@
 #include <shim.h>
 #endif
 
-#include <boot.h>
-#include <efilinux.h>
+#if USE_INTEL_OS_VERIFICATION
+#include "os_verification.h"
+#endif
+
 
 typedef struct boot_img_hdr boot_img_hdr;
 
@@ -97,6 +103,28 @@ struct boot_img_hdr
     unsigned char extra_cmdline[BOOT_EXTRA_ARGS_SIZE];
 };
 
+static void display_boot_img_hdr(struct boot_img_hdr *h)
+{
+        debug(L"magic: 0x%02X\n", h->magic);
+
+        debug(L"kernel_size: %d\n", h->kernel_size);
+        debug(L"kernel_addr: 0x%02X\n", h->kernel_addr);
+
+        debug(L"ramdisk_size: %d\n", h->ramdisk_size);
+        debug(L"ramdisk_addr: 0x%02X\n", h->ramdisk_addr);
+
+        debug(L"second_size: %d\n", h->second_size);
+        debug(L"second_addr: 0x%02X\n", h->second_addr);
+
+        debug(L"tags_addr: 0x%02X\n", h->tags_addr);
+        debug(L"page_size: %d\n", h->page_size);
+        debug(L"sig_size: %d\n", h->sig_size);
+        debug(L"name: %x\n", h->name);
+        debug(L"cmdline: %a\n", h->cmdline);
+        debug(L"id: 0x%02X\n", h->id);
+        debug(L"extra_cmdline: %a\n", h->extra_cmdline);
+}
+
 /*
 ** +-----------------+
 ** | boot header     | 1 page
@@ -135,7 +163,11 @@ static UINT32 pages(struct boot_img_hdr *hdr, UINT32 blob_size)
         return (blob_size + hdr->page_size - 1) / hdr->page_size;
 }
 
-
+/*
+ * FIXME:
+ * decide whether or not we use sig_size and patch to avoid these ugly if
+ * statement
+ */
 static UINTN bootimage_size(struct boot_img_hdr *aosp_header,
                 BOOLEAN include_sig)
 {
@@ -145,45 +177,33 @@ static UINTN bootimage_size(struct boot_img_hdr *aosp_header,
                 pages(aosp_header, aosp_header->ramdisk_size) +
                 pages(aosp_header, aosp_header->second_size)) *
                         aosp_header->page_size;
+
         if (include_sig)
                 size += (pages(aosp_header, aosp_header->sig_size) *
                         aosp_header->page_size);
+
         return size;
 }
 
 static EFI_STATUS verify_boot_image(UINT8 *bootimage)
 {
-#if USE_SHIM
-        SHIM_LOCK *shim_lock;
-        EFI_GUID shim_guid = SHIM_LOCK_GUID;
-        EFI_STATUS ret;
-        UINTN sig_offset;
-        UINTN sigsize;
-        struct boot_img_hdr *aosp_header;
+        struct boot_img_hdr *aosp_header = (struct boot_img_hdr *)bootimage;
+        UINTN sig_offset = bootimage_size(aosp_header, FALSE);
+        UINTN sigsize = aosp_header->sig_size;
 
-        aosp_header = (struct boot_img_hdr *)bootimage;
-        ret = LibLocateProtocol(&shim_guid, (VOID **)&shim_lock);
-        if (EFI_ERROR(ret)) {
-                error(L"Couldn't instantiate shim protocol", ret);
-                return ret;
-        }
+        debug(L"bootimage addr: 0x%02X\n", bootimage);
+        debug(L"bootimage size: %d\n", sig_offset);
 
-        sig_offset = bootimage_size(aosp_header, FALSE);
-        sigsize = aosp_header->sig_size;
+        debug(L"manifest addr: 0x%02X\n", bootimage + sig_offset);
+        debug(L"manifest size: %d\n", sigsize);
 
         if (!sigsize) {
-                Print(L"Secure boot enabled, but Android boot image is unsigned\n");
-                return EFI_ACCESS_DENIED;
+                error(L"Image is not signed\n");
+                return EFI_LOAD_ERROR;
         }
 
-        ret = shim_lock->VerifyBlob(bootimage, sig_offset,
+        return loader_ops.hash_verify(bootimage, sig_offset,
                         bootimage + sig_offset, sigsize);
-        if (EFI_ERROR(ret))
-                error(L"Boot image verification failed", ret);
-        return ret;
-#else
-        return 0;
-#endif
 }
 
 
@@ -656,8 +676,9 @@ EFI_STATUS android_image_start_file(
 
         aosp_header = (struct boot_img_hdr *)bootimage;
         bsize = bootimage_size(aosp_header, TRUE);
-        if (buffersize != bsize) {
-                Print(L"Boot image size mismatch; got %ld expected %ld\n",
+        display_boot_img_hdr(aosp_header);
+        if ((bsize - buffersize) > aosp_header->sig_size) {
+                Print(L"Boot image size mismatch; got %d expected %d\n",
                                 buffersize, bsize);
                 ret = EFI_INVALID_PARAMETER;
                 goto out;
@@ -673,21 +694,6 @@ free_info:
         return ret;
 }
 
-UINT8 is_secure_boot_enabled(void)
-{
-        UINT8 secure_boot;
-        UINTN size;
-        EFI_STATUS status;
-        EFI_GUID global_var_guid = EFI_GLOBAL_VARIABLE;
-
-        size = sizeof(secure_boot);
-        status = uefi_call_wrapper(RT->GetVariable, 5, L"SecureBoot", (EFI_GUID *)&global_var_guid, NULL, &size, (void*)&secure_boot);
-
-        if (EFI_ERROR(status))
-                secure_boot = 0;
-
-        return secure_boot;
-}
 
 EFI_STATUS android_image_start_buffer(
                 IN EFI_HANDLE parent_image,
@@ -715,13 +721,13 @@ EFI_STATUS android_image_start_buffer(
         }
 
         if (is_secure_boot_enabled()) {
-                debug(L"Verifying the boot image\n");
-                ret = verify_boot_image(bootimage);
-                if (EFI_ERROR(ret)) {
-                        error(L"boot image digital signature verification failed", ret);
-                        goto out_bootimage;
-                }
-        }
+                 debug(L"Verifying the boot image\n");
+                 ret = verify_boot_image(bootimage);
+                 if (EFI_ERROR(ret)) {
+                         error(L"boot image digital signature verification failed", ret);
+                         goto out_bootimage;
+                 }
+         }
 
         debug(L"Creating command line\n");
         ret = setup_command_line(bootimage, cmdline);

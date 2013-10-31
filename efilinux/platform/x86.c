@@ -36,6 +36,14 @@
 #include "uefi_boot.h"
 #include "uefi_em.h"
 
+#if USE_INTEL_OS_VERIFICATION
+#include "os_verification.h"
+#endif
+
+#if USE_SHIM
+#include "shim_protocol.h"
+#endif
+
 static void x86_hook_bootlogic_begin()
 {
 	uefi_init_boot_options();
@@ -65,4 +73,12 @@ void x86_ops(struct osloader_ops *ops)
 	ops->get_battery_level = uefi_get_battery_level;
 	ops->is_battery_ok = uefi_is_battery_ok;
 	ops->print_battery_infos = uefi_print_battery_infos;
+#if USE_INTEL_OS_VERIFICATION
+	ops->hash_verify = intel_os_verify;
+#endif
+
+#if USE_SHIM
+	ops->hash_verify = shim_blob_verify;
+#endif
+
 }

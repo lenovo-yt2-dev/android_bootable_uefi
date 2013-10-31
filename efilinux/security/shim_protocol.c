@@ -25,43 +25,39 @@
  * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
  */
 
-#ifndef _PLATFORM_H_
-#define _PLATFORM_H_
-
 #include <efi.h>
-#include "bootlogic.h"
+#include <efilib.h>
+#include <utils.h>
+#include <stdlib.h>
+#include <shim.h>
+#include "shim_protocol.h"
 
-struct osloader_ops {
-	EFI_STATUS (*check_partition_table)(void);
-	enum flow_types (*read_flow_type)(void);
-	void (*do_cold_off)(void);
-	EFI_STATUS (*populate_indicators)(void);
-	EFI_STATUS (*load_target)(enum targets);
-	enum wake_sources (*get_wake_source)(void);
-	enum reset_sources (*get_reset_source)(void);
-	enum reset_types (*get_reset_type)(void);
-	enum shutdown_sources (*get_shutdown_source)(void);
-	int (*is_osnib_corrupted)(void);
-	enum batt_levels (*get_battery_level)(void);
-	int (*is_battery_ok)(void);
-	int (*combo_key)(enum combo_keys);
-	EFI_STATUS (*set_target_mode)(enum targets);
-	EFI_STATUS (*set_rtc_alarm_charging)(int);
-	EFI_STATUS (*set_wdt_counter)(int);
-	enum targets (*get_target_mode)(void);
-	int (*get_rtc_alarm_charging)(void);
-	int (*get_wdt_counter)(void);
-	void (*hook_bootlogic_begin)(void);
-	EFI_STATUS (*update_boot)(void);
-	EFI_STATUS (*display_splash)(void);
-	void (*print_battery_infos)(void);
-	EFI_STATUS (*hash_verify)(VOID*, UINTN, VOID*, UINTN);
-};
+EFI_GUID gShimLockProtocolGuid = SHIM_LOCK_GUID;
 
-extern struct osloader_ops loader_ops;
+EFI_STATUS shim_blob_verify(IN VOID *blob, IN UINTN blob_size,
+		IN VOID *sig, IN UINTN sig_size) {
 
-EFI_STATUS init_platform_functions(void);
+	SHIM_LOCK *shim_lock;
+	EFI_STATUS ret;
+	ret = LibLocateProtocol(&gShimLockProtocolGuid, (VOID **)&shim_lock);
+	if (EFI_ERROR(ret)) {
+		error(L"Couldn't instantiate shim protocol", ret);
+		return ret;
+	}
 
-#endif /* _PLATFORM_H_ */
+	if (!sigsize) {
+		Print(L"Secure boot enabled,"
+				"but Android boot image is unsigned\n");
+		return EFI_ACCESS_DENIED;
+	}
+
+	ret = uefi_call_wrapper(VerifyBlob, 4, shim_lock,
+			bootimage, blob_size,
+			sig_offset, sig_size);
+	if (EFI_ERROR(ret))
+		error(L"Boot image verification failed", ret);
+	return ret;
+}

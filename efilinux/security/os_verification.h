@@ -25,43 +25,42 @@
  * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
  */
 
-#ifndef _PLATFORM_H_
-#define _PLATFORM_H_
+#ifndef _OS_VERIFICATION_H
+#define _OS_VERIFICATION_H
 
 #include <efi.h>
-#include "bootlogic.h"
 
-struct osloader_ops {
-	EFI_STATUS (*check_partition_table)(void);
-	enum flow_types (*read_flow_type)(void);
-	void (*do_cold_off)(void);
-	EFI_STATUS (*populate_indicators)(void);
-	EFI_STATUS (*load_target)(enum targets);
-	enum wake_sources (*get_wake_source)(void);
-	enum reset_sources (*get_reset_source)(void);
-	enum reset_types (*get_reset_type)(void);
-	enum shutdown_sources (*get_shutdown_source)(void);
-	int (*is_osnib_corrupted)(void);
-	enum batt_levels (*get_battery_level)(void);
-	int (*is_battery_ok)(void);
-	int (*combo_key)(enum combo_keys);
-	EFI_STATUS (*set_target_mode)(enum targets);
-	EFI_STATUS (*set_rtc_alarm_charging)(int);
-	EFI_STATUS (*set_wdt_counter)(int);
-	enum targets (*get_target_mode)(void);
-	int (*get_rtc_alarm_charging)(void);
-	int (*get_wdt_counter)(void);
-	void (*hook_bootlogic_begin)(void);
-	EFI_STATUS (*update_boot)(void);
-	EFI_STATUS (*display_splash)(void);
-	void (*print_battery_infos)(void);
-	EFI_STATUS (*hash_verify)(VOID*, UINTN, VOID*, UINTN);
+#define MANIFEST_SIZE 1024
+
+typedef struct _OS_VERIFICATION_PROTOCOL OS_VERIFICATION_PROTOCOL;
+
+typedef
+EFI_STATUS
+(EFIAPI *EFI_OS_VERIFY) (
+  IN OS_VERIFICATION_PROTOCOL *This,
+  IN VOID                     *OsImagePtr,
+  IN UINTN                    OsImageSize,
+  IN VOID                     *ManifestPtr,
+  IN UINTN                    ManifestSize
+  );
+
+struct _OS_VERIFICATION_PROTOCOL {
+  EFI_OS_VERIFY           VerifiyOsImage;
 };
 
-extern struct osloader_ops loader_ops;
+// {DAFB7EEC-B2E9-4ea6-A80A-37FED7909FF3}
+#define INTEL_OS_VERIFICATION_PROTOCOL_GUID				\
+	{								\
+		0xdafb7eec, 0xb2e9, 0x4ea6,				\
+		{ 0xa8, 0xa, 0x37, 0xfe, 0xd7, 0x90, 0x9f, 0xf3 }	\
+	}
 
-EFI_STATUS init_platform_functions(void);
+extern EFI_GUID gOsVerificationProtocolGuid;
 
-#endif /* _PLATFORM_H_ */
+EFI_STATUS intel_os_verify(IN VOID *os, IN UINTN os_size,
+		IN VOID *manifest, IN UINTN manifest_size);
+
+#endif

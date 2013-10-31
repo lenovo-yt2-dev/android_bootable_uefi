@@ -7,7 +7,7 @@ ifeq ($(TARGET_ARCH),x86)
 	SPECIFIC_GNU_EFI_SRC := ""
 	LOCAL_CFLAGS := \
 		-fPIC -fshort-wchar -ffreestanding -Wall -fno-stack-protector -m32 \
-		-D$(EFI_ARCH) -DUSE_SHIM=0
+		-D$(EFI_ARCH)
 endif
 
 ifeq ($(TARGET_ARCH),x86-64)
@@ -20,7 +20,26 @@ EFI_TARGET := efi-app-$(EFI_ARCH)
 LOCAL_C_INCLUDES := \
 	$(LOCAL_PATH)/android \
 	$(LOCAL_PATH)/loaders \
+	$(LOCAL_PATH)/security \
+	$(LOCAL_PATH)/platform \
+	$(LOCAL_PATH)/bzimage \
 	$(LOCAL_PATH)/fs
+
+security_src_files := \
+	security/secure_boot.c
+
+ifeq ($(TARGET_OS_SIGNING_METHOD),isu)
+	LOCAL_CFLAGS += -DUSE_INTEL_OS_VERIFICATION=1 -DUSE_SHIM=0
+	security_src_files += \
+	      security/os_verification.c
+endif
+
+ifeq ($(TARGET_OS_SIGNING_METHOD),uefi)
+	LOCAL_CFLAGS += -DUSE_SHIM=1 -DUSE_INTEL_OS_VERIFICATION=0
+	security_src_files += \
+	      security/shim_protocol.c
+endif
+
 
 LOCAL_SRC_FILES := \
 	malloc.c \
@@ -39,11 +58,13 @@ LOCAL_SRC_FILES := \
 	uefi_utils.c \
 	commands.c \
 	uefi_em.c \
+	$(security_src_files) \
 	fs/fs.c
+
 
 SPLASH_BMP := $(LOCAL_PATH)/splash.bmp
 
-EFILINUX_VERSION_STRING := $(shell cd $(LOCAL_PATH) ; git describe --abbrev=8 --dirty --always)
+EFILINUX_VERSION_STRING := $(shell cd $(LOCAL_PATH) ; git describe --abbrev=12 --dirty --always)
 EFILINUX_VERSION_DATE := $(shell date -u)
 LOCAL_CFLAGS +=  -DEFILINUX_VERSION_STRING='L"$(EFILINUX_VERSION_STRING)"'
 LOCAL_CFLAGS +=  -DEFILINUX_VERSION_DATE='L"$(EFILINUX_VERSION_DATE)"'
@@ -93,6 +114,6 @@ $(LOCAL_BUILT_MODULE): $(PRODUCT_OUT) $(TARGET_LIBGCC) libgnuefi elf_$(EFI_ARCH)
 		$(call intermediates-dir-for, STATIC_LIBRARIES, libgnuefi)/gnuefi/crt0-efi-$(EFI_ARCH).o -lgnuefi -lgcc -o $@
 	@echo "checking symbols in $@"
 	$(shell if [ `nm -u $@ | wc -l` -ne 0 ] ; then exit -1 ; fi )
-	@echo "creating efilinux.efi - $(EFILINUX_VERSION_STRING) - $(EFILINUX_VERSION_DATE) - $(BUILD_NUMBER)"
+	@echo "creating efilinux.efi - $(EFILINUX_VERSION_STRING) - $(EFILINUX_VERSION_DATE) - $(BUILD_NUMBER) - signing: $(TARGET_OS_SIGNING_METHOD)"
 	$(TARGET_OBJCOPY) -j .text -j .sdata -j .data -j .dynamic -j .dynsym -j .rel \
 		-j .rela -j .reloc --target=$(EFI_TARGET) -S $@ $(PRIVATE_EFI_FILE)

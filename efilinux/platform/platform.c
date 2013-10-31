@@ -197,6 +197,13 @@ void stub_print_battery_infos(void)
 	debug(L"WARNING: stubbed!\n");
 }
 
+static EFI_STATUS stub_hash_verify(VOID *blob, UINTN blob_size,
+		VOID *sig, UINTN sig_size)
+{
+	debug(L"WARNING: stubbed!\n");
+	return EFI_SUCCESS;
+}
+
 struct osloader_ops loader_ops = {
 	.check_partition_table = stub_check_partition_table,
 	.read_flow_type = stub_read_flow_type,
@@ -221,4 +228,5 @@ struct osloader_ops loader_ops = {
 	.display_splash = stub_display_splash,
 	.is_battery_ok = stub_is_battery_ok,
 	.print_battery_infos = stub_print_battery_infos,
+	.hash_verify = stub_hash_verify,
 };
