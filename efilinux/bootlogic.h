@@ -60,10 +60,12 @@ enum reset_sources {
 };
 
 /* Reset type */
-#define NOT_APPLICABLE  0x00
-#define WARM_RESET	0x01
-#define COLD_RESET	0x02
-#define GLOBAL_RESET	0x07
+enum reset_types {
+	NOT_APPLICABLE,
+	WARM_RESET,
+	COLD_RESET,
+	GLOBAL_RESET = 0x07,
+};
 
 /* Shutdown sources */
 enum shutdown_sources {

@@ -36,6 +36,7 @@ void dump_infos(void)
 {
 	Print(L"Wake source = 0x%x\n", loader_ops.get_wake_source());
 	Print(L"Reset source = 0x%x\n", loader_ops.get_reset_source());
+	Print(L"Reset type = 0x%x\n", loader_ops.get_reset_type());
 	Print(L"Shutdown source = 0x%x\n", loader_ops.get_shutdown_source());
 	Print(L"Batt level = 0x%x\n", loader_ops.get_battery_level());
 	Print(L"Batt status = 0x%x\n", loader_ops.is_battery_ok());

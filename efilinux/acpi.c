@@ -179,6 +179,11 @@ enum reset_sources rsci_get_reset_source(void)
         return get_acpi_field(RSCI, reset_source);
 }
 
+enum reset_types rsci_get_reset_type(void)
+{
+        return get_acpi_field(RSCI, reset_type);
+}
+
 enum shutdown_sources rsci_get_shutdown_source(void)
 {
         return get_acpi_field(RSCI, shutdown_source);

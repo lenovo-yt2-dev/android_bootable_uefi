@@ -50,6 +50,7 @@ void x86_ops(struct osloader_ops *ops)
 	ops->load_target = intel_load_target;
 	ops->get_wake_source = rsci_get_wake_source;
 	ops->get_reset_source = rsci_get_reset_source;
+	ops->get_reset_type = rsci_get_reset_type;
 	ops->get_shutdown_source = rsci_get_shutdown_source;
 	ops->combo_key = uefi_combo_key;
 	ops->set_target_mode = uefi_set_target_mode;

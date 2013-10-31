@@ -103,6 +103,12 @@ static enum reset_sources stub_get_reset_source(void)
 	return WAKE_NOT_APPLICABLE;
 }
 
+static enum reset_types stub_get_reset_type(void)
+{
+	debug(L"WARNING: stubbed!\n");
+	return NOT_APPLICABLE;
+}
+
 static enum shutdown_sources stub_get_shutdown_source(void)
 {
 	debug(L"WARNING: stubbed!\n");
@@ -199,6 +205,7 @@ struct osloader_ops loader_ops = {
 	.load_target = stub_load_target,
 	.get_wake_source = stub_get_wake_source,
 	.get_reset_source = stub_get_reset_source,
+	.get_reset_type = stub_get_reset_type,
 	.get_shutdown_source = stub_get_shutdown_source,
 	.is_osnib_corrupted = stub_is_osnib_corrupted,
 	.get_battery_level = stub_get_batt_level,

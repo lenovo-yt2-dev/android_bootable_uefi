@@ -118,6 +118,7 @@ void acpi_cold_off(void);
 EFI_STATUS rsci_populate_indicators(void);
 enum wake_sources rsci_get_wake_source(void);
 enum reset_sources rsci_get_reset_source(void);
+enum reset_types rsci_get_reset_type(void);
 enum shutdown_sources rsci_get_shutdown_source(void);
 
 UINT16 em1_get_ia_apps_run(void);
