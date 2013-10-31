@@ -117,7 +117,7 @@ enum batt_levels uefi_get_battery_level(void)
 	else {
 		value = status.BatteryVoltageLevel;
 		threshold = em1_get_ia_apps_run();
-		debug(L"Battery: %dmA Threshold: %dmA\n");
+		debug(L"Battery: %dmA Threshold: %dmA\n", value, threshold);
 	}
 
 	return value > threshold ? BATT_BOOT_OS : BATT_LOW;
@@ -163,6 +163,7 @@ void uefi_print_battery_infos(void)
 	Print(L"IA_APPS_RUN = 0x%x\n", em1_get_ia_apps_run());
 	Print(L"IA_APPS_CAP = 0x%x\n", em1_get_ia_apps_cap());
 	Print(L"CAP_OR_VOLT = 0x%x\n", em1_get_cap_or_volt());
+	Print(L"BOOT_ON_INVALID_BATT = 0x%x\n", em1_get_boot_on_invalid_batt());
 error:
 	if (EFI_ERROR(ret))
 	    error(L"Failed to get battery status: %r\n", ret);
