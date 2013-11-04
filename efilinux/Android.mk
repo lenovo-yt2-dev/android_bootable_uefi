@@ -78,7 +78,7 @@ $(LOCAL_BUILT_MODULE) : SPLASH_OBJ := $(addprefix $(intermediates)/, splash_bmp.
 
 $(LOCAL_BUILT_MODULE): $(PRODUCT_OUT) $(TARGET_LIBGCC) libgnuefi elf_$(EFI_ARCH)_efi.lds $(all_objects)
 	@mkdir -p $(dir $@)
-	bin-to-hex splash_bmp < $(SPLASH_BMP) | $(TARGET_CC) -x c - -c $(TARGET_GLOBAL_CFLAGS) -o $(SPLASH_OBJ)
+	$(HOST_OUT_EXECUTABLES)/bin-to-hex splash_bmp < $(SPLASH_BMP) | $(TARGET_CC) -x c - -c $(TARGET_GLOBAL_CFLAGS) -o $(SPLASH_OBJ)
 	@echo "linking $@"
 	$(TARGET_LD).bfd \
 		-Bsymbolic \
