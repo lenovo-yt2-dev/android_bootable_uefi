@@ -455,6 +455,12 @@ static EFI_STATUS handover_kernel(CHAR8 *bootimage, EFI_HANDLE parent_image)
         }
 	debug(L"kernel_start = 0x%x\n", kernel_start);
 
+	if (!buf->hdr.relocatable_kernel && kernel_start != buf->hdr.pref_address) {
+		error(L"Failed to store non relocatable kernel to it's preferred address\n");
+		ret = EFI_LOAD_ERROR;
+		goto out;
+	}
+
         memcpy((CHAR8 *)(UINTN)kernel_start, bootimage + koffset + setup_size, ksize);
 
         boot_addr = 0x3fffffff;
@@ -704,12 +710,6 @@ EFI_STATUS android_image_start_buffer(
 
         if (buf->hdr.header != SETUP_HDR) {
                 Print(L"Setup code version is invalid\n");
-                ret = EFI_INVALID_PARAMETER;
-                goto out_bootimage;
-        }
-
-        if (!buf->hdr.relocatable_kernel) {
-                Print(L"Expected relocatable kernel\n");
                 ret = EFI_INVALID_PARAMETER;
                 goto out_bootimage;
         }
