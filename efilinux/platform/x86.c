@@ -66,7 +66,7 @@ void x86_ops(struct osloader_ops *ops)
 	ops->get_reset_type = rsci_get_reset_type;
 	ops->get_shutdown_source = rsci_get_shutdown_source;
 	ops->combo_key = uefi_combo_key;
-	ops->set_target_mode = uefi_set_target_mode;
+	ops->set_target_mode = uefi_set_boot_next;
 	ops->set_rtc_alarm_charging = uefi_set_rtc_alarm_charging;
 	ops->set_wdt_counter = uefi_set_wdt_counter;
 	ops->get_target_mode = uefi_boot_current;

@@ -119,7 +119,6 @@ enum targets boot_charger_insertion(enum wake_sources ws)
 
 enum targets target_from_off(enum wake_sources ws)
 {
-	enum shutdown_sources shutdown_source;
 	enum targets target = TARGET_UNKNOWN;
 
 	if (loader_ops.get_shutdown_source() == SHTDWN_POWER_BUTTON_OVERRIDE)
@@ -132,14 +131,6 @@ enum targets target_from_off(enum wake_sources ws)
 		boot_battery_insertion,
 		boot_charger_insertion,
 	};
-
-	shutdown_source = loader_ops.get_shutdown_source();
-
-	if (shutdown_source == SHTDWN_POWER_BUTTON_OVERRIDE) {
-		loader_ops.set_target_mode(TARGET_BOOT);
-		loader_ops.set_rtc_alarm_charging(0);
-		loader_ops.set_wdt_counter(0);
-	}
 
 	int i;
 	for (i = 0; i < sizeof(boot_case) / sizeof(*boot_case); i++) {
@@ -164,11 +155,50 @@ enum targets boot_reset(enum reset_sources rs)
 		return TARGET_UNKNOWN;
 }
 
+enum targets fallback_target(enum targets target)
+{
+	enum targets fallback;
+	switch (target) {
+	case TARGET_BOOT:
+		fallback = TARGET_RECOVERY;
+		break;
+	case TARGET_RECOVERY:
+		fallback = TARGET_FASTBOOT;
+		break;
+	case TARGET_FASTBOOT:
+		fallback = TARGET_DNX;
+		break;
+	default:
+		fallback = TARGET_UNKNOWN;
+	}
+
+	debug(L"Fallback from 0x%x to 0x%x\n", target, fallback);
+	return fallback;
+}
+
 enum targets boot_watchdog(enum reset_sources rs)
 {
-	/* TODO */
-	debug(L"TO BE IMPLEMENTED\n");
-	return TARGET_UNKNOWN;
+	if (rs != RESET_KERNEL_WATCHDOG
+	    && rs != RESET_SECURITY_WATCHDOG
+	    && rs != RESET_SECURITY_INITIATED
+	    && rs != RESET_PMC_WATCHDOG
+	    && rs != RESET_EC_WATCHDOG
+	    && rs != RESET_PLATFORM_WATCHDOG)
+		return TARGET_UNKNOWN;
+
+	int wdt_counter = loader_ops.get_wdt_counter();
+	enum targets last_target = loader_ops.get_target_mode();
+
+	wdt_counter++;
+	debug(L"watchdog counter = %d\n", wdt_counter);
+	debug(L"last target = 0x%x\n", last_target);
+	if (wdt_counter >= 3) {
+		loader_ops.set_wdt_counter(0);
+		return fallback_target(last_target);
+	}
+
+	loader_ops.set_wdt_counter(wdt_counter);
+	return last_target;
 }
 
 enum targets target_from_reset(enum reset_sources rs)
@@ -253,13 +283,6 @@ EFI_STATUS check_target(enum targets target)
 	return EFI_SUCCESS;
 }
 
-enum targets fallback_target(enum targets target)
-{
-	/* TODO */
-	debug(L"TO BE IMPLEMENTED\n");
-	return TARGET_BOOT;
-}
-
 EFI_STATUS start_boot_logic(CHAR8 *cmdline)
 {
 	EFI_STATUS ret;
@@ -280,6 +303,7 @@ EFI_STATUS start_boot_logic(CHAR8 *cmdline)
 		error(L"No valid target found. Fallbacking to MOS\n");
 		target = TARGET_BOOT;
 	}
+	debug(L"target = 0x%x\n", target);
 
 	if (target == TARGET_COLD_OFF)
 		loader_ops.do_cold_off();
@@ -292,6 +316,10 @@ EFI_STATUS start_boot_logic(CHAR8 *cmdline)
 	ret = loader_ops.populate_indicators();
 	if (EFI_ERROR(ret))
 		goto error;
+
+	ret = loader_ops.set_target_mode(target);
+	if (EFI_ERROR(ret))
+		error(L"Failed to set target_mode: %r\n", ret);
 
 	debug(L"Booting target %a\n", target_strings[target]);
 

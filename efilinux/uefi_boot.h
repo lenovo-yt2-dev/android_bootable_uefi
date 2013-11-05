@@ -33,6 +33,7 @@
 EFI_STATUS uefi_init_boot_options(void);
 EFI_STATUS uefi_update_boot(void);
 enum targets uefi_boot_current(void);
+EFI_STATUS uefi_set_boot_next(enum targets target);
 EFI_STATUS uefi_display_splash(void);
 
 #endif /* __UEFI_BOOT_H__ */

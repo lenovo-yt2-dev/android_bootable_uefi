@@ -39,6 +39,7 @@
 #define BOOT_OPTION_NAME_LENGTH 10
 #define BOOT_ORDER_NAME		L"BootOrder"
 #define BOOT_CURRENT_NAME	L"BootCurrent"
+#define BOOT_NEXT_NAME		L"BootNext"
 
 struct android_boot_option {
 	UINT16 id;
@@ -260,6 +261,13 @@ enum targets uefi_boot_current(void)
 		return *current - ANDROID_PREFIX;
 	else
 		return TARGET_UNKNOWN;
+}
+
+EFI_STATUS uefi_set_boot_next(enum targets target)
+{
+	target += ANDROID_PREFIX;
+	debug(L"Setting boot next to 0x%x\n", target);
+	return LibSetNVVariable(BOOT_NEXT_NAME, &EfiGlobalVariable, sizeof(UINT16), &target);
 }
 
 EFI_STATUS uefi_update_boot(void)
