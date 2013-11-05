@@ -30,6 +30,9 @@
 #ifndef __PROTOCOL_H__
 #define __PROTOCOL_H__
 
+#include <efi.h>
+#include <efilib.h>
+
 /**
  * handle_protocol - Query @handle to see if it supports @protocol
  * @handle: the handle being queried
@@ -42,7 +45,7 @@
 static inline EFI_STATUS
 handle_protocol(EFI_HANDLE handle, EFI_GUID *protocol, void **interface)
 {
-	return uefi_call_wrapper(boot->HandleProtocol, 3,
+	return uefi_call_wrapper(BS->HandleProtocol, 3,
 				 handle, protocol, interface);
 }
 
@@ -60,7 +63,7 @@ static inline EFI_STATUS
 locate_handle(EFI_LOCATE_SEARCH_TYPE type, EFI_GUID *protocol, void *key,
 	      UINTN *size, EFI_HANDLE *buffer)
 {
-	return uefi_call_wrapper(boot->LocateHandle, 5, type, protocol,
+	return uefi_call_wrapper(BS->LocateHandle, 5, type, protocol,
 				 key, size, buffer);
 }
 

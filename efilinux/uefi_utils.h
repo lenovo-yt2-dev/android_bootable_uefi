@@ -39,9 +39,22 @@ EFI_STATUS ConvertBmpToGopBlt (VOID *BmpImage, UINTN BmpImageSize,
 			       VOID **GopBlt, UINTN *GopBltSize,
 			       UINTN *PixelHeight, UINTN *PixelWidth);
 EFI_STATUS gop_display_blt(EFI_GRAPHICS_OUTPUT_BLT_PIXEL *Blt, UINTN blt_size, UINTN height, UINTN width);
+EFI_STATUS get_esp_handle(EFI_HANDLE **esp);
+EFI_STATUS get_esp_fs(EFI_FILE_IO_INTERFACE **esp_fs);
 EFI_STATUS uefi_read_file(EFI_FILE_IO_INTERFACE *io, CHAR16 *filename, void **data, UINTN *size);
 EFI_STATUS uefi_write_file(EFI_FILE_IO_INTERFACE *io, CHAR16 *filename, void *data, UINTN *size);
 EFI_STATUS find_device_partition(const EFI_GUID *guid, EFI_HANDLE **handles, UINTN *no_handles);
 void uefi_reset_system(EFI_RESET_TYPE reset_type);
+EFI_STATUS uefi_delete_file(EFI_FILE_IO_INTERFACE *io, CHAR16 *filename);
+BOOLEAN uefi_exist_file(EFI_FILE *parent, CHAR16 *filename);
+BOOLEAN uefi_exist_file_root(EFI_FILE_IO_INTERFACE *io, CHAR16 *filename);
+EFI_STATUS uefi_create_directory(EFI_FILE *parent, CHAR16 *dirname);
+EFI_STATUS uefi_create_directory_root(EFI_FILE_IO_INTERFACE *io, CHAR16 *dirname);
+EFI_STATUS uefi_file_get_size(EFI_HANDLE image, CHAR16 *filename, UINT64 *size);
+EFI_STATUS uefi_call_image(IN EFI_HANDLE parent_image, IN EFI_HANDLE device,
+			   IN CHAR16 *filename, OUT UINTN *exit_data_size, OUT CHAR16 **exit_data);
+EFI_STATUS uefi_set_simple_var(char *name, EFI_GUID *guid, int size, void *data,
+			       BOOLEAN persistent);
+INT8 uefi_get_simple_var(char *name, EFI_GUID *guid);
 
 #endif /* __UEFI_UTILS_H__ */

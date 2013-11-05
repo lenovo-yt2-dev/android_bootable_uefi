@@ -16,6 +16,6 @@
 
 LOCAL_PATH := $(call my-dir)
 
-uefi_osloader: efilinux
+uefi_osloader: efilinux warmdump
 
 include $(call all-subdir-makefiles)

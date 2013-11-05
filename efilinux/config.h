@@ -31,7 +31,13 @@
 #ifndef __CONFIG_H__
 #define __CONFIG_H__
 
-#include "efilinux.h"
+#include <efi.h>
+
+#ifdef CONFIG_LOG_TAG
+#define LOG_TAG CONFIG_LOG_TAG
+#else
+#define LOG_TAG L"EFILINUX"
+#endif	/* CONFIG_LOG_TAG */
 
 #ifdef CONFIG_LOG_BUF_SIZE
 #define LOG_BUF_SIZE CONFIG_LOG_BUF_SIZE
@@ -47,6 +53,7 @@
 
 extern UINTN log_level;
 extern BOOLEAN log_flush_to_variable;
+extern BOOLEAN has_warmdump;
 extern EFI_GUID osloader_guid;
 
 #endif	/* __CONFIG_H__ */

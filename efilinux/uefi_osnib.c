@@ -34,6 +34,7 @@
 #include "bootlogic.h"
 #include "platform/platform.h"
 #include "config.h"
+#include "uefi_utils.h"
 
 /* Warning: These macros requires that the data is a contained in a BYTE ! */
 #define set_osnib_var(var, persistent)				\
@@ -41,50 +42,6 @@
 
 #define get_osnib_var(var)			\
 	uefi_get_simple_var(#var, &osloader_guid)
-
-static EFI_STATUS uefi_set_simple_var(char *name, EFI_GUID *guid, int size, void *data,
-				      BOOLEAN persistent)
-{
-	EFI_STATUS ret;
-	CHAR16 *name16 = stra_to_str((CHAR8 *)name);
-
-	if (persistent)
-		ret = LibSetNVVariable(name16, guid, size, data);
-	else
-		ret = LibSetVariable(name16, guid, size, data);
-
-	free(name16);
-	return ret;
-}
-
-static INT8 uefi_get_simple_var(char *name, EFI_GUID *guid)
-{
-	void *buffer;
-	UINT64 ret;
-	UINTN size;
-	CHAR16 *name16 = stra_to_str((CHAR8 *)name);
-	buffer = LibGetVariableAndSize(name16, guid, &size);
-
-	if (buffer == NULL) {
-		error(L"Failed to get variable %s\n", name16);
-		ret = -1;
-		goto out;
-	}
-
-	if (size > sizeof(ret)) {
-		error(L"Tried to get UEFI variable larger than %d bytes (%d bytes)."
-		      " Please use an appropriate retrieve method.\n", sizeof(ret), size);
-		ret = -1;
-		goto out;
-	}
-
-	ret = *(INT8 *)buffer;
-out:
-	free(name16);
-	if (buffer)
-		free(buffer);
-	return ret;
-}
 
 EFI_STATUS uefi_set_rtc_alarm_charging(int RtcAlarmCharging)
 {
@@ -110,6 +67,16 @@ int uefi_get_wdt_counter(void)
 CHAR8 *uefi_get_extra_cmdline(void)
 {
 	return LibGetVariable(L"ExtraKernelCommandLine", &osloader_guid);
+}
+
+EFI_STATUS uefi_set_warmdump(int WarmDump)
+{
+	return set_osnib_var(WarmDump, TRUE);
+}
+
+int uefi_get_warmdump(void)
+{
+	return get_osnib_var(WarmDump);
 }
 
 void uefi_populate_osnib_variables(void)

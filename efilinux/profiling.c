@@ -27,6 +27,7 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "efilinux.h"
 #include "log.h"
 
 #define trace(func, caller) \

@@ -28,8 +28,9 @@
  *
  */
 
-#include "efilinux.h"
-#include "efistdarg.h"
+#include <efi.h>
+#include <efilib.h>
+
 #include "platform.h"
 #include "log.h"
 
@@ -39,16 +40,19 @@ static CHAR16 *cur = buffer;
 void log(UINTN level, const CHAR16 *prefix, const void *func, const INTN line,
 	 const CHAR16* fmt, ...)
 {
-	UINT64 time = loader_ops.get_current_time_us();
-	UINT64 sec = time / 1000000;
-	UINT64 usec = time - (sec * 1000000);
 	CHAR16 *start = cur;
 	va_list args;
 
 	va_start(args, fmt);
 
+#ifdef CONFIG_LOG_TIMESTAMP
+	UINT64 time = loader_ops.get_current_time_us();
+	UINT64 sec = time / 1000000;
+	UINT64 usec = time - (sec * 1000000);
+
 	cur += SPrint(cur, sizeof(buffer) - (cur - buffer), L"[%5ld.%06ld] ",
 		      sec, usec);
+#endif
 	cur += SPrint(cur, sizeof(buffer) - (cur - buffer), (CHAR16 *)prefix,
 		      func, line);
 	cur += VSPrint(cur, sizeof(buffer) - (cur - buffer), (CHAR16 *)fmt,
@@ -56,10 +60,11 @@ void log(UINTN level, const CHAR16 *prefix, const void *func, const INTN line,
 	if (((cur - buffer) + LOG_LINE_LEN) * sizeof(CHAR16) >= LOG_BUF_SIZE)
 		cur = buffer;
 
-	va_end (args);
 
 	if (log_level >= level)
-		Print(L"EFILINUX %s", start);
+		Print(LOG_TAG L" %s", start);
+
+	va_end (args);
 }
 
 void log_save_to_variable()

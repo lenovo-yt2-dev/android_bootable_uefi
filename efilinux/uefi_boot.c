@@ -31,54 +31,9 @@
 #include <efilib.h>
 #include "efilinux.h"
 #include "bootlogic.h"
-#include "protocol.h"
 #include "uefi_utils.h"
 #include "splash.h"
 #include "intel_partitions.h"
-
-static EFI_STATUS get_esp_handle(EFI_HANDLE **esp)
-{
-	EFI_STATUS ret;
-	UINTN no_handles;
-	EFI_HANDLE *handles;
-	CHAR16 *description;
-	EFI_DEVICE_PATH *device;
-
-	ret = find_device_partition(&EfiPartTypeSystemPartitionGuid, &handles, &no_handles);
-	if (EFI_ERROR(ret)) {
-		error(L"Failed to found partition: %r\n", ret);
-		goto out;
-	}
-
-	if (LOGLEVEL(DEBUG)) {
-		UINTN i;
-		debug(L"Found %d devices\n", no_handles);
-		for (i = 0; i < no_handles; i++) {
-			device = DevicePathFromHandle(handles[i]);
-			description = DevicePathToStr(device);
-			debug(L"Device : %s\n", description);
-			free_pool(description);
-		}
-	}
-
-	if (no_handles == 0) {
-		error(L"Can't find loader partition!\n");
-		ret = EFI_NOT_FOUND;
-		goto out;
-	}
-	if (no_handles > 1) {
-		error(L"Multiple loader partition found!\n");
-		goto free_handles;
-	}
-	*esp = handles[0];
-	return EFI_SUCCESS;
-
-free_handles:
-	if (handles)
-		free(handles);
-out:
-	return ret;
-}
 
 EFI_STATUS uefi_display_splash(void)
 {

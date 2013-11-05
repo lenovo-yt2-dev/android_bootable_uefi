@@ -31,6 +31,9 @@
 #ifndef __FS_H__
 #define __FS_H__
 
+#include <efi.h>
+#include <efilib.h>
+
 #define MAX_FILENAME	256
 
 struct file {
@@ -89,7 +92,7 @@ file_size(struct file *f, UINT64 *size)
 
 	*size = info->FileSize;
 
-	free_pool(info);
+	FreePool(info);
 
 	return EFI_SUCCESS;
 }

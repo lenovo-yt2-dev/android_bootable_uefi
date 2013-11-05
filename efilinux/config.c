@@ -34,7 +34,7 @@
 #ifdef CONFIG_LOG_LEVEL
 UINTN log_level = CONFIG_LOG_LEVEL;
 #else
-UINTN log_level = LOG_DEBUG;
+UINTN log_level = LEVEL_DEBUG;
 #endif	/* CONFIG_LOG_LEVEL */
 
 #ifdef CONFIG_LOG_FLUSH_TO_VARIABLE
@@ -42,6 +42,12 @@ BOOLEAN log_flush_to_variable = TRUE;
 #else
 BOOLEAN log_flush_to_variable = FALSE;
 #endif	/* CONFIG_LOG_FLUSH_TO_VARIABLE */
+
+#ifdef CONFIG_HAS_WARMDUMP
+BOOLEAN has_warmdump = TRUE;
+#else
+BOOLEAN has_warmdump = FALSE;
+#endif	/* CONFIG_HAS_WARMDUMP */
 
 EFI_GUID osloader_guid = {
 	0x4a67b082, 0x0a4c, 0x41cf,

@@ -56,4 +56,18 @@ EFI_STATUS open_partition(
 void path_to_dos(CHAR16 *path);
 CHAR8 *append_strings(CHAR8 *s1, CHAR8 *s2);
 UINTN strtoul(const CHAR16 *nptr, CHAR16 **endptr, UINTN base);
+
+/* Basic port I/O */
+static inline void outb(UINT16 port, UINT8 value)
+{
+	asm volatile("outb %0,%1" : : "a" (value), "dN" (port));
+}
+
+static inline UINT8 inb(UINT16 port)
+{
+	UINT8 value;
+	asm volatile("inb %1,%0" : "=a" (value) : "dN" (port));
+	return value;
+}
+
 #endif

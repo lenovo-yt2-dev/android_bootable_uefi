@@ -102,6 +102,7 @@ void x86_ops(struct osloader_ops *ops)
 	ops->load_target = intel_load_target;
 	ops->get_wake_source = rsci_get_wake_source;
 	ops->get_reset_source = rsci_get_reset_source;
+	ops->set_reset_source = rsci_set_reset_source;
 	ops->get_reset_type = rsci_get_reset_type;
 	ops->get_last_target_mode = get_entry_last;
 	ops->get_target_mode = get_entry_oneshot;

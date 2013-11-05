@@ -42,6 +42,7 @@ struct osloader_ops {
 	EFI_STATUS (*load_target)(enum targets, CHAR8 *cmdline);
 	enum wake_sources (*get_wake_source)(void);
 	enum reset_sources (*get_reset_source)(void);
+	EFI_STATUS (*set_reset_source)(enum reset_sources);
 	enum reset_types (*get_reset_type)(void);
 	enum shutdown_sources (*get_shutdown_source)(void);
 	int (*is_osnib_corrupted)(void);

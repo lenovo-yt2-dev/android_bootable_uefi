@@ -27,19 +27,15 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef __UEFI_OSNIB_H__
-#define __UEFI_OSNIB_H__
+#ifndef _WARMDUMP_H_
+#define _WARMDUMP_H_
 
-#include "bootlogic.h"
+#define BACKUP_DIR		L"\\EFI\\Intel\\Data"
 
-EFI_STATUS uefi_set_rtc_alarm_charging(int);
-EFI_STATUS uefi_set_wdt_counter(int);
-int uefi_get_rtc_alarm_charging(void);
-int uefi_get_wdt_counter(void);
-CHAR8 *uefi_get_extra_cmdline(void);
-EFI_STATUS uefi_set_warmdump(int WarmDump);
-int uefi_get_warmdump(void);
+#define EFIVAR_PSTORE_ADDR	L"PstoreAddr"
+#define EFIVAR_PSTORE_SIZE	L"PstoreSize"
 
-void uefi_populate_osnib_variables(void);
+#define WARMDUMP_VERSION_MAJOR 1
+#define WARMDUMP_VERSION_MINOR 0
 
-#endif /* __UEFI_OSNIB_H__ */
+#endif /* _WARMDUMP_H_ */

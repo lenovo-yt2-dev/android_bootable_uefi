@@ -58,6 +58,13 @@ static struct EM_1_TABLE *EM_1_table = NULL;
 			(VOID **)&table##_table,		\
 			offsetof(struct table##_TABLE, field), sizeof(table##_table->field))
 
+#define set_acpi_field(table, field, value)			\
+	(typeof(table##_table->field))				\
+	_set_acpi_field(#table,	#field,				\
+			(VOID **)&table##_table,		\
+			offsetof(struct table##_TABLE, field),	\
+			sizeof(table##_table->field), value)
+
 static UINT64 _get_acpi_field(CHAR8 *name, CHAR8 *fieldname, VOID **var, UINTN offset, UINTN size)
 {
 	if (size > sizeof(UINT64)) {
@@ -76,6 +83,25 @@ static UINT64 _get_acpi_field(CHAR8 *name, CHAR8 *fieldname, VOID **var, UINTN o
 	UINT64 ret = 0;
 	memcpy((CHAR8 *)&ret, (CHAR8 *)*var + offset, size);
 	return ret;
+}
+
+static EFI_STATUS _set_acpi_field(CHAR8 *name, CHAR8 *fieldname, VOID **var, UINTN offset, UINTN size, CHAR8 value)
+{
+	if (size > sizeof(UINT64)) {
+		error(L"Can't set field %a of ACPI table %a : sizeof of field is %d > %d bytes\n", fieldname, name, size, sizeof(UINT64));
+		return -1;
+	}
+
+	if (!*var) {
+		EFI_STATUS ret = get_acpi_table((CHAR8 *)name, (VOID **)var);
+		if (EFI_ERROR(ret)) {
+			error(L"Failed to retrieve %a table: %r\n", name, ret);
+			return ret;
+		}
+	}
+
+	memcpy((CHAR8 *)*var + offset, &value, size);
+	return EFI_SUCCESS;
 }
 
 EFI_STATUS get_rsdt_table(struct RSDT_TABLE **rsdt)
@@ -124,9 +150,8 @@ void dump_acpi_tables(void)
 	int nb_acpi_tables = (rsdt->header.length - sizeof(rsdt->header)) / sizeof(rsdt->entry[1]);
 	info(L"Listing %d tables\n", nb_acpi_tables);
 
-        ret = uefi_call_wrapper(BS->HandleProtocol, 3, efilinux_image,
-                        &FileSystemProtocol,
-                        (void **)&io);
+	ret = uefi_call_wrapper(BS->HandleProtocol, 3, efilinux_image,
+				&FileSystemProtocol, (void **)&io);
 	if (EFI_ERROR(ret)) {
 		error(L"Failed to get FS_prot:%r\n", ret);
 		goto out;
@@ -251,6 +276,11 @@ enum wake_sources rsci_get_wake_source(void)
         return get_acpi_field(RSCI, wake_source);
 }
 
+EFI_STATUS rsci_set_reset_source(enum reset_sources value)
+{
+        return set_acpi_field(RSCI, reset_source, value);
+}
+
 enum reset_sources rsci_get_reset_source(void)
 {
         return get_acpi_field(RSCI, reset_source);
@@ -352,9 +382,8 @@ void load_dsdt(void)
 	int nb_acpi_tables = (rsdt->header.length - sizeof(rsdt->header)) / sizeof(rsdt->entry[1]);
 	info(L"Listing %d tables\n", nb_acpi_tables);
 
-        ret = uefi_call_wrapper(BS->HandleProtocol, 3, efilinux_image,
-                        &FileSystemProtocol,
-                        (void **)&io);
+	ret = uefi_call_wrapper(BS->HandleProtocol, 3, efilinux_image,
+				&FileSystemProtocol, (void **)&io);
 	if (EFI_ERROR(ret)) {
 		error(L"Failed to get FS_prot:%r\n", ret);
 		goto out;

@@ -33,6 +33,9 @@
 #include "acpi.h"
 #include "bootlogic.h"
 #include "platform/platform.h"
+#include "uefi_utils.h"
+#include "utils.h"
+#include "uefi_osnib.h"
 
 #define STRINGIZE(x) #x
 char *target_strings[TARGET_UNKNOWN + 1] = {
@@ -179,6 +182,25 @@ enum targets fallback_target(enum targets target)
 	return fallback;
 }
 
+static inline EFI_STATUS call_warmdump(void)
+{
+	CHAR16 *path = WARMDUMP_FILE_PATH;
+
+	path_to_dos(path);
+	return uefi_call_image(main_image_handle, efilinux_image,
+			       path, NULL, NULL);
+}
+
+static void warmdump_complete(enum targets last_target)
+{
+	loader_ops.save_target_mode(last_target);
+	if (EFI_ERROR(uefi_set_warmdump(1)))
+		error(L"Failed to set warmdump variable\n");
+	// uefi_reset_system(EfiResetCold); // BUG: always do warm reset
+	outb(0xCF9, 0x0E); // Cold reset using PCI reset register
+	error(L"Reset requested, this code should not be reached\n");
+}
+
 enum targets boot_watchdog(enum reset_sources rs)
 {
 	if (rs != RESET_KERNEL_WATCHDOG
@@ -188,8 +210,19 @@ enum targets boot_watchdog(enum reset_sources rs)
 	    && rs != RESET_PLATFORM_WATCHDOG)
 		return TARGET_UNKNOWN;
 
-	int wdt_counter = loader_ops.get_wdt_counter();
 	enum targets last_target = loader_ops.get_last_target_mode();
+
+	if (has_warmdump) {
+		EFI_STATUS ret = call_warmdump();
+		if (ret == EFI_TIMEOUT) {
+			debug(L"Warmdump requests a cold reset\n");
+			warmdump_complete(last_target);
+		} else if (EFI_ERROR(ret))
+			error(L"Warmdump error (%r)\n", ret);
+		uefi_set_warmdump(0);
+	}
+
+	int wdt_counter = loader_ops.get_wdt_counter();
 
 	wdt_counter++;
 	debug(L"watchdog counter = %d\n", wdt_counter);
@@ -200,6 +233,7 @@ enum targets boot_watchdog(enum reset_sources rs)
 	}
 
 	loader_ops.set_wdt_counter(wdt_counter);
+
 	return last_target;
 }
 
@@ -250,6 +284,13 @@ enum targets target_from_inputs(enum flow_types flow_type)
 
 	if (rs == RESET_NOT_APPLICABLE)
 		rs = RESET_OS_INITIATED;
+
+	if (has_warmdump && uefi_get_warmdump() == 1) {
+		rs = RESET_KERNEL_WATCHDOG;
+		loader_ops.set_reset_source(RESET_KERNEL_WATCHDOG);
+		debug(L"Reset source changed to = 0x%x\n", rs);
+	}
+
 	return target_from_reset(rs);
 }
 

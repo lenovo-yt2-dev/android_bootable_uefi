@@ -29,7 +29,9 @@
 
 #include <efi.h>
 #include <efilib.h>
+#include <fs.h>
 #include "efilinux.h"
+#include "protocol.h"
 
 extern EFI_GUID GraphicsOutputProtocol;
 
@@ -276,6 +278,91 @@ EFI_STATUS ConvertBmpToGopBlt (VOID *BmpImage, UINTN BmpImageSize,
   return EFI_SUCCESS;
 }
 
+EFI_STATUS find_device_partition(const EFI_GUID *guid, EFI_HANDLE **handles, UINTN *no_handles)
+{
+	EFI_STATUS ret;
+	*handles = NULL;
+
+	ret = LibLocateHandleByDiskSignature(
+		MBR_TYPE_EFI_PARTITION_TABLE_HEADER,
+		SIGNATURE_TYPE_GUID,
+		(void *)guid,
+		no_handles,
+		handles);
+	if (EFI_ERROR(ret) || *no_handles == 0)
+		error(L"Failed to found partition %g\n", guid);
+	return ret;
+}
+
+EFI_STATUS get_esp_handle(EFI_HANDLE **esp)
+{
+	EFI_STATUS ret;
+	UINTN no_handles;
+	EFI_HANDLE *handles;
+	CHAR16 *description;
+	EFI_DEVICE_PATH *device;
+
+	ret = find_device_partition(&EfiPartTypeSystemPartitionGuid, &handles, &no_handles);
+	if (EFI_ERROR(ret)) {
+		error(L"Failed to found partition: %r\n", ret);
+		goto out;
+	}
+
+	if (LOGLEVEL(DEBUG)) {
+		UINTN i;
+		debug(L"Found %d devices\n", no_handles);
+		for (i = 0; i < no_handles; i++) {
+			device = DevicePathFromHandle(handles[i]);
+			description = DevicePathToStr(device);
+			debug(L"Device : %s\n", description);
+			free_pool(description);
+		}
+	}
+
+	if (no_handles == 0) {
+		error(L"Can't find loader partition!\n");
+		ret = EFI_NOT_FOUND;
+		goto out;
+	}
+	if (no_handles > 1) {
+		error(L"Multiple loader partition found!\n");
+		goto free_handles;
+	}
+	*esp = handles[0];
+	return EFI_SUCCESS;
+
+free_handles:
+	if (handles)
+		free(handles);
+out:
+	return ret;
+}
+
+EFI_STATUS get_esp_fs(EFI_FILE_IO_INTERFACE **esp_fs)
+{
+	EFI_STATUS ret = EFI_SUCCESS;
+	EFI_GUID SimpleFileSystemProtocol = SIMPLE_FILE_SYSTEM_PROTOCOL;
+	EFI_HANDLE *esp_handle;
+	EFI_FILE_IO_INTERFACE *esp;
+
+	ret = get_esp_handle(&esp_handle);
+	if (EFI_ERROR(ret)) {
+		error(L"Failed to get ESP partition: %r\n", ret);
+		return ret;
+	}
+
+	ret = handle_protocol(esp_handle, &SimpleFileSystemProtocol,
+			      (void **)&esp);
+	if (EFI_ERROR(ret)) {
+		error(L"HandleProtocol", ret);
+		return ret;
+	}
+
+	*esp_fs = esp;
+
+	return ret;
+}
+
 EFI_STATUS uefi_read_file(EFI_FILE_IO_INTERFACE *io, CHAR16 *filename, void **data, UINTN *size)
 {
 	EFI_STATUS ret;
@@ -354,23 +441,6 @@ out:
 	return ret;
 }
 
-EFI_STATUS find_device_partition(const EFI_GUID *guid, EFI_HANDLE **handles, UINTN *no_handles)
-{
-	EFI_STATUS ret;
-	*handles = NULL;
-
-	ret = LibLocateHandleByDiskSignature(
-		MBR_TYPE_EFI_PARTITION_TABLE_HEADER,
-		SIGNATURE_TYPE_GUID,
-		(void *)guid,
-		no_handles,
-		handles);
-	if (EFI_ERROR(ret) || *no_handles == 0)
-		error(L"Failed to found partition %g\n", guid);
-	return ret;
-}
-
-
 EFI_STATUS uefi_write_file(EFI_FILE_IO_INTERFACE *io, CHAR16 *filename, void *data, UINTN *size)
 {
 	EFI_STATUS ret;
@@ -397,4 +467,209 @@ void uefi_reset_system(EFI_RESET_TYPE reset_type)
 {
 	uefi_call_wrapper(RT->ResetSystem, 4, reset_type,
 			  EFI_SUCCESS, 0, NULL);
+}
+
+EFI_STATUS uefi_delete_file(EFI_FILE_IO_INTERFACE *io, CHAR16 *filename)
+{
+	EFI_STATUS ret;
+	EFI_FILE *file, *root;
+
+	ret = uefi_call_wrapper(io->OpenVolume, 2, io, &root);
+	if (EFI_ERROR(ret))
+		goto out;
+
+	ret = uefi_call_wrapper(root->Open, 5, root, &file, filename,
+				EFI_FILE_MODE_READ | EFI_FILE_MODE_WRITE, 0);
+	if (EFI_ERROR(ret))
+		goto out;
+
+	ret = uefi_call_wrapper(file->Delete, 1, file);
+
+out:
+	if (EFI_ERROR(ret) || ret == EFI_WARN_DELETE_FAILURE)
+		error(L"Failed to delete file %s:%r\n", filename, ret);
+
+	return ret;
+}
+
+BOOLEAN uefi_exist_file(EFI_FILE *parent, CHAR16 *filename)
+{
+	EFI_STATUS ret;
+	EFI_FILE *file;
+
+	ret = uefi_call_wrapper(parent->Open, 5, parent, &file, filename,
+				EFI_FILE_MODE_READ, 0);
+	if (!EFI_ERROR(ret))
+		uefi_call_wrapper(file->Close, 1, file);
+	else if (ret != EFI_NOT_FOUND) // IO error
+		error(L"Failed to found file %s:%r\n", filename, ret);
+
+	return ret == EFI_SUCCESS;
+}
+
+BOOLEAN uefi_exist_file_root(EFI_FILE_IO_INTERFACE *io, CHAR16 *filename)
+{
+	EFI_STATUS ret;
+	EFI_FILE *root;
+
+	ret = uefi_call_wrapper(io->OpenVolume, 2, io, &root);
+	if (EFI_ERROR(ret)) {
+		error(L"Failed to open volume %s:%r\n", filename, ret);
+		return FALSE;
+	}
+
+	return uefi_exist_file(root, filename);
+}
+
+EFI_STATUS uefi_create_directory(EFI_FILE *parent, CHAR16 *dirname)
+{
+	EFI_STATUS ret;
+	EFI_FILE *dir;
+
+	ret = uefi_call_wrapper(parent->Open, 5, parent, &dir, dirname,
+				EFI_FILE_MODE_READ | EFI_FILE_MODE_WRITE | EFI_FILE_MODE_CREATE,
+				EFI_FILE_DIRECTORY);
+
+	if (EFI_ERROR(ret)) {
+		error(L"Failed to create directory %s:%r\n", dirname, ret);
+	} else {
+		uefi_call_wrapper(dir->Close, 1, dir);
+	}
+
+	return ret;
+}
+
+EFI_STATUS uefi_create_directory_root(EFI_FILE_IO_INTERFACE *io, CHAR16 *dirname)
+{
+	EFI_STATUS ret;
+	EFI_FILE *root;
+
+	ret = uefi_call_wrapper(io->OpenVolume, 2, io, &root);
+	if (EFI_ERROR(ret)) {
+		error(L"Failed to open volume %s:%r\n", dirname, ret);
+		return ret;
+	}
+
+	return uefi_create_directory(root, dirname);
+}
+
+EFI_STATUS uefi_file_get_size(EFI_HANDLE image, CHAR16 *filename, UINT64 *size)
+{
+	EFI_STATUS ret;
+	EFI_LOADED_IMAGE *info;
+	struct file *file;
+	UINT64 fsize;
+
+	ret = handle_protocol(image, &LoadedImageProtocol, (void **)&info);
+	if (EFI_ERROR(ret)) {
+		error(L"HandleProtocol %s (%r)\n", filename, ret);
+		return ret;
+	}
+	ret = file_open(info, filename, &file);
+	if (EFI_ERROR(ret)) {
+		error(L"FileOpen %s (%r)\n", filename, ret);
+		return ret;
+	}
+	ret = file_size(file, &fsize);
+	if (EFI_ERROR(ret)) {
+		error(L"FileSize %s (%r)\n", filename, ret);
+		return ret;
+	}
+	ret = file_close(file);
+	if (EFI_ERROR(ret)) {
+		error(L"FileClose %s (%r)\n", filename, ret);
+		return ret;
+	}
+
+	*size = fsize;
+
+	return ret;
+}
+
+EFI_STATUS uefi_call_image(
+	IN EFI_HANDLE parent_image,
+	IN EFI_HANDLE device,
+	IN CHAR16 *filename,
+	OUT UINTN *exit_data_size,
+	OUT CHAR16 **exit_data)
+{
+	EFI_STATUS ret;
+	EFI_DEVICE_PATH *path;
+	UINT64 size;
+	EFI_HANDLE image;
+
+	debug(L"Call image file %s\n", filename);
+	path = FileDevicePath(device, filename);
+	if (!path) {
+		error(L"Error getting device path : %s\n", filename);
+		return EFI_INVALID_PARAMETER;
+	}
+
+	ret = uefi_file_get_size(parent_image, filename, &size);
+	if (EFI_ERROR(ret)) {
+		error(L"GetSize %s (%r)\n", filename, ret);
+		goto out;
+	}
+
+	ret = uefi_call_wrapper(BS->LoadImage, 6, FALSE, parent_image, path,
+				NULL, size, &image);
+	if (EFI_ERROR(ret)) {
+		error(L"LoadImage %s (%r)\n", filename, ret);
+		goto out;
+	}
+
+	ret = uefi_call_wrapper(BS->StartImage, 3, image,
+				exit_data_size, exit_data);
+	if (EFI_ERROR(ret))
+		info(L"StartImage returned error %s (%r)\n", filename, ret);
+
+out:
+	if (path)
+		FreePool(path);
+
+	return ret;
+}
+
+EFI_STATUS uefi_set_simple_var(char *name, EFI_GUID *guid, int size, void *data,
+			       BOOLEAN persistent)
+{
+	EFI_STATUS ret;
+	CHAR16 *name16 = stra_to_str((CHAR8 *)name);
+
+	if (persistent)
+		ret = LibSetNVVariable(name16, guid, size, data);
+	else
+		ret = LibSetVariable(name16, guid, size, data);
+
+	free(name16);
+	return ret;
+}
+
+INT8 uefi_get_simple_var(char *name, EFI_GUID *guid)
+{
+	void *buffer;
+	UINT64 ret;
+	UINTN size;
+	CHAR16 *name16 = stra_to_str((CHAR8 *)name);
+	buffer = LibGetVariableAndSize(name16, guid, &size);
+
+	if (buffer == NULL) {
+		error(L"Failed to get variable %s\n", name16);
+		ret = -1;
+		goto out;
+	}
+
+	if (size > sizeof(ret)) {
+		error(L"Tried to get UEFI variable larger than %d bytes (%d bytes)."
+		      " Please use an appropriate retrieve method.\n", sizeof(ret), size);
+		ret = -1;
+		goto out;
+	}
+
+	ret = *(INT8 *)buffer;
+out:
+	free(name16);
+	if (buffer)
+		free(buffer);
+	return ret;
 }
