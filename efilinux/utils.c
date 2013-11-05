@@ -191,18 +191,23 @@ EFI_STATUS open_partition(
                 goto out;
         }
 
+	/* In Fast boot mode, only ESP device is connected to protocols.
+	 * We need to specificallty connect the device in order to use it's DiskIoProtocol
+	 */
+	uefi_call_wrapper(BS->ConnectController, 4, HandleBuffer[0], NULL, NULL, TRUE);
+
         /* Instantiate BlockIO and DiskIO protocols so we can read various data */
         ret = uefi_call_wrapper(BS->HandleProtocol, 3, HandleBuffer[0],
                         &BlockIoProtocol,
                         (void **)&BlockIo);
         if (EFI_ERROR(ret)) {
-                error(L"HandleProtocol (BlockIoProtocol)", ret);
+                error(L"HandleProtocol (BlockIoProtocol)\n", ret);
                 goto out;;
         }
         ret = uefi_call_wrapper(BS->HandleProtocol, 3, HandleBuffer[0],
                         &DiskIoProtocol, (void **)&DiskIo);
         if (EFI_ERROR(ret)) {
-                error(L"HandleProtocol (DiskIoProtocol)", ret);
+                error(L"HandleProtocol (DiskIoProtocol)\n", ret);
                 goto out;
         }
         MediaId = BlockIo->Media->MediaId;
