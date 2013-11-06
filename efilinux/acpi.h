@@ -74,16 +74,16 @@ struct RSCI_TABLE {
 
 /** PIDV Definitions **/
 struct ext_id_1 {
-	CHAR8 customer:2;
-	CHAR8 vendor:2;
-	CHAR8 device_manufacturer:2;
-	CHAR8 platform_family:2;
-	CHAR8 product_line:2;
-	CHAR8 hardware:2;
-	CHAR8 spid_checksum:4;
-	CHAR16 fru:10;
-	CHAR8 fru_checksum:4;
-	CHAR8 reserved:2;
+	UINT16 customer;
+	UINT16 vendor;
+	UINT16 device_manufacturer;
+	UINT16 platform_family;
+	UINT16 product_line;
+	UINT16 hardware;
+	UINT32 spid_checksum;
+	CHAR8 fru[10];
+	UINT16 fru_checksum;
+	UINT16 reserved;
 } __attribute__ ((packed));
 
 struct ext_id_2 {
@@ -126,5 +126,8 @@ UINT16 em1_get_ia_apps_run(void);
 UINT8 em1_get_ia_apps_cap(void);
 UINT8 em1_get_cap_or_volt(void);
 UINT8 em1_get_boot_on_invalid_batt(void);
+
+void print_pidv(void);
+void print_rsci(void);
 
 #endif /* __ACPI_H__ */

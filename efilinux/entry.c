@@ -65,6 +65,8 @@ struct efilinux_commands {
 	void (*func)(void);
 } commands[] = {
 	{L"dump_infos", dump_infos},
+	{L"print_pidv", print_pidv},
+	{L"print_rsci", print_rsci},
 };
 
 
