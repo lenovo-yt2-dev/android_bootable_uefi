@@ -118,7 +118,6 @@ enum batt_levels {
 
 enum combo_keys {
 	COMBO_FASTBOOT_MODE,
-	COMBO_SAFE_MODE,
 	COMBO_ERROR = -1,
 };
 

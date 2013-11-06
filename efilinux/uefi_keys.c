@@ -77,8 +77,6 @@ int uefi_combo_key(enum combo_keys combo)
 {
 	switch(combo) {
 	case COMBO_FASTBOOT_MODE:
-		return is_key_pressed(VOLUME_UP);
-	case COMBO_SAFE_MODE:
 		return is_key_pressed(VOLUME_DOWN);
 	default:
 		error(L"Unknown combo 0x%x\n", combo);
