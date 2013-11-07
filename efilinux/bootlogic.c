@@ -52,11 +52,11 @@ int batt_boot_os(void)
 	return 1;
 }
 
-enum targets boot_forced_shutdown(enum wake_sources ws)
+void forced_shutdown(void)
 {
-	/* TODO */
-	debug(L"TO BE IMPLEMENTED\n");
-	return TARGET_UNKNOWN;
+	DEBUG(L"Forced shutdown occured\n");
+	loader_ops.set_rtc_alarm_charging(0);
+	loader_ops.set_wdt_counter(0);
 }
 
 enum targets boot_fastboot_combo(enum wake_sources ws)
@@ -112,17 +112,20 @@ enum targets boot_battery_insertion(enum wake_sources ws)
 
 enum targets boot_charger_insertion(enum wake_sources ws)
 {
-	/* TODO */
-	debug(L"TO BE IMPLEMENTED\n");
-	return TARGET_UNKNOWN;
+	return (ws == WAKE_USB_CHARGER_INSERTED ||
+		ws == WAKE_ACDC_CHARGER_INSERTED)
+		? TARGET_CHARGING : TARGET_UNKNOWN;
 }
 
 enum targets target_from_off(enum wake_sources ws)
 {
 	enum shutdown_sources shutdown_source;
 	enum targets target = TARGET_UNKNOWN;
+
+	if (loader_ops.get_shutdown_source() == SHTDWN_POWER_BUTTON_OVERRIDE)
+		forced_shutdown();
+
 	enum targets (*boot_case[])(enum wake_sources wake_source) = {
-		boot_forced_shutdown,
 		boot_fastboot_combo,
 		boot_power_key,
 		boot_rtc,
