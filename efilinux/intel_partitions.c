@@ -44,16 +44,17 @@ struct target_entry {
 	enum targets target;
 	CHAR16 *name;
 	EFI_GUID guid;
+	CHAR8 *cmdline;
 };
 
 static struct target_entry android_entries[] = {
-	{TARGET_BOOT		, L"boot"	, BOOT_GUID},
-	{TARGET_RECOVERY	, L"recovery"	, RECOVERY_GUID},
-	{TARGET_FASTBOOT	, L"fastboot"	, FASTBOOT_GUID},
-	{TARGET_TEST		, L"test"	, TEST_GUID},
-	{TARGET_CHARGING	, L"charging"	, BOOT_GUID},
-	{TARGET_ERROR		, NULL		, NULL_GUID},
-	{TARGET_ERROR		, NULL		, NULL_GUID},
+	{TARGET_BOOT	 , L"boot"	, BOOT_GUID     , (CHAR8 *) "androidboot.mode=main"},
+	{TARGET_RECOVERY , L"recovery"	, RECOVERY_GUID , (CHAR8 *) "androidboot.mode=fota"},
+	{TARGET_FASTBOOT , L"fastboot"	, FASTBOOT_GUID , (CHAR8 *) "androidboot.mode=fastboot"},
+	{TARGET_TEST	 , L"test"	, TEST_GUID     , (CHAR8 *) "androidboot.mode=test"},
+	{TARGET_CHARGING , L"charging"	, BOOT_GUID     , (CHAR8 *) "androidboot.mode=charger"},
+	{TARGET_ERROR	 , NULL		, NULL_GUID     , NULL},
+	{TARGET_ERROR	 , NULL		, NULL_GUID     , NULL},
 };
 
 struct target_entry *get_target_entry(enum targets target)
@@ -84,7 +85,7 @@ EFI_STATUS intel_load_target(enum targets target)
 
 	debug(L"Loading target %s\n", entry->name);
 
-	return android_image_start_partition(NULL, &entry->guid, NULL);
+	return android_image_start_partition(NULL, &entry->guid, entry->cmdline);
 }
 
 EFI_STATUS name_to_guid(CHAR16 *name, EFI_GUID *guid) {
