@@ -129,5 +129,7 @@ UINT8 em1_get_boot_on_invalid_batt(void);
 
 void print_pidv(void);
 void print_rsci(void);
+void dump_acpi_tables(void);
+void load_dsdt(void);
 
 #endif /* __ACPI_H__ */

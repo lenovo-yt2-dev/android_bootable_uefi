@@ -55,6 +55,7 @@
 #endif
 
 static CHAR16 *banner = L"efilinux loader %d.%d %s %s %s\n";
+EFI_HANDLE efilinux_image;
 
 EFI_SYSTEM_TABLE *sys_table;
 EFI_BOOT_SERVICES *boot;
@@ -67,6 +68,8 @@ struct efilinux_commands {
 	{L"dump_infos", dump_infos},
 	{L"print_pidv", print_pidv},
 	{L"print_rsci", print_rsci},
+	{L"dump_acpi_tables", dump_acpi_tables},
+	{L"load_dsdt", load_dsdt},
 };
 
 
@@ -497,6 +500,8 @@ efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *_table)
 	err = handle_protocol(image, &LoadedImageProtocol, (void **)&info);
 	if (err != EFI_SUCCESS)
 		goto fs_deinit;
+
+	efilinux_image = info->DeviceHandle;
 
 	if (!read_config_file(info, &options, &options_size)) {
 		int i;

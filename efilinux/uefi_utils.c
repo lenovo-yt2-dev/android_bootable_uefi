@@ -94,7 +94,6 @@ EFI_STATUS ConvertBmpToGopBlt (VOID *BmpImage, UINTN BmpImageSize,
   // Doesn't support compress.
   //
   if (BmpHeader->CompressionType != 0) {
-	  debug(L"\n");
     return EFI_UNSUPPORTED;
   }
 
@@ -163,7 +162,6 @@ EFI_STATUS ConvertBmpToGopBlt (VOID *BmpImage, UINTN BmpImageSize,
   // Ensure the BltBufferSize * sizeof (EFI_GRAPHICS_OUTPUT_BLT_PIXEL) doesn't overflow
   //
   if (BltBufferSize > DivU64x32 ((UINTN) ~0, sizeof (EFI_GRAPHICS_OUTPUT_BLT_PIXEL), NULL)) {
-	  debug(L"\n");
     return EFI_UNSUPPORTED;
   }
   BltBufferSize = MultU64x32 (BltBufferSize, sizeof (EFI_GRAPHICS_OUTPUT_BLT_PIXEL));
@@ -260,7 +258,6 @@ EFI_STATUS ConvertBmpToGopBlt (VOID *BmpImage, UINTN BmpImageSize,
           FreePool (*GopBlt);
           *GopBlt = NULL;
         }
-	  debug(L"\n");
         return EFI_UNSUPPORTED;
         break;
       };
@@ -369,3 +366,29 @@ EFI_STATUS find_device_partition(const EFI_GUID *guid, EFI_HANDLE **handles, UIN
 	return ret;
 }
 
+
+EFI_STATUS uefi_write_file(EFI_FILE_IO_INTERFACE *io, CHAR16 *filename, void *data, UINTN *size)
+{
+	EFI_STATUS ret;
+	EFI_FILE *file, *root;
+
+	ret = uefi_call_wrapper(io->OpenVolume, 2, io, &root);
+	if (EFI_ERROR(ret))
+		goto out;
+
+	ret = uefi_call_wrapper(root->Open, 5, root, &file, filename, EFI_FILE_MODE_READ | EFI_FILE_MODE_WRITE | EFI_FILE_MODE_CREATE, 0);
+	if (EFI_ERROR(ret))
+		goto out;
+
+	ret = uefi_call_wrapper(file->Write, 3, file, size, data);
+	if (EFI_ERROR(ret))
+		goto close;
+
+close:
+	if(file)
+		uefi_call_wrapper(file->Close, 1, file);
+out:
+	if (EFI_ERROR(ret))
+		error(L"Failed to write file %s:%r\n", filename, ret);
+	return ret;
+}

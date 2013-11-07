@@ -31,6 +31,8 @@
 #include <efilib.h>
 #include "acpi.h"
 #include "utils.h"
+#include "efilinux.h"
+#include "uefi_utils.h"
 
 static struct RSCI_TABLE *RSCI_table = NULL;
 static struct EM_1_TABLE *EM_1_table = NULL;
@@ -98,6 +100,74 @@ EFI_STATUS get_rsdt_table(struct RSDT_TABLE **rsdt)
 	}
 out:
 	return ret;
+}
+
+void dump_acpi_tables(void)
+{
+	struct RSDT_TABLE *rsdt;
+	EFI_STATUS ret;
+	EFI_FILE_IO_INTERFACE *io;
+
+	ret = get_rsdt_table(&rsdt);
+	if (EFI_ERROR(ret)) {
+		error(L"Failed to get rsdt table: %r\n", ret);
+		goto out;
+	}
+
+	int nb_acpi_tables = (rsdt->header.length - sizeof(rsdt->header)) / sizeof(rsdt->entry[1]);
+	Print(L"Listing %d tables\n", nb_acpi_tables);
+
+        ret = uefi_call_wrapper(BS->HandleProtocol, 3, efilinux_image,
+                        &FileSystemProtocol,
+                        (void **)&io);
+	if (EFI_ERROR(ret)) {
+		error(L"Failed to get FS_prot:%r\n", ret);
+		goto out;
+	}
+
+	int i;
+	for (i = 0 ; i < nb_acpi_tables; i++) {
+		CHAR8 *s = ((struct ACPI_DESC_HEADER *)rsdt->entry[i])->signature;
+		CHAR8 signature[5];
+		CHAR16 *tmp;
+		CHAR16 *filename;
+		UINTN size = ((struct ACPI_DESC_HEADER *)s)->length;
+		UINTN written_size = size;
+		Print(L"RSDT[%d] = %c%c%c%c\n", i, s[0], s[1], s[2], s[3]);
+
+		memcpy(signature, s, 4);
+		signature[4] = 0;
+
+		tmp = stra_to_str(signature);
+		SPrint(filename, 0, L"ACPI\\%s", tmp);
+		free(tmp);
+
+		ret = uefi_write_file(io, filename, s, &written_size);
+		if (size != written_size)
+			error(L"Written %d/%d bytes\n", written_size, size);
+		if (EFI_ERROR(ret)) {
+			error(L"Failed to write file %s: %r\n", filename, ret);
+			goto out;
+		}
+
+		if (!strncmpa(signature, (CHAR8 *)"FACP", 4)) {
+			s = s + 0x28;
+			s = (CHAR8 *) (*((UINT32 *)s));
+			written_size = ((struct ACPI_DESC_HEADER *)s)->length;;
+			size = written_size;
+
+			filename = L"ACPI\\DSDT";
+			ret = uefi_write_file(io, filename, s, &written_size);
+			if (size != written_size)
+				error(L"Written %d/%d bytes\n", written_size, size);
+			if (EFI_ERROR(ret)) {
+				error(L"Failed to write file %s: %r\n", filename, ret);
+				goto out;
+			}
+		}
+	}
+out:
+	return;
 }
 
 EFI_STATUS list_acpi_tables(void)
@@ -258,4 +328,56 @@ void print_rsci(void)
 	Print(L"reset_type	=0x%x\n", rsci->reset_type);
 	Print(L"shutdown_source	=0x%x\n", rsci->shutdown_source);
 	Print(L"indicators	=0x%x\n", rsci->indicators);
+}
+
+void load_dsdt(void)
+{
+	struct RSDT_TABLE *rsdt;
+	EFI_STATUS ret;
+	EFI_FILE_IO_INTERFACE *io;
+
+	ret = get_rsdt_table(&rsdt);
+	if (EFI_ERROR(ret)) {
+		error(L"Failed to get rsdt table: %r\n", ret);
+		goto out;
+	}
+
+	int nb_acpi_tables = (rsdt->header.length - sizeof(rsdt->header)) / sizeof(rsdt->entry[1]);
+	Print(L"Listing %d tables\n", nb_acpi_tables);
+
+        ret = uefi_call_wrapper(BS->HandleProtocol, 3, efilinux_image,
+                        &FileSystemProtocol,
+                        (void **)&io);
+	if (EFI_ERROR(ret)) {
+		error(L"Failed to get FS_prot:%r\n", ret);
+		goto out;
+	}
+
+	int i;
+	for (i = 0 ; i < nb_acpi_tables; i++) {
+		CHAR8 *s = ((struct ACPI_DESC_HEADER *)rsdt->entry[i])->signature;
+		CHAR8 signature[5];
+		UINTN size = ((struct ACPI_DESC_HEADER *)s)->length;
+		Print(L"RSDT[%d] = %c%c%c%c\n", i, s[0], s[1], s[2], s[3]);
+		memcpy(signature, s, 4);
+		signature[4] = 0;
+
+		if (!strncmpa(signature, (CHAR8 *)"FACP", 4)) {
+			CHAR8 *facp = s;
+			CHAR8 *dsdt;
+			facp += 0x28;
+			dsdt = (CHAR8 *) (*((UINT32 *)s));
+			free(s);
+			ret = uefi_read_file(io, L"DSDT", (void **)&dsdt, &size);
+			if (EFI_ERROR(ret)) {
+				error(L"Failed to read file DSDT:%r\n", ret);
+				goto out;
+			}
+			debug(L"Read %d bytes\n", size);
+			*((UINT32 *)s) = (UINT32)dsdt;
+			Print(L"DSDT = %c%c%c%c\n", dsdt[0], dsdt[1], dsdt[2], dsdt[3]);
+		}
+	}
+out:
+	return;
 }
