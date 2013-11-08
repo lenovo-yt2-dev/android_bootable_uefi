@@ -53,4 +53,5 @@ EFI_STATUS open_partition(
                 OUT EFI_BLOCK_IO **BlockIoPtr,
                 OUT EFI_DISK_IO **DiskIoPtr);
 void path_to_dos(CHAR16 *path);
+CHAR8 *append_strings(CHAR8 *s1, CHAR8 *s2);
 #endif

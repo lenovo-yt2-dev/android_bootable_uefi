@@ -121,6 +121,6 @@ enum combo_keys {
 	COMBO_ERROR = -1,
 };
 
-EFI_STATUS start_boot_logic(void);
+EFI_STATUS start_boot_logic(CHAR8 *cmdline);
 
 #endif /* _BOOTLOGIC_H_ */

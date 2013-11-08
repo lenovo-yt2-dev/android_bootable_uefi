@@ -33,6 +33,7 @@
 #include "stdlib.h"
 #include "bootlogic.h"
 #include "android/boot.h"
+#include "utils.h"
 
 #define BOOT_GUID	{0x80868086, 0x8086, 0x8086, {0x80, 0x86, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00}}
 #define RECOVERY_GUID	{0x80868086, 0x8086, 0x8086, {0x80, 0x86, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01}}
@@ -71,21 +72,27 @@ int is_loadable_target(struct target_entry *entry)
 	return entry->name != NULL;
 }
 
-EFI_STATUS intel_load_target(enum targets target)
+EFI_STATUS intel_load_target(enum targets target, CHAR8 *cmdline)
 {
+	CHAR8 *updated_cmdline;
+
 	struct target_entry *entry = get_target_entry(target);
 	if (!entry) {
 		error(L"Target 0x%x not supported\n", target);
 		return EFI_UNSUPPORTED;
 	}
 
-
 	if (!is_loadable_target(entry))
 	    return EFI_INVALID_PARAMETER;
 
+	updated_cmdline = append_strings(cmdline, entry->cmdline);
+	if (cmdline)
+		free(cmdline);
+
+	debug(L"target cmdline = %a\n", cmdline);
 	debug(L"Loading target %s\n", entry->name);
 
-	return android_image_start_partition(NULL, &entry->guid, entry->cmdline);
+	return android_image_start_partition(NULL, &entry->guid, updated_cmdline);
 }
 
 EFI_STATUS name_to_guid(CHAR16 *name, EFI_GUID *guid) {

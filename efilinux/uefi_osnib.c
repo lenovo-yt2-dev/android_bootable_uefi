@@ -111,3 +111,7 @@ int uefi_get_wdt_counter(void)
 	return get_osnib_var(wdt_counter);
 }
 
+CHAR8 *uefi_get_extra_cmdline(void)
+{
+	return LibGetVariable(L"cmdline", &osnib_guid);
+}

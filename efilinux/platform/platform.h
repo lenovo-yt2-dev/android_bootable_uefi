@@ -38,7 +38,7 @@ struct osloader_ops {
 	enum flow_types (*read_flow_type)(void);
 	void (*do_cold_off)(void);
 	EFI_STATUS (*populate_indicators)(void);
-	EFI_STATUS (*load_target)(enum targets);
+	EFI_STATUS (*load_target)(enum targets, CHAR8 *cmdline);
 	enum wake_sources (*get_wake_source)(void);
 	enum reset_sources (*get_reset_source)(void);
 	enum reset_types (*get_reset_type)(void);
@@ -58,6 +58,7 @@ struct osloader_ops {
 	EFI_STATUS (*display_splash)(void);
 	void (*print_battery_infos)(void);
 	EFI_STATUS (*hash_verify)(VOID*, UINTN, VOID*, UINTN);
+	CHAR8* (*get_extra_cmdline)(void);
 };
 
 extern struct osloader_ops loader_ops;

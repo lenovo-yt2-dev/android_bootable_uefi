@@ -221,6 +221,24 @@ enum targets target_from_inputs(enum flow_types flow_type)
 	return target_from_reset(rs);
 }
 
+CHAR8 *get_cmdline(CHAR8 *cmdline)
+{
+	CHAR8 *extra_cmdline;
+	CHAR8 *updated_cmdline;
+
+	extra_cmdline = loader_ops.get_extra_cmdline();
+	debug(L"Getting extra commandline: %a\n", extra_cmdline);
+
+	updated_cmdline = append_strings(extra_cmdline, cmdline);
+
+	if (extra_cmdline)
+		free(extra_cmdline);
+	if (cmdline)
+		free(cmdline);
+
+	return updated_cmdline;
+}
+
 void display_splash(void)
 {
 	/* TODO */
@@ -242,11 +260,12 @@ enum targets fallback_target(enum targets target)
 	return TARGET_BOOT;
 }
 
-EFI_STATUS start_boot_logic(void)
+EFI_STATUS start_boot_logic(CHAR8 *cmdline)
 {
 	EFI_STATUS ret;
 	enum flow_types flow_type;
 	enum targets target;
+	CHAR8 *updated_cmdline;
 
 	loader_ops.hook_bootlogic_begin();
 
@@ -276,7 +295,9 @@ EFI_STATUS start_boot_logic(void)
 
 	debug(L"Booting target %a\n", target_strings[target]);
 
-	ret = loader_ops.load_target(target);
+	updated_cmdline = get_cmdline(cmdline);
+
+	ret = loader_ops.load_target(target, updated_cmdline);
 	/* This code shouldn't be reached! */
 	if (EFI_ERROR(ret))
 		goto error;

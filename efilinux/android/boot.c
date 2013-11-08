@@ -283,6 +283,7 @@ static EFI_STATUS setup_command_line(UINT8 *bootimage,
 		full_cmdline[cmdlen] = ' ';
                 memcpy(full_cmdline + cmdlen + 1, append, append_len + 1);
 		cmdlen = strlena(full_cmdline);
+		free(append);
         }
 
         /* Documentation/x86/boot.txt: "The kernel command line can be located
@@ -703,7 +704,6 @@ EFI_STATUS android_image_start_buffer(
         struct boot_img_hdr *aosp_header;
         struct boot_params *buf;
         EFI_STATUS ret;
-
         aosp_header = (struct boot_img_hdr *)bootimage;
         buf = (struct boot_params *)(bootimage + aosp_header->page_size);
 

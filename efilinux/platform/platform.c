@@ -85,7 +85,7 @@ static EFI_STATUS stub_populate_indicators(void)
 	return EFI_SUCCESS;
 }
 
-static EFI_STATUS stub_load_target(enum targets target)
+static EFI_STATUS stub_load_target(enum targets target, CHAR8 *cmdline)
 {
 	debug(L"WARNING: stubbed!\n");
 	return EFI_LOAD_ERROR;
@@ -204,6 +204,12 @@ static EFI_STATUS stub_hash_verify(VOID *blob, UINTN blob_size,
 	return EFI_SUCCESS;
 }
 
+static CHAR8* stub_get_extra_cmdline(void)
+{
+	debug(L"WARNING: stubbed!\n");
+	return NULL;
+}
+
 struct osloader_ops loader_ops = {
 	.check_partition_table = stub_check_partition_table,
 	.read_flow_type = stub_read_flow_type,
@@ -229,4 +235,5 @@ struct osloader_ops loader_ops = {
 	.is_battery_ok = stub_is_battery_ok,
 	.print_battery_infos = stub_print_battery_infos,
 	.hash_verify = stub_hash_verify,
+	.get_extra_cmdline = stub_get_extra_cmdline,
 };

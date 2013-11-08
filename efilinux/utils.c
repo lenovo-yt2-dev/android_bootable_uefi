@@ -228,3 +228,44 @@ void path_to_dos(CHAR16 *path)
 		path++;
 	}
 }
+
+/* Return a newly allocated string containing the concatenation of the
+ * two parameters with a space between them
+ *
+ * return NULL if the two strings are empty or the allocation failed,
+ */
+CHAR8 *append_strings(CHAR8 *s1, CHAR8 *s2)
+{
+	INTN len_s1;
+	INTN len_s2;
+	BOOLEAN space;
+	CHAR8 *new;
+
+	len_s1 = s1 ? strlena(s1) : 0;
+	len_s2 = s2 ? strlena(s2) : 0;
+	space = s1 && s2;
+
+	if (!s1 && !s2)
+		return NULL;
+
+	new = AllocatePool(len_s1 + len_s2 + 1 + space);
+	if (!new) {
+		error(L"Failed to allocate new command line\n");
+		return NULL;
+	}
+
+	UINTN i = 0;
+	if (s1) {
+		memcpy(new, s1, len_s1);
+		i += len_s1;
+	}
+	if (space)
+		new[i++] = ' ';
+	if (s2) {
+		memcpy(new + i, s2, len_s2);
+		i += len_s2;
+	}
+
+	new[i] = '\0';
+	return new;
+}

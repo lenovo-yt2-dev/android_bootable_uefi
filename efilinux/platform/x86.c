@@ -80,5 +80,6 @@ void x86_ops(struct osloader_ops *ops)
 #if USE_SHIM
 	ops->hash_verify = shim_blob_verify;
 #endif
+	ops->get_extra_cmdline = uefi_get_extra_cmdline;
 
 }

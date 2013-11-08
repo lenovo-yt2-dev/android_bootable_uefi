@@ -536,6 +536,7 @@ efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *_table)
 			goto fs_deinit;
 	}
 
+	debug(L"shell cmdline=%a\n", cmdline);
 	switch(type) {
 	case 'f':
 		Print(L"Starting file %s\n", name);
@@ -558,7 +559,7 @@ efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *_table)
 	}
 		break;
 	default:
-		err = start_boot_logic();
+		err = start_boot_logic(cmdline);
 		if (EFI_ERROR(err)) {
 			error(L"Boot logic failed: %r\n", err);
 			goto free_args;
