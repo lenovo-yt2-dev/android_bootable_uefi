@@ -16,6 +16,7 @@ ifeq ($(TARGET_ARCH),x86-64)
 endif
 
 EFI_TARGET := efi-app-$(EFI_ARCH)
+PRIVATE_EFI_FILE := $(PRODUCT_OUT)/efilinux.unsigned.efi
 
 LOCAL_C_INCLUDES := \
 	$(LOCAL_PATH)/android \
@@ -40,6 +41,13 @@ ifeq ($(TARGET_OS_SIGNING_METHOD),uefi)
 	      security/shim_protocol.c
 endif
 
+OSLOADER_SIGNING_TOOL := $(HOST_OUT_EXECUTABLES)/isu
+OSLOADER_SIGNING_OUT := $(PRODUCT_OUT)/efilinux_manifest_
+OSLOADER_MANIFEST_OUT := $(PRODUCT_OUT)/efilinux_manifest__OS_manifest.bin
+OSLOADER_SIGNED_OUT := $(PRODUCT_OUT)/efilinux.efi
+PRE_SIGNING_COMMAND := @echo "Signing"
+SIGNING_COMMAND :=  $(OSLOADER_SIGNING_TOOL) -h 0 -i $(PRIVATE_EFI_FILE) -o  $(OSLOADER_SIGNING_OUT) -l $(TARGET_BOOT_IMAGE_PRIV_KEY) -k $(TARGET_BOOT_IMAGE_PUB_KEY) -t 4 -p 2 -v 1
+POST_SIGNING_COMMAND := @cat $(PRIVATE_EFI_FILE) $(OSLOADER_MANIFEST_OUT) > $(OSLOADER_SIGNED_OUT)
 
 LOCAL_SRC_FILES := \
 	malloc.c \
@@ -61,7 +69,6 @@ LOCAL_SRC_FILES := \
 	$(security_src_files) \
 	fs/fs.c
 
-
 SPLASH_BMP := $(LOCAL_PATH)/splash.bmp
 
 EFILINUX_VERSION_STRING := $(shell cd $(LOCAL_PATH) ; git describe --abbrev=12 --dirty --always)
@@ -71,7 +78,6 @@ LOCAL_CFLAGS +=  -DEFILINUX_VERSION_DATE='L"$(EFILINUX_VERSION_DATE)"'
 LOCAL_CFLAGS +=  -DEFILINUX_BUILD_STRING='L"$(BUILD_NUMBER) $(PRODUCT_NAME)"'
 
 OSLOADER_FILE_PATH := EFI/BOOT/boot$(EFI_ARCH).efi
-PRIVATE_EFI_FILE := $(PRODUCT_OUT)/efilinux.efi
 LOCAL_CFLAGS +=  -DOSLOADER_FILE_PATH='L"$(OSLOADER_FILE_PATH)"'
 
 LOCAL_STATIC_LIBRARY := libgnuefi
@@ -97,7 +103,9 @@ $(LOCAL_BUILT_MODULE) : EFILINUX_OBJS := $(patsubst %.S, %.o , $(EFILINUX_OBJS))
 $(LOCAL_BUILT_MODULE) : EFILINUX_OBJS := $(addprefix $(intermediates)/, $(EFILINUX_OBJS))
 $(LOCAL_BUILT_MODULE) : SPLASH_OBJ := $(addprefix $(intermediates)/, splash_bmp.o)
 
-$(LOCAL_BUILT_MODULE): $(PRODUCT_OUT) $(TARGET_LIBGCC) libgnuefi elf_$(EFI_ARCH)_efi.lds $(all_objects) bin-to-hex
+
+
+$(LOCAL_BUILT_MODULE): $(PRODUCT_OUT) $(TARGET_LIBGCC) libgnuefi elf_$(EFI_ARCH)_efi.lds $(all_objects) bin-to-hex $(OSLOADER_SIGNING_TOOL)
 	@mkdir -p $(dir $@)
 	bin-to-hex splash_bmp < $(SPLASH_BMP) | $(TARGET_CC) -x c - -c $(TARGET_GLOBAL_CFLAGS) -o $(SPLASH_OBJ)
 	@echo "linking $@"
@@ -117,3 +125,7 @@ $(LOCAL_BUILT_MODULE): $(PRODUCT_OUT) $(TARGET_LIBGCC) libgnuefi elf_$(EFI_ARCH)
 	@echo "creating efilinux.efi - $(EFILINUX_VERSION_STRING) - $(EFILINUX_VERSION_DATE) - $(BUILD_NUMBER) - signing: $(TARGET_OS_SIGNING_METHOD)"
 	$(TARGET_OBJCOPY) -j .text -j .sdata -j .data -j .dynamic -j .dynsym -j .rel \
 		-j .rela -j .reloc --target=$(EFI_TARGET) -S $@ $(PRIVATE_EFI_FILE)
+	@echo "signing efilinux.efi with $(OSLOADER_SIGNING_TOOL)"
+	$(PRE_SIGNING_COMMAND)
+	$(SIGNING_COMMAND)
+	$(POST_SIGNING_COMMAND)
