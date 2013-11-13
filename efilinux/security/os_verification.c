@@ -55,3 +55,26 @@ EFI_STATUS intel_os_verify(IN VOID *os, IN UINTN os_size,
 out:
 	return ret;
 }
+
+BOOLEAN is_secure_boot_enabled(void)
+{
+	OS_VERIFICATION_PROTOCOL *ovp;
+	EFI_STATUS ret;
+	BOOLEAN unsigned_allowed;
+
+	ret = LibLocateProtocol(&gOsVerificationProtocolGuid, (void **)&ovp);
+	if (EFI_ERROR(ret)) {
+		error(L"%x failure\n", __func__);
+		goto out;
+	}
+
+	ret = uefi_call_wrapper(ovp->GetSecurityPolicy, 2, ovp,
+			&unsigned_allowed);
+	if (EFI_ERROR(ret))
+		goto out;
+
+	return (unsigned_allowed == FALSE);
+out:
+	return TRUE;
+}
+

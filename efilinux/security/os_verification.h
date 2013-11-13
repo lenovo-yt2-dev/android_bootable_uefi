@@ -47,8 +47,16 @@ EFI_STATUS
   IN UINTN                    ManifestSize
   );
 
+typedef
+EFI_STATUS
+(EFIAPI *GET_SECURITY_POLICY) (
+  IN     OS_VERIFICATION_PROTOCOL *This,
+  IN OUT BOOLEAN                  *AllowUnsignedOS
+);
+
 struct _OS_VERIFICATION_PROTOCOL {
   EFI_OS_VERIFY           VerifiyOsImage;
+  GET_SECURITY_POLICY     GetSecurityPolicy;
 };
 
 // {DAFB7EEC-B2E9-4ea6-A80A-37FED7909FF3}

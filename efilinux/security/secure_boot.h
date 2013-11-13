@@ -33,7 +33,7 @@
 
 #include <efi.h>
 
-UINT8 is_secure_boot_enabled(void);
+BOOLEAN is_secure_boot_enabled(void);
 
 #endif
 

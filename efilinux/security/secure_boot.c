@@ -34,7 +34,8 @@
 #include <utils.h>
 #include "secure_boot.h"
 
-UINT8 is_secure_boot_enabled(void)
+#if USE_SHIM
+BOOL is_secure_boot_enabled(void)
 {
         UINT8 secure_boot;
         UINTN size;
@@ -49,6 +50,6 @@ UINT8 is_secure_boot_enabled(void)
                 secure_boot = 0;
 
 	debug(L"SecureBoot value = 0x%02X\n", secure_boot);
-        return secure_boot;
+        return (secure_boot == 1);
 }
-
+#endif
