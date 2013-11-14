@@ -44,6 +44,7 @@
 #define EFILINUX_CONFIG	L"efilinux.cfg"
 
 #include "utils.h"
+#include "watchdog/watchdog.h"
 
 #define LEVEL_DEBUG		4
 #define LEVEL_INFO		3
@@ -181,6 +182,11 @@ get_memory_map(UINTN *size, EFI_MEMORY_DESCRIPTOR *map, UINTN *key,
 static inline EFI_STATUS
 exit_boot_services(EFI_HANDLE image, UINTN key)
 {
+	/* do not add extra code between this function and
+	 * setup_efi__memory_map call, or memory_map key might mismatch with
+	 * bios and EBS call will fail
+         **/
+
 	return uefi_call_wrapper(boot->ExitBootServices, 2, image, key);
 }
 
@@ -233,5 +239,5 @@ static inline const CHAR16 *memory_type_to_str(UINT32 type)
 extern EFI_STATUS memory_map(EFI_MEMORY_DESCRIPTOR **map_buf,
 			     UINTN *map_size, UINTN *map_key,
 			     UINTN *desc_size, UINT32 *desc_version);
-			     
+
 #endif /* __EFILINUX_H__ */

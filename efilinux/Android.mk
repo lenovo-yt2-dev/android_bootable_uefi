@@ -26,6 +26,10 @@ LOCAL_C_INCLUDES := \
 	$(LOCAL_PATH)/bzimage \
 	$(LOCAL_PATH)/fs
 
+watchdog_src_files := \
+	watchdog/tco_reset.c \
+	watchdog/watchdog.c
+
 security_src_files := \
 	security/secure_boot.c
 
@@ -67,6 +71,7 @@ LOCAL_SRC_FILES := \
 	commands.c \
 	uefi_em.c \
 	$(security_src_files) \
+	$(watchdog_src_files) \
 	fs/fs.c
 
 SPLASH_BMP := $(LOCAL_PATH)/splash.bmp

@@ -32,50 +32,56 @@
 #include <efilib.h>
 #include <stdlib.h>
 #include <utils.h>
-#include "os_verification.h"
+#include "tco_reset.h"
 
-EFI_GUID gOsVerificationProtocolGuid = INTEL_OS_VERIFICATION_PROTOCOL_GUID;
 
-EFI_STATUS intel_os_verify(IN VOID *os, IN UINTN os_size,
-		IN VOID *manifest, IN UINTN manifest_size)
+EFI_GUID gEfiTcoResetProtocolGuid = EFI_TCO_RESET_PROTOCOL_GUID;
+
+static EFI_STATUS start_tco_watchdog(struct watchdog *wd)
 {
-	OS_VERIFICATION_PROTOCOL *ovp;
+	EFI_TCO_RESET_PROTOCOL *tco;
 	EFI_STATUS ret;
 
-	ret = LibLocateProtocol(&gOsVerificationProtocolGuid, (void **)&ovp);
+	debug(L"timeout = %d\n", wd->reg);
+	ret = LibLocateProtocol(&gEfiTcoResetProtocolGuid, (void **)&tco);
 	if (EFI_ERROR(ret)) {
 		error(L"%x failure\n", __func__);
 		goto out;
 	}
 
-	ret = uefi_call_wrapper(ovp->VerifiyOsImage, 5, ovp,
-			os, os_size,
-			manifest, manifest_size);
+	ret = uefi_call_wrapper(tco->EnableTcoReset, 1, &(wd->reg));
 
 out:
 	return ret;
 }
 
-BOOLEAN is_secure_boot_enabled(void)
+static EFI_STATUS stop_tco_watchdog(struct watchdog *wd)
 {
-	OS_VERIFICATION_PROTOCOL *ovp;
+	EFI_TCO_RESET_PROTOCOL *tco;
 	EFI_STATUS ret;
-	BOOLEAN unsigned_allowed;
 
-	ret = LibLocateProtocol(&gOsVerificationProtocolGuid, (void **)&ovp);
+	ret = LibLocateProtocol(&gEfiTcoResetProtocolGuid, (void **)&tco);
 	if (EFI_ERROR(ret)) {
 		error(L"%x failure\n", __func__);
 		goto out;
 	}
 
-	ret = uefi_call_wrapper(ovp->GetSecurityPolicy, 2, ovp,
-			&unsigned_allowed);
-	if (EFI_ERROR(ret))
-		goto out;
+	ret = uefi_call_wrapper(tco->DisableTcoReset, 1, wd->reg);
 
-	debug(L"unsigned_allowed = %x\n", unsigned_allowed);
-	return (unsigned_allowed == FALSE);
 out:
-	return TRUE;
+	return ret;
 }
 
+static void set_tco_timeout(struct watchdog *wd, UINT32 timeout)
+{
+	wd->reg = timeout;
+}
+
+struct watchdog tco_watchdog = {
+	.reg = TCO_DEFAULT_TIMEOUT,
+	.ops = {
+		.start = start_tco_watchdog,
+		.stop = stop_tco_watchdog,
+		.set_timeout = set_tco_timeout,
+	},
+};

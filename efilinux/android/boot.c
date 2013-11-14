@@ -505,10 +505,19 @@ static EFI_STATUS handover_kernel(CHAR8 *bootimage, EFI_HANDLE parent_image)
 
 	fs_close();
 
+	ret = watchdog->ops.start(watchdog);
+	if (EFI_ERROR(ret))
+		debug(L"watchdog not started: %x\n", ret);
+
 	UINTN map_key;
 	ret = setup_efi_memory_map(boot_params, &map_key);
 	if (EFI_ERROR(ret))
 		goto out;
+
+	/* do not add extra code between this function and
+	 * setup_efi__memory_map call, or memory_map key might mismatch with
+	 * bios and EBS call will fail
+         **/
 
 	ret = exit_boot_services(bootimage, map_key);
 	if (EFI_ERROR(ret))

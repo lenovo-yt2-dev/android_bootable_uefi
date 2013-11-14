@@ -28,54 +28,50 @@
  *
  */
 
+#ifndef _TCO_RESET_H
+#define _TCO_RESET_H
+
 #include <efi.h>
-#include <efilib.h>
-#include <stdlib.h>
-#include <utils.h>
-#include "os_verification.h"
+#include "watchdog.h"
 
-EFI_GUID gOsVerificationProtocolGuid = INTEL_OS_VERIFICATION_PROTOCOL_GUID;
+#ifndef TCO_DEFAULT_TIMEOUT
+#define TCO_DEFAULT_TIMEOUT 30
+#endif
 
-EFI_STATUS intel_os_verify(IN VOID *os, IN UINTN os_size,
-		IN VOID *manifest, IN UINTN manifest_size)
-{
-	OS_VERIFICATION_PROTOCOL *ovp;
-	EFI_STATUS ret;
+extern struct watchdog tco_watchdog;
 
-	ret = LibLocateProtocol(&gOsVerificationProtocolGuid, (void **)&ovp);
-	if (EFI_ERROR(ret)) {
-		error(L"%x failure\n", __func__);
-		goto out;
+typedef struct _EFI_TCO_RESET_PROTOCOL EFI_TCO_RESET_PROTOCOL;
+
+typedef
+EFI_STATUS
+(EFIAPI *EFI_TCO_RESET_PROTOCOL_ENABLE_TCO_RESET) (
+	/*
+	 *IN EFI_TCO_RESET_PROTOCOL *This,
+	 */
+	IN OUT      UINT32        *RcrbGcsValue
+  );
+
+typedef
+EFI_STATUS
+(EFIAPI *EFI_TCO_RESET_PROTOCOL_DISABLE_TCO_RESET) (
+	/*
+	 *IN EFI_TCO_RESET_PROTOCOL *This,
+	 */
+	IN    UINT32    RcrbGcsValue
+  );
+
+struct _EFI_TCO_RESET_PROTOCOL {
+  EFI_TCO_RESET_PROTOCOL_ENABLE_TCO_RESET       EnableTcoReset;
+  EFI_TCO_RESET_PROTOCOL_DISABLE_TCO_RESET    	DisableTcoReset;
+};
+
+//  {A6A79162-E325-4c30-BCC3-59373064EFB3}
+#define EFI_TCO_RESET_PROTOCOL_GUID					\
+	{								\
+		0xa6a79162, 0xe325, 0x4c30,				\
+		{ 0xbc, 0xc3, 0x59, 0x37, 0x30, 0x64, 0xef, 0xb3 }	\
 	}
 
-	ret = uefi_call_wrapper(ovp->VerifiyOsImage, 5, ovp,
-			os, os_size,
-			manifest, manifest_size);
+extern EFI_GUID gEfiTcoResetProtocolGuid;
 
-out:
-	return ret;
-}
-
-BOOLEAN is_secure_boot_enabled(void)
-{
-	OS_VERIFICATION_PROTOCOL *ovp;
-	EFI_STATUS ret;
-	BOOLEAN unsigned_allowed;
-
-	ret = LibLocateProtocol(&gOsVerificationProtocolGuid, (void **)&ovp);
-	if (EFI_ERROR(ret)) {
-		error(L"%x failure\n", __func__);
-		goto out;
-	}
-
-	ret = uefi_call_wrapper(ovp->GetSecurityPolicy, 2, ovp,
-			&unsigned_allowed);
-	if (EFI_ERROR(ret))
-		goto out;
-
-	debug(L"unsigned_allowed = %x\n", unsigned_allowed);
-	return (unsigned_allowed == FALSE);
-out:
-	return TRUE;
-}
-
+#endif

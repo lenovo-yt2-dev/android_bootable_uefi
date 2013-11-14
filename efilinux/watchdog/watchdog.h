@@ -28,54 +28,21 @@
  *
  */
 
+#ifndef _WATCHDOG_H
+#define _WATCHDOG_H
+
 #include <efi.h>
-#include <efilib.h>
-#include <stdlib.h>
-#include <utils.h>
-#include "os_verification.h"
+#include "tco_reset.h"
 
-EFI_GUID gOsVerificationProtocolGuid = INTEL_OS_VERIFICATION_PROTOCOL_GUID;
+struct watchdog {
+	UINT32 reg;
+	struct watchdog_ops {
+		EFI_STATUS (*start)(struct watchdog *wd);
+		EFI_STATUS (*stop)(struct watchdog *wd);
+		void (*set_timeout)(struct watchdog *wd, UINT32 timeout);
+	} ops;
+};
 
-EFI_STATUS intel_os_verify(IN VOID *os, IN UINTN os_size,
-		IN VOID *manifest, IN UINTN manifest_size)
-{
-	OS_VERIFICATION_PROTOCOL *ovp;
-	EFI_STATUS ret;
+#endif
 
-	ret = LibLocateProtocol(&gOsVerificationProtocolGuid, (void **)&ovp);
-	if (EFI_ERROR(ret)) {
-		error(L"%x failure\n", __func__);
-		goto out;
-	}
-
-	ret = uefi_call_wrapper(ovp->VerifiyOsImage, 5, ovp,
-			os, os_size,
-			manifest, manifest_size);
-
-out:
-	return ret;
-}
-
-BOOLEAN is_secure_boot_enabled(void)
-{
-	OS_VERIFICATION_PROTOCOL *ovp;
-	EFI_STATUS ret;
-	BOOLEAN unsigned_allowed;
-
-	ret = LibLocateProtocol(&gOsVerificationProtocolGuid, (void **)&ovp);
-	if (EFI_ERROR(ret)) {
-		error(L"%x failure\n", __func__);
-		goto out;
-	}
-
-	ret = uefi_call_wrapper(ovp->GetSecurityPolicy, 2, ovp,
-			&unsigned_allowed);
-	if (EFI_ERROR(ret))
-		goto out;
-
-	debug(L"unsigned_allowed = %x\n", unsigned_allowed);
-	return (unsigned_allowed == FALSE);
-out:
-	return TRUE;
-}
-
+extern struct watchdog *watchdog;
