@@ -297,6 +297,8 @@ EFI_STATUS start_boot_logic(CHAR8 *cmdline)
 
 	updated_cmdline = get_cmdline(cmdline);
 
+	loader_ops.hook_bootlogic_end();
+
 	ret = loader_ops.load_target(target, updated_cmdline);
 	/* This code shouldn't be reached! */
 	if (EFI_ERROR(ret))

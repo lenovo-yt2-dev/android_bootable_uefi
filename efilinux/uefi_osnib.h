@@ -40,4 +40,6 @@ int uefi_get_rtc_alarm_charging(void);
 int uefi_get_wdt_counter(void);
 CHAR8 *uefi_get_extra_cmdline(void);
 
+void uefi_populate_osnib_variables(void);
+
 #endif /* __UEFI_OSNIB_H__ */

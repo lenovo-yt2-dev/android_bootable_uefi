@@ -49,6 +49,11 @@ static void x86_hook_bootlogic_begin()
 	uefi_init_boot_options();
 }
 
+static void x86_hook_bootlogic_end()
+{
+	uefi_populate_osnib_variables();
+}
+
 void x86_ops(struct osloader_ops *ops)
 {
 	ops->check_partition_table = check_gpt;
@@ -68,6 +73,7 @@ void x86_ops(struct osloader_ops *ops)
 	ops->get_rtc_alarm_charging = uefi_get_rtc_alarm_charging;
 	ops->get_wdt_counter = uefi_get_wdt_counter;
 	ops->hook_bootlogic_begin = x86_hook_bootlogic_begin;
+	ops->hook_bootlogic_end = x86_hook_bootlogic_end;
 	ops->update_boot = uefi_update_boot;
 	ops->display_splash = uefi_display_splash;
 	ops->get_battery_level = uefi_get_battery_level;

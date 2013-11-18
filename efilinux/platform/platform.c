@@ -174,6 +174,11 @@ static void stub_hook_bootlogic_begin(void)
 	debug(L"WARNING: stubbed!\n");
 }
 
+static void stub_hook_bootlogic_end(void)
+{
+	debug(L"WARNING: stubbed!\n");
+}
+
 EFI_STATUS stub_update_boot(void)
 {
 	debug(L"WARNING: stubbed!\n");
@@ -230,6 +235,7 @@ struct osloader_ops loader_ops = {
 	.get_rtc_alarm_charging = stub_get_rtc_alarm_charging,
 	.get_wdt_counter = stub_get_wdt_counter,
 	.hook_bootlogic_begin = stub_hook_bootlogic_begin,
+	.hook_bootlogic_end = stub_hook_bootlogic_end,
 	.update_boot = stub_update_boot,
 	.display_splash = stub_display_splash,
 	.is_battery_ok = stub_is_battery_ok,

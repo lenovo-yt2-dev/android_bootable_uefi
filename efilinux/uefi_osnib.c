@@ -32,24 +32,30 @@
 #include "efilinux.h"
 #include "uefi_osnib.h"
 #include "bootlogic.h"
+#include "platform/platform.h"
 
 #define INTEL_OSNIB_GUID	{0x80868086, 0x8086, 0x8086, {0x80, 0x86, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00}}
 
 static EFI_GUID osnib_guid = INTEL_OSNIB_GUID;
 
 /* Warning: These macros requires that the data is a contained in a BYTE ! */
-#define set_osnib_var(var)					\
-	uefi_set_simple_var(#var, &osnib_guid, 1, &var)
+#define set_osnib_var(var, persistent)				\
+	uefi_set_simple_var(#var, &osnib_guid, 1, &var, persistent)
 
 #define get_osnib_var(var)			\
 	uefi_get_simple_var(#var, &osnib_guid)
 
-static EFI_STATUS uefi_set_simple_var(char *name, EFI_GUID *guid, int size, void *data)
+static EFI_STATUS uefi_set_simple_var(char *name, EFI_GUID *guid, int size, void *data,
+				      BOOLEAN persistent)
 {
 	EFI_STATUS ret;
 	CHAR16 *name16 = stra_to_str((CHAR8 *)name);
 
-	ret = LibSetNVVariable(name16, guid, size, data);
+	if (persistent)
+		ret = LibSetNVVariable(name16, guid, size, data);
+	else
+		ret = LibSetVariable(name16, guid, size, data);
+
 	free(name16);
 	return ret;
 }
@@ -81,37 +87,61 @@ out:
 	return ret;
 }
 
-EFI_STATUS uefi_set_target_mode(enum targets target_mode)
+EFI_STATUS uefi_set_target_mode(enum targets TargetMode)
 {
-	return set_osnib_var(target_mode);
+	return set_osnib_var(TargetMode, FALSE);
 }
 
-EFI_STATUS uefi_set_rtc_alarm_charging(int rtc_alarm_charging)
+EFI_STATUS uefi_set_rtc_alarm_charging(int RtcAlarmCharging)
 {
-	return set_osnib_var(rtc_alarm_charging);
+	return set_osnib_var(RtcAlarmCharging, TRUE);
 }
 
-EFI_STATUS uefi_set_wdt_counter(int wdt_counter)
+EFI_STATUS uefi_set_wdt_counter(int WdtCounter)
 {
-	return set_osnib_var(wdt_counter);
+	return set_osnib_var(WdtCounter, TRUE);
 }
 
 enum targets uefi_get_target_mode(void)
 {
-	return get_osnib_var(target_mode);
+	return get_osnib_var(TargetMode);
 }
 
 int uefi_get_rtc_alarm_charging(void)
 {
-	return get_osnib_var(rtc_alarm_charging);
+	return get_osnib_var(RtcAlarmCharging);
 }
 
 int uefi_get_wdt_counter(void)
 {
-	return get_osnib_var(wdt_counter);
+	return get_osnib_var(WdtCounter);
 }
 
 CHAR8 *uefi_get_extra_cmdline(void)
 {
 	return LibGetVariable(L"cmdline", &osnib_guid);
+}
+
+void uefi_populate_osnib_variables(void)
+{
+	struct int_var {
+		int (*get_value)(void);
+		char *name;
+	} int_vars[] = {
+		{ (int (*)(void))loader_ops.get_wake_source, "WakeSource" },
+		{ (int (*)(void))loader_ops.get_reset_source, "ResetSource" },
+		{ (int (*)(void))loader_ops.get_reset_type, "ResetType" },
+		{ (int (*)(void))loader_ops.get_shutdown_source, "ShutdownSource" }
+	};
+
+	EFI_STATUS ret;
+	int i;
+	for (i = 0 ; i < sizeof(int_vars)/sizeof(int_vars[0]) ; i++) {
+		struct int_var *var = int_vars + i;
+		int value = var->get_value();
+
+		ret = uefi_set_simple_var(var->name, &osnib_guid, 1, &value, FALSE);
+		if (EFI_ERROR(ret))
+			error(L"Failed to set %s osnib EFI variable", var->name, ret);
+	}
 }
