@@ -37,6 +37,7 @@
 
 #include "efilinux.h"
 
+#define UINTN_MAX ((UINTN)-1);
 #define offsetof(TYPE, MEMBER) ((UINTN) &((TYPE *)0)->MEMBER)
 
 EFI_STATUS str_to_stra(CHAR8 *dst, CHAR16 *src, UINTN len);
@@ -54,4 +55,5 @@ EFI_STATUS open_partition(
                 OUT EFI_DISK_IO **DiskIoPtr);
 void path_to_dos(CHAR16 *path);
 CHAR8 *append_strings(CHAR8 *s1, CHAR8 *s2);
+UINTN strtoul(const CHAR16 *nptr, CHAR16 **endptr, UINTN base);
 #endif

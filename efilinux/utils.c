@@ -269,3 +269,43 @@ CHAR8 *append_strings(CHAR8 *s1, CHAR8 *s2)
 	new[i] = '\0';
 	return new;
 }
+
+static INTN to_digit(CHAR16 c, UINTN base)
+{
+	INTN value = -1;
+
+	if (c >= '0' && c <= '9')
+		value = c - '0';
+	else if (c >= 'a' && c <= 'z')
+		value = 0xA + c - 'a';
+	else if (c >= 'A' && c <= 'Z')
+		value = 0xA + c - 'A';
+
+	return value < base ? value : -1;
+}
+
+UINTN strtoul(const CHAR16 *nptr, CHAR16 **endptr, UINTN base)
+{
+	UINTN value = 0;
+
+	if ((base == 0 || base == 16) &&
+	    (StrLen(nptr) > 2 && nptr[0] == '0' && nptr[1] == 'x')) {
+		nptr += 2;
+		base = 16;
+	}
+
+	if (base == 0)
+		base = 10;
+
+	for (; *nptr != '\0' ; nptr++) {
+		INTN t = to_digit(*nptr, base);
+		if (t == -1)
+			goto out;
+		value = (value * base) + t;
+	}
+
+out:
+	if (endptr)
+		*endptr = (CHAR16 *)nptr;
+	return value;
+}

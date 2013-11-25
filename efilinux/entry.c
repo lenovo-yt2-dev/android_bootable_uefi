@@ -39,6 +39,7 @@
 #include "bootlogic.h"
 #include "platform/platform.h"
 #include "commands.h"
+#include "utils.h"
 
 #define ERROR_STRING_LENGTH	32
 
@@ -271,9 +272,17 @@ parse_args(CHAR16 *options, UINT32 size, CHAR16 *type, CHAR16 **name, CHAR8 **cm
 				if (!*name)
 					goto out;
 				break;
-			case 'a':
+			case 't':
 				list_acpi_tables();
 				goto fail;
+			case 'a':
+				*type = *n;
+				n++;
+
+				n = get_argument(n, name);
+				if (!*name)
+					goto out;
+				break;
 			case 'b':
 				loader_ops.update_boot();
 				goto fail;
@@ -558,7 +567,20 @@ efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *_table)
 		err = EFI_SUCCESS;
 	}
 		break;
+	case 'a':
+	{
+		CHAR16 *endptr;
+		VOID * addr = (VOID *)strtoul(name, &endptr, 0);
+		if ((name[0] == '\0' || *endptr != '\0')) {
+			error(L"Failed to convert %s into address\n", name);
+			goto free_args;
+		}
+		debug(L"Loading android image at 0x%x\n", addr);
+		err = android_image_start_buffer(image, addr, cmdline);
+		break;
+	}
 	default:
+		debug(L"type=0x%x, starting bootlogic\n", type);
 		err = start_boot_logic(cmdline);
 		if (EFI_ERROR(err)) {
 			error(L"Boot logic failed: %r\n", err);
