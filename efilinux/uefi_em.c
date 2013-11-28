@@ -121,7 +121,7 @@ static enum batt_levels uefi_get_battery_level(void)
 		debug(L"Battery: %dmA Threshold: %dmA\n", value, threshold);
 	}
 
-	return value > threshold ? BATT_BOOT_OS : BATT_LOW;
+	return value > threshold ? BATT_BOOT_OS : BATT_BOOT_CHARGING;
 
 error:
 	error(L"Failed to get battery level: %r\n", ret);
