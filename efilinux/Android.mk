@@ -77,7 +77,7 @@ LOCAL_SRC_FILES := \
 SPLASH_BMP := $(LOCAL_PATH)/splash.bmp
 
 EFILINUX_VERSION_STRING := $(shell cd $(LOCAL_PATH) ; git describe --abbrev=12 --dirty --always)
-EFILINUX_VERSION_DATE := $(shell date -u)
+EFILINUX_VERSION_DATE := $(shell cd $(LOCAL_PATH) ; git log --pretty=%cD HEAD^.. HEAD)
 LOCAL_CFLAGS +=  -DEFILINUX_VERSION_STRING='L"$(EFILINUX_VERSION_STRING)"'
 LOCAL_CFLAGS +=  -DEFILINUX_VERSION_DATE='L"$(EFILINUX_VERSION_DATE)"'
 LOCAL_CFLAGS +=  -DEFILINUX_BUILD_STRING='L"$(BUILD_NUMBER) $(PRODUCT_NAME)"'
@@ -100,6 +100,10 @@ LOCAL_CFLAGS  += -g -Wall -fshort-wchar -fno-strict-aliasing \
            -fno-merge-constants -fno-stack-protector \
            -fno-stack-check
 
+GNUEFI_PATH := $(call intermediates-dir-for, STATIC_LIBRARIES, libgnuefi)
+EFI_CRT0 := $(GNUEFI_PATH)/gnuefi/crt0-efi-$(EFI_ARCH).o
+LDS := $(PRODUCT_OUT)/elf_$(EFI_ARCH)_efi.lds
+
 include $(BUILD_SYSTEM)/binary.mk
 
 $(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_TARGET_GLOBAL_CFLAGS :=
@@ -108,9 +112,7 @@ $(LOCAL_BUILT_MODULE) : EFILINUX_OBJS := $(patsubst %.S, %.o , $(EFILINUX_OBJS))
 $(LOCAL_BUILT_MODULE) : EFILINUX_OBJS := $(addprefix $(intermediates)/, $(EFILINUX_OBJS))
 $(LOCAL_BUILT_MODULE) : SPLASH_OBJ := $(addprefix $(intermediates)/, splash_bmp.o)
 
-
-
-$(LOCAL_BUILT_MODULE): $(PRODUCT_OUT) $(TARGET_LIBGCC) libgnuefi elf_$(EFI_ARCH)_efi.lds $(all_objects) bin-to-hex $(OSLOADER_SIGNING_TOOL)
+$(LOCAL_BUILT_MODULE): $(GNUEFI_PATH)/libgnuefi.a $(LDS) $(all_objects) | $(HOST_OUT_EXECUTABLES)/bin-to-hex $(OSLOADER_SIGNING_TOOL)
 	@mkdir -p $(dir $@)
 	bin-to-hex splash_bmp < $(SPLASH_BMP) | $(TARGET_CC) -x c - -c $(TARGET_GLOBAL_CFLAGS) -o $(SPLASH_OBJ)
 	@echo "linking $@"
@@ -120,11 +122,11 @@ $(LOCAL_BUILT_MODULE): $(PRODUCT_OUT) $(TARGET_LIBGCC) libgnuefi elf_$(EFI_ARCH)
 		-nostdlib \
 		-znocombreloc \
 		-L$(shell dirname $(TARGET_LIBGCC)) \
-		-L$(call intermediates-dir-for, STATIC_LIBRARIES, libgnuefi) \
-		-T $(PRODUCT_OUT)/elf_$(EFI_ARCH)_efi.lds \
+		-L$(GNUEFI_PATH) \
+		-T $(LDS) \
 		$(EFILINUX_OBJS) \
 		$(SPLASH_OBJ) \
-		$(call intermediates-dir-for, STATIC_LIBRARIES, libgnuefi)/gnuefi/crt0-efi-$(EFI_ARCH).o -lgnuefi -lgcc -o $@
+		$(EFI_CRT0) -lgnuefi -lgcc -o $@
 	@echo "checking symbols in $@"
 	$(shell if [ `nm -u $@ | wc -l` -ne 0 ] ; then exit -1 ; fi )
 	@echo "creating efilinux.efi - $(EFILINUX_VERSION_STRING) - $(EFILINUX_VERSION_DATE) - $(BUILD_NUMBER) - signing: $(TARGET_OS_SIGNING_METHOD)"
