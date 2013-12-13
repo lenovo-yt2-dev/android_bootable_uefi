@@ -33,7 +33,7 @@ watchdog_src_files := \
 security_src_files := \
 	security/secure_boot.c
 
-ifeq ($(TARGET_OS_SIGNING_METHOD),isu)
+ifneq (, $(findstring isu,$(TARGET_OS_SIGNING_METHOD)))
 	LOCAL_CFLAGS += -DUSE_INTEL_OS_VERIFICATION=1 -DUSE_SHIM=0
 	security_src_files += \
 	      security/os_verification.c
