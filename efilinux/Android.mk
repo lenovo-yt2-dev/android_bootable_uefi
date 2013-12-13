@@ -157,7 +157,7 @@ $(LOCAL_BUILT_MODULE): $(GNUEFI_PATH)/libgnuefi.a $(LDS) $(all_objects) | $(HOST
 		$(SPLASH_OBJ) \
 		$(EFI_CRT0) -lgnuefi -lgcc -o $@
 	@echo "checking symbols in $@"
-	$(shell if [ `nm -u $@ | wc -l` -ne 0 ] ; then exit -1 ; fi )
+	@$(hide) unknown=`nm -u $@` ; if [ -n "$$unknown" ] ; then echo "Unknown symbol(s): $$unknown" && exit -1 ; fi
 	@echo "creating efilinux.efi - $(EFILINUX_VERSION_STRING) - $(EFILINUX_VERSION_DATE) - $(BUILD_NUMBER) - signing: $(TARGET_OS_SIGNING_METHOD)"
 	$(TARGET_OBJCOPY) -j .text -j .sdata -j .data -j .dynamic -j .dynsym -j .rel \
 		-j .rela -j .reloc --target=$(EFI_TARGET) -S $@ $(PRIVATE_EFI_FILE)
