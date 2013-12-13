@@ -392,3 +392,9 @@ out:
 		error(L"Failed to write file %s:%r\n", filename, ret);
 	return ret;
 }
+
+void uefi_reset_system(EFI_RESET_TYPE reset_type)
+{
+	uefi_call_wrapper(RT->ResetSystem, 4, reset_type,
+			  EFI_SUCCESS, 0, NULL);
+}

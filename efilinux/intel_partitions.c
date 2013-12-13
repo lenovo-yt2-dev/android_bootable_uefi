@@ -34,6 +34,7 @@
 #include "bootlogic.h"
 #include "android/boot.h"
 #include "utils.h"
+#include "uefi_utils.h"
 
 #define BOOT_GUID	{0x80868086, 0x8086, 0x8086, {0x80, 0x86, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00}}
 #define RECOVERY_GUID	{0x80868086, 0x8086, 0x8086, {0x80, 0x86, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01}}
@@ -54,8 +55,7 @@ static struct target_entry android_entries[] = {
 	{TARGET_FASTBOOT , L"fastboot"	, FASTBOOT_GUID , (CHAR8 *) "androidboot.mode=fastboot"},
 	{TARGET_TEST	 , L"test"	, TEST_GUID     , (CHAR8 *) "androidboot.mode=test"},
 	{TARGET_CHARGING , L"charging"	, BOOT_GUID     , (CHAR8 *) "androidboot.mode=charger"},
-	{TARGET_ERROR	 , NULL		, NULL_GUID     , NULL},
-	{TARGET_ERROR	 , NULL		, NULL_GUID     , NULL},
+	{TARGET_DNX	 , L"dnx"	, NULL_GUID     , NULL},
 };
 
 struct target_entry *get_target_entry(enum targets target)
@@ -67,9 +67,48 @@ struct target_entry *get_target_entry(enum targets target)
 	return NULL;
 }
 
-int is_loadable_target(struct target_entry *entry)
+static const UINT64	 EFI_OS_INDICATION_RESCUE_MODE	  = 1 << 5;
+static CHAR16		*OS_INDICATIONS_SUPPORTED_VARNAME = L"OsIndicationsSupported";
+static CHAR16		*OS_INDICATIONS_VARNAME		  = L"OsIndications";
+
+static EFI_STATUS intel_go_to_rescue_mode(void)
 {
-	return entry->name != NULL;
+	UINTN size;
+	UINT64 value = EFI_OS_INDICATION_RESCUE_MODE;
+	EFI_STATUS status;
+
+	UINT64 *supported = LibGetVariableAndSize(OS_INDICATIONS_SUPPORTED_VARNAME,
+						  &EfiGlobalVariable, &size);
+	if (!supported || size != sizeof(*supported)) {
+		error(L"Failed to get %s variable\n", OS_INDICATIONS_SUPPORTED_VARNAME);
+		return EFI_LOAD_ERROR;
+	}
+
+	if (!(*supported & EFI_OS_INDICATION_RESCUE_MODE)) {
+		error(L"Rescue mode not supported\n");
+		return EFI_UNSUPPORTED;
+	}
+
+	UINT64 *os_indications = LibGetVariableAndSize(OS_INDICATIONS_VARNAME,
+						       &EfiGlobalVariable, &size);
+	if (os_indications && size != sizeof(*os_indications)) {
+		error(L"%s has incorrect size\n", OS_INDICATIONS_VARNAME);
+		return EFI_LOAD_ERROR;
+	}
+
+	if (os_indications)
+		value |= *os_indications;
+
+	status = LibSetNVVariable(OS_INDICATIONS_VARNAME, &EfiGlobalVariable,
+				  sizeof(*os_indications), &value);
+	if (EFI_ERROR(status)) {
+		error(L"Failed to set %s variable\n", OS_INDICATIONS_VARNAME);
+		return status;
+	}
+
+	uefi_reset_system(EfiResetWarm);
+
+	return EFI_SUCCESS;
 }
 
 EFI_STATUS intel_load_target(enum targets target, CHAR8 *cmdline)
@@ -82,8 +121,8 @@ EFI_STATUS intel_load_target(enum targets target, CHAR8 *cmdline)
 		return EFI_UNSUPPORTED;
 	}
 
-	if (!is_loadable_target(entry))
-	    return EFI_INVALID_PARAMETER;
+	if (target == TARGET_DNX)
+		return intel_go_to_rescue_mode();
 
 	updated_cmdline = append_strings(cmdline, entry->cmdline);
 	if (cmdline)
@@ -95,14 +134,35 @@ EFI_STATUS intel_load_target(enum targets target, CHAR8 *cmdline)
 	return android_image_start_partition(NULL, &entry->guid, updated_cmdline);
 }
 
-EFI_STATUS name_to_guid(CHAR16 *name, EFI_GUID *guid) {
+static struct target_entry *name_to_entry(CHAR16 *name)
+{
 	int i;
-	for (i = 0; i < sizeof(android_entries) / sizeof(*android_entries); i++) {
-		if (!StrCmp(name, android_entries[i].name)) {
-			memcpy((CHAR8 *)guid, (CHAR8 *)&android_entries[i].guid, sizeof(EFI_GUID));
-			return EFI_SUCCESS;
-		}
+	for (i = 0; i < sizeof(android_entries) / sizeof(*android_entries); i++)
+		if (!StrCmp(name, android_entries[i].name))
+			return &android_entries[i];
+	return NULL;
+}
+
+EFI_STATUS name_to_guid(CHAR16 *name, EFI_GUID *guid) {
+	struct target_entry *entry = name_to_entry(name);
+
+	if (entry) {
+		memcpy((CHAR8 *)guid, (CHAR8 *)&entry->guid, sizeof(EFI_GUID));
+		return EFI_SUCCESS;
 	}
+
+	return EFI_INVALID_PARAMETER;
+}
+
+EFI_STATUS name_to_target(CHAR16 *name, enum targets *target)
+{
+	struct target_entry *entry = name_to_entry(name);
+
+	if (entry) {
+		*target = entry->target;
+		return EFI_SUCCESS;
+	}
+
 	return EFI_INVALID_PARAMETER;
 }
 

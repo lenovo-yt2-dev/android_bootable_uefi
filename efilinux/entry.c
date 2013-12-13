@@ -248,14 +248,6 @@ parse_args(CHAR16 *options, UINT32 size, CHAR16 *type, CHAR16 **name, CHAR8 **cm
 			switch (*++n) {
 			case 'h':
 				goto usage;
-			case 'f':
-				*type = *n;
-				n++;	/* Skip 'f' */
-
-				n = get_argument(n, name);
-				if (!*name)
-					goto out;
-				break;
 			case 'l':
 				blk_init();
 				list_blk_devices();
@@ -265,17 +257,10 @@ parse_args(CHAR16 *options, UINT32 size, CHAR16 *type, CHAR16 **name, CHAR8 **cm
 				print_memory_map();
 				n++;
 				goto fail;
+			case 'f':
 			case 'p':
-				*type = *n;
-				n++;	/* Skip 'p' */
-
-				n = get_argument(n, name);
-				if (!*name)
-					goto out;
-				break;
 			case 't':
-				list_acpi_tables();
-				goto fail;
+			case 'c':
 			case 'a':
 				*type = *n;
 				n++;
@@ -298,16 +283,12 @@ parse_args(CHAR16 *options, UINT32 size, CHAR16 *type, CHAR16 **name, CHAR8 **cm
 				break;
 			}
 #endif	/* RUNTIME_SETTINGS */
+			case 'A':
+				list_acpi_tables();
+				goto fail;
 			case 'b':
 				loader_ops.update_boot();
 				goto fail;
-			case 'c':
-				*type = *n;
-				n++;
-				n = get_argument(n, name);
-				if (!*name)
-					goto out;
-				break;
 			default:
 				Print(L"Unknown command-line switch\n");
 				goto usage;
@@ -346,11 +327,13 @@ usage:
 	Print(L"\t-l:             list boot devices\n");
 	Print(L"\t-m:             print memory map\n");
 	Print(L"\t-a:             ACPI variables\n");
+	Print(L"\t-A:             List ACPI tables\n");
 #ifdef RUNTIME_SETTINGS
 	Print(L"\t-e <policy>:    Set the energy management policy ('uefi', 'fake')\n");
 #endif	/* RUNTIME_SETTINGS */
 	Print(L"\t-f <filename>:  image to load\n");
 	Print(L"\t-p <partname>:  partition to load\n");
+	Print(L"\t-t <target>:    target to boot\n");
 
 fail:
 	err = EFI_INVALID_PARAMETER;
@@ -506,7 +489,6 @@ efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *_table)
 	CHAR16 *options;
 	UINT32 options_size;
 	CHAR8 *cmdline = NULL;
-	EFI_GUID part_guid;
 
 	InitializeLib(image, _table);
 	sys_table = _table;
@@ -569,7 +551,18 @@ efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *_table)
 		Print(L"Starting file %s\n", name);
 		err = android_image_start_file(image, info->DeviceHandle, name, cmdline);
 		break;
-	case 'p':
+	case 't': {
+		enum targets target;
+		if ((err = name_to_target(name, &target)) != EFI_SUCCESS) {
+			Print(L"Unknown target name %s\n", name);
+			goto free_args;
+		}
+		Print(L"Starting target %s\n", name);
+		loader_ops.load_target(target, cmdline);
+		break;
+	}
+	case 'p': {
+		EFI_GUID part_guid;
 		if ((err = name_to_guid(name, &part_guid)) != EFI_SUCCESS) {
 			Print(L"Unknown target name %s\n", name);
 			goto free_args;
@@ -577,6 +570,7 @@ efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *_table)
 		Print(L"Starting partition %s\n", name);
 		err = android_image_start_partition(image, &part_guid, cmdline);
 		break;
+	}
 	case 'c': {
 		int i;
 		for (i = 0 ; i < sizeof(commands) / sizeof(*commands); i++)
