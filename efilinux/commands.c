@@ -38,9 +38,9 @@ void dump_infos(void)
 	Print(L"Reset source = 0x%x\n", loader_ops.get_reset_source());
 	Print(L"Reset type = 0x%x\n", loader_ops.get_reset_type());
 	Print(L"Shutdown source = 0x%x\n", loader_ops.get_shutdown_source());
-	Print(L"Batt level = 0x%x\n", loader_ops.get_battery_level());
-	Print(L"Batt status = 0x%x\n", loader_ops.is_battery_ok());
-	loader_ops.print_battery_infos();
+	Print(L"Batt level = 0x%x\n", loader_ops.em_ops->get_battery_level());
+	Print(L"Batt status = 0x%x\n", loader_ops.em_ops->is_battery_ok());
+	loader_ops.em_ops->print_battery_infos();
 	Print(L"COMBO_FASTBOOT_MODE = 0x%x\n", loader_ops.combo_key(COMBO_FASTBOOT_MODE));
 	Print(L"Target mode = 0x%x\n", loader_ops.get_target_mode());
 	Print(L"Wdt counter = 0x%x\n", loader_ops.get_wdt_counter());

@@ -27,42 +27,21 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _PLATFORM_H_
-#define _PLATFORM_H_
-
 #include <efi.h>
-#include "bootlogic.h"
+#include <efilib.h>
+#include "fake_em.h"
+#include "uefi_em.h"
+#include "platform/platform.h"
 #include "em.h"
 
-struct osloader_ops {
-	EFI_STATUS (*check_partition_table)(void);
-	enum flow_types (*read_flow_type)(void);
-	void (*do_cold_off)(void);
-	EFI_STATUS (*populate_indicators)(void);
-	EFI_STATUS (*load_target)(enum targets, CHAR8 *cmdline);
-	enum wake_sources (*get_wake_source)(void);
-	enum reset_sources (*get_reset_source)(void);
-	enum reset_types (*get_reset_type)(void);
-	enum shutdown_sources (*get_shutdown_source)(void);
-	int (*is_osnib_corrupted)(void);
-	struct energy_mgmt_ops *em_ops;
-	int (*combo_key)(enum combo_keys);
-	EFI_STATUS (*set_target_mode)(enum targets);
-	EFI_STATUS (*set_rtc_alarm_charging)(int);
-	EFI_STATUS (*set_wdt_counter)(int);
-	enum targets (*get_target_mode)(void);
-	int (*get_rtc_alarm_charging)(void);
-	int (*get_wdt_counter)(void);
-	void (*hook_bootlogic_begin)(void);
-	void (*hook_bootlogic_end)(void);
-	EFI_STATUS (*update_boot)(void);
-	EFI_STATUS (*display_splash)(void);
-	EFI_STATUS (*hash_verify)(VOID*, UINTN, VOID*, UINTN);
-	CHAR8* (*get_extra_cmdline)(void);
-};
+EFI_STATUS em_set_policy(const CHAR16 *name)
+{
+	if (!StrCmp(name, L"uefi"))
+		loader_ops.em_ops = &uefi_em_ops;
+	else if (!StrCmp(name, L"fake"))
+		loader_ops.em_ops = &fake_em_ops;
+	else
+		return EFI_INVALID_PARAMETER;
 
-extern struct osloader_ops loader_ops;
-
-EFI_STATUS init_platform_functions(void);
-
-#endif /* _PLATFORM_H_ */
+	return EFI_SUCCESS;
+}

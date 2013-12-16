@@ -25,44 +25,21 @@
  * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
  */
 
-#ifndef _PLATFORM_H_
-#define _PLATFORM_H_
+#ifndef __EM_H__
+#define __EM_H__
 
 #include <efi.h>
 #include "bootlogic.h"
-#include "em.h"
 
-struct osloader_ops {
-	EFI_STATUS (*check_partition_table)(void);
-	enum flow_types (*read_flow_type)(void);
-	void (*do_cold_off)(void);
-	EFI_STATUS (*populate_indicators)(void);
-	EFI_STATUS (*load_target)(enum targets, CHAR8 *cmdline);
-	enum wake_sources (*get_wake_source)(void);
-	enum reset_sources (*get_reset_source)(void);
-	enum reset_types (*get_reset_type)(void);
-	enum shutdown_sources (*get_shutdown_source)(void);
-	int (*is_osnib_corrupted)(void);
-	struct energy_mgmt_ops *em_ops;
-	int (*combo_key)(enum combo_keys);
-	EFI_STATUS (*set_target_mode)(enum targets);
-	EFI_STATUS (*set_rtc_alarm_charging)(int);
-	EFI_STATUS (*set_wdt_counter)(int);
-	enum targets (*get_target_mode)(void);
-	int (*get_rtc_alarm_charging)(void);
-	int (*get_wdt_counter)(void);
-	void (*hook_bootlogic_begin)(void);
-	void (*hook_bootlogic_end)(void);
-	EFI_STATUS (*update_boot)(void);
-	EFI_STATUS (*display_splash)(void);
-	EFI_STATUS (*hash_verify)(VOID*, UINTN, VOID*, UINTN);
-	CHAR8* (*get_extra_cmdline)(void);
+struct energy_mgmt_ops {
+	enum batt_levels (*get_battery_level)(void);
+	int (*is_battery_ok)(void);
+	void (*print_battery_infos)(void);
 };
 
-extern struct osloader_ops loader_ops;
+EFI_STATUS em_set_policy(const CHAR16 *name);
 
-EFI_STATUS init_platform_functions(void);
-
-#endif /* _PLATFORM_H_ */
+#endif	/* __EM_H__ */

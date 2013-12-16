@@ -32,9 +32,8 @@
 #define __UEFI_EM_H__
 
 #include "bootlogic.h"
+#include "em.h"
 
-enum batt_levels uefi_get_battery_level(void);
-int uefi_is_battery_ok(void);
-void uefi_print_battery_infos(void);
+extern struct energy_mgmt_ops uefi_em_ops;
 
 #endif /* __UEFI_EM_H__ */

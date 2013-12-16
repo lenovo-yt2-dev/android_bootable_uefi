@@ -18,6 +18,13 @@ endif
 EFI_TARGET := efi-app-$(EFI_ARCH)
 PRIVATE_EFI_FILE := $(PRODUCT_OUT)/efilinux.unsigned.efi
 
+ifeq ($(TARGET_BUILD_VARIANT),eng)
+	LOCAL_CFLAGS += -DRUNTIME_SETTINGS
+endif
+
+OSLOADER_EM_POLICY ?= uefi
+LOCAL_CFLAGS += -DOSLOADER_EM_POLICY_OPS=$(OSLOADER_EM_POLICY)_em_ops
+
 LOCAL_C_INCLUDES := \
 	$(LOCAL_PATH)/android \
 	$(LOCAL_PATH)/loaders \
@@ -69,6 +76,8 @@ LOCAL_SRC_FILES := \
 	uefi_boot.c \
 	uefi_utils.c \
 	commands.c \
+	em.c \
+	fake_em.c \
 	uefi_em.c \
 	$(security_src_files) \
 	$(watchdog_src_files) \

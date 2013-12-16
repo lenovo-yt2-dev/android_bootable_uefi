@@ -64,7 +64,7 @@ enum targets boot_fastboot_combo(enum wake_sources ws)
 	if (!loader_ops.combo_key(COMBO_FASTBOOT_MODE))
 		return TARGET_UNKNOWN;
 
-	switch(loader_ops.get_battery_level()) {
+	switch(loader_ops.em_ops->get_battery_level()) {
 	case BATT_ERROR:
 		error(L"Failed to get battery level. Booting.\n");
 	case BATT_BOOT_OS:
@@ -82,7 +82,7 @@ enum targets boot_power_key(enum wake_sources ws)
 	if (ws != WAKE_POWER_BUTTON_PRESSED)
 		return TARGET_UNKNOWN;
 
-	switch(loader_ops.get_battery_level()) {
+	switch(loader_ops.em_ops->get_battery_level()) {
 	case BATT_ERROR:
 		error(L"Failed to get battery level. Booting\n");
 	case BATT_BOOT_OS:
@@ -226,7 +226,7 @@ enum targets target_from_inputs(enum flow_types flow_type)
 	enum wake_sources ws;
 	enum reset_sources rs;
 
-	if (!loader_ops.is_battery_ok())
+	if (!loader_ops.em_ops->is_battery_ok())
 		return TARGET_COLD_OFF;
 
 	ws = loader_ops.get_wake_source();

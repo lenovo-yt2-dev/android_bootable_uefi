@@ -40,6 +40,7 @@
 #include "platform/platform.h"
 #include "commands.h"
 #include "utils.h"
+#include "em.h"
 
 #define ERROR_STRING_LENGTH	32
 
@@ -283,6 +284,20 @@ parse_args(CHAR16 *options, UINT32 size, CHAR16 *type, CHAR16 **name, CHAR8 **cm
 				if (!*name)
 					goto out;
 				break;
+#ifdef RUNTIME_SETTINGS
+			case 'e': {
+				CHAR16 *em_policy;
+				EFI_STATUS status;
+				n++;
+				n = get_argument(n, &em_policy);
+				if (!*em_policy)
+					goto usage;
+				status = em_set_policy(em_policy);
+				if (EFI_ERROR(status))
+					goto usage;
+				break;
+			}
+#endif	/* RUNTIME_SETTINGS */
 			case 'b':
 				loader_ops.update_boot();
 				goto fail;
@@ -331,6 +346,9 @@ usage:
 	Print(L"\t-l:             list boot devices\n");
 	Print(L"\t-m:             print memory map\n");
 	Print(L"\t-a:             ACPI variables\n");
+#ifdef RUNTIME_SETTINGS
+	Print(L"\t-e <policy>:    Set the energy management policy ('uefi', 'fake')\n");
+#endif	/* RUNTIME_SETTINGS */
 	Print(L"\t-f <filename>:  image to load\n");
 	Print(L"\t-p <partname>:  partition to load\n");
 

@@ -34,7 +34,9 @@
 #include "uefi_osnib.h"
 #include "uefi_keys.h"
 #include "uefi_boot.h"
+#include "em.h"
 #include "uefi_em.h"
+#include "fake_em.h"
 
 #if USE_INTEL_OS_VERIFICATION
 #include "os_verification.h"
@@ -76,9 +78,9 @@ void x86_ops(struct osloader_ops *ops)
 	ops->hook_bootlogic_end = x86_hook_bootlogic_end;
 	ops->update_boot = uefi_update_boot;
 	ops->display_splash = uefi_display_splash;
-	ops->get_battery_level = uefi_get_battery_level;
-	ops->is_battery_ok = uefi_is_battery_ok;
-	ops->print_battery_infos = uefi_print_battery_infos;
+
+	ops->em_ops = &OSLOADER_EM_POLICY_OPS;
+
 #if USE_INTEL_OS_VERIFICATION
 	ops->hash_verify = intel_os_verify;
 #endif

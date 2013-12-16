@@ -30,6 +30,9 @@
 #include <efi.h>
 #include <efilib.h>
 #include <efilinux.h>
+#include "em.h"
+#include "fake_em.h"
+
 #include "platform.h"
 
 void init_cherrytrail(void);
@@ -121,12 +124,6 @@ static int stub_is_osnib_corrupted(void)
 	return 0;
 }
 
-static enum batt_levels stub_get_batt_level(void)
-{
-	debug(L"WARNING: stubbed!\n");
-	return BATT_BOOT_OS;
-}
-
 static int stub_combo_key(enum combo_keys combo)
 {
 	debug(L"WARNING: stubbed!\n");
@@ -191,17 +188,6 @@ EFI_STATUS stub_display_splash(void)
 	return EFI_SUCCESS;
 }
 
-int stub_is_battery_ok(void)
-{
-	debug(L"WARNING: stubbed!\n");
-	return 1;
-}
-
-void stub_print_battery_infos(void)
-{
-	debug(L"WARNING: stubbed!\n");
-}
-
 static EFI_STATUS stub_hash_verify(VOID *blob, UINTN blob_size,
 		VOID *sig, UINTN sig_size)
 {
@@ -226,7 +212,7 @@ struct osloader_ops loader_ops = {
 	.get_reset_type = stub_get_reset_type,
 	.get_shutdown_source = stub_get_shutdown_source,
 	.is_osnib_corrupted = stub_is_osnib_corrupted,
-	.get_battery_level = stub_get_batt_level,
+	.em_ops = &fake_em_ops,
 	.combo_key = stub_combo_key,
 	.set_target_mode = stub_set_target_mode,
 	.set_rtc_alarm_charging = stub_set_rtc_alarm_charging,
@@ -238,8 +224,6 @@ struct osloader_ops loader_ops = {
 	.hook_bootlogic_end = stub_hook_bootlogic_end,
 	.update_boot = stub_update_boot,
 	.display_splash = stub_display_splash,
-	.is_battery_ok = stub_is_battery_ok,
-	.print_battery_infos = stub_print_battery_infos,
 	.hash_verify = stub_hash_verify,
 	.get_extra_cmdline = stub_get_extra_cmdline,
 };
