@@ -60,7 +60,7 @@ static EFI_STATUS uefi_set_simple_var(char *name, EFI_GUID *guid, int size, void
 	return ret;
 }
 
-static CHAR8 uefi_get_simple_var(char *name, EFI_GUID *guid)
+static INT8 uefi_get_simple_var(char *name, EFI_GUID *guid)
 {
 	void *buffer;
 	UINT64 ret;
@@ -81,7 +81,7 @@ static CHAR8 uefi_get_simple_var(char *name, EFI_GUID *guid)
 		goto out;
 	}
 
-	ret = *(CHAR8 *)buffer;
+	ret = *(INT8 *)buffer;
 out:
 	free(buffer);
 	return ret;
@@ -114,7 +114,8 @@ int uefi_get_rtc_alarm_charging(void)
 
 int uefi_get_wdt_counter(void)
 {
-	return get_osnib_var(WdtCounter);
+	int counter = get_osnib_var(WdtCounter);
+	return counter == -1 ? 0 : counter;
 }
 
 CHAR8 *uefi_get_extra_cmdline(void)
