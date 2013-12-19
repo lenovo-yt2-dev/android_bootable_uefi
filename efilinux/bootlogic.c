@@ -318,9 +318,9 @@ EFI_STATUS start_boot_logic(CHAR8 *cmdline)
 	if (EFI_ERROR(ret))
 		goto error;
 
-	ret = loader_ops.set_target_mode(target);
+	ret = loader_ops.save_target_mode(target);
 	if (EFI_ERROR(ret))
-		error(L"Failed to set target_mode: %r\n", ret);
+		error(L"Failed to save the target_mode: %r\n", ret);
 
 	debug(L"Booting target %a\n", target_strings[target]);
 

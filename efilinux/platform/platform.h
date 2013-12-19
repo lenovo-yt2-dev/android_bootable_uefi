@@ -47,7 +47,7 @@ struct osloader_ops {
 	int (*is_osnib_corrupted)(void);
 	struct energy_mgmt_ops *em_ops;
 	int (*combo_key)(enum combo_keys);
-	EFI_STATUS (*set_target_mode)(enum targets);
+	EFI_STATUS (*save_target_mode)(enum targets);
 	EFI_STATUS (*set_rtc_alarm_charging)(int);
 	EFI_STATUS (*set_wdt_counter)(int);
 	enum targets (*get_target_mode)(void);

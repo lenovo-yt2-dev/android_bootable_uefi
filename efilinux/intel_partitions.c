@@ -50,9 +50,11 @@ struct target_entry {
 };
 
 static struct target_entry android_entries[] = {
-	{TARGET_BOOT	 , L"boot"	, BOOT_GUID     , (CHAR8 *) "androidboot.mode=main"},
+	{TARGET_BOOT	 , L"main"	, BOOT_GUID     , (CHAR8 *) "androidboot.mode=main"},
+	{TARGET_BOOT	 , L"android"	, BOOT_GUID     , (CHAR8 *) "androidboot.mode=main"},
 	{TARGET_RECOVERY , L"recovery"	, RECOVERY_GUID , (CHAR8 *) "androidboot.mode=fota"},
 	{TARGET_FASTBOOT , L"fastboot"	, FASTBOOT_GUID , (CHAR8 *) "androidboot.mode=fastboot"},
+	{TARGET_FASTBOOT , L"bootloader", FASTBOOT_GUID , (CHAR8 *) "androidboot.mode=fastboot"},
 	{TARGET_TEST	 , L"test"	, TEST_GUID     , (CHAR8 *) "androidboot.mode=test"},
 	{TARGET_CHARGING , L"charging"	, BOOT_GUID     , (CHAR8 *) "androidboot.mode=charger"},
 	{TARGET_DNX	 , L"dnx"	, NULL_GUID     , NULL},
@@ -160,6 +162,18 @@ EFI_STATUS name_to_target(CHAR16 *name, enum targets *target)
 
 	if (entry) {
 		*target = entry->target;
+		return EFI_SUCCESS;
+	}
+
+	return EFI_INVALID_PARAMETER;
+}
+
+EFI_STATUS target_to_name(enum targets target, CHAR16 **name)
+{
+	struct target_entry *entry = get_target_entry(target);
+
+	if (entry) {
+		*name = entry->name;
 		return EFI_SUCCESS;
 	}
 
