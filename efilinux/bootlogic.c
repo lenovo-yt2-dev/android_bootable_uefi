@@ -240,14 +240,15 @@ enum targets target_from_inputs(enum flow_types flow_type)
 		return target_from_off(ws);
 
 	rs = loader_ops.get_reset_source();
+	if (rs == RESET_NOT_APPLICABLE)
+		rs = RESET_OS_INITIATED;
+
 	debug(L"Reset source = 0x%x\n", rs);
 	if (rs == RESET_ERROR) {
 		error(L"Reset source couldn't be retrieved. Falling back in TARGET_BOOT\n");
 		return TARGET_BOOT;
 	}
 
-	if (rs == RESET_NOT_APPLICABLE)
-		rs = RESET_OS_INITIATED;
 	return target_from_reset(rs);
 }
 
