@@ -55,7 +55,6 @@ struct osloader_ops {
 	int (*get_wdt_counter)(void);
 	void (*hook_bootlogic_begin)(void);
 	void (*hook_bootlogic_end)(void);
-	EFI_STATUS (*update_boot)(void);
 	EFI_STATUS (*display_splash)(void);
 	EFI_STATUS (*hash_verify)(VOID*, UINTN, VOID*, UINTN);
 	CHAR8* (*get_extra_cmdline)(void);

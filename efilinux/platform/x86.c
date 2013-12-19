@@ -48,7 +48,6 @@
 
 static void x86_hook_bootlogic_begin()
 {
-	uefi_init_boot_options();
 }
 
 static void x86_hook_bootlogic_end()
@@ -68,15 +67,12 @@ void x86_ops(struct osloader_ops *ops)
 	ops->get_reset_type = rsci_get_reset_type;
 	ops->get_shutdown_source = rsci_get_shutdown_source;
 	ops->combo_key = uefi_combo_key;
-	ops->set_target_mode = uefi_set_boot_next;
 	ops->set_rtc_alarm_charging = uefi_set_rtc_alarm_charging;
 	ops->set_wdt_counter = uefi_set_wdt_counter;
-	ops->get_target_mode = uefi_boot_current;
 	ops->get_rtc_alarm_charging = uefi_get_rtc_alarm_charging;
 	ops->get_wdt_counter = uefi_get_wdt_counter;
 	ops->hook_bootlogic_begin = x86_hook_bootlogic_begin;
 	ops->hook_bootlogic_end = x86_hook_bootlogic_end;
-	ops->update_boot = uefi_update_boot;
 	ops->display_splash = uefi_display_splash;
 
 	ops->em_ops = &OSLOADER_EM_POLICY_OPS;

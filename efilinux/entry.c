@@ -286,9 +286,6 @@ parse_args(CHAR16 *options, UINT32 size, CHAR16 *type, CHAR16 **name, CHAR8 **cm
 			case 'A':
 				list_acpi_tables();
 				goto fail;
-			case 'b':
-				loader_ops.update_boot();
-				goto fail;
 			default:
 				Print(L"Unknown command-line switch\n");
 				goto usage;
