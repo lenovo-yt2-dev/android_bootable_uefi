@@ -142,7 +142,7 @@ $(LOCAL_BUILT_MODULE): $(GNUEFI_PATH)/libgnuefi.a $(LDS) $(all_objects) | $(HOST
 	@mkdir -p $(dir $@)
 	prebuilt-bin-to-hex splash_bmp < $(SPLASH_BMP) | $(TARGET_CC) -x c - -c $(TARGET_GLOBAL_CFLAGS) -o $(SPLASH_OBJ)
 	@echo "linking $@"
-	$(TARGET_LD).bfd \
+	$(TARGET_TOOLS_PREFIX)ld$(HOST_EXECUTABLE_SUFFIX).bfd \
 		-Bsymbolic \
 		-shared \
 		-z relro -z now \
