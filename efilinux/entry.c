@@ -504,7 +504,7 @@ efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *_table)
 
 	err = fs_init();
 	if (err != EFI_SUCCESS)
-		goto failed;
+		error(L"fs_init failed, DnX mode ?\n");
 
 	err = handle_protocol(image, &LoadedImageProtocol, (void **)&info);
 	if (err != EFI_SUCCESS)
