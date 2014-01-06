@@ -180,7 +180,7 @@ void list_blk_devices(void)
 {
 	int i;
 
-	Print(L"Devices:\n\n");
+	info(L"Devices:\n\n");
 
 	for (i = 0; i < nr_blk_devices; i++) {
 		EFI_DEVICE_PATH *path;
@@ -191,7 +191,7 @@ void list_blk_devices(void)
 		path = DevicePathFromHandle(dev_handle);
 		dev = DevicePathToStr(path);
 
-		Print(L"\t%d. \"%s\"\n", i, dev);
+		info(L"\t%d. \"%s\"\n", i, dev);
 		free_pool(dev);
 	}
 }
@@ -212,7 +212,7 @@ fs_init(void)
 			    NULL, &size, NULL);
 
 	if (err != EFI_SUCCESS && size == 0) {
-		Print(L"No devices support filesystems\n");
+		error(L"No devices support filesystems\n");
 		return err;
 	}
 
@@ -277,7 +277,7 @@ blk_init(void)
 			    NULL, &size, NULL);
 
 	if (err != EFI_SUCCESS && size == 0) {
-		Print(L"No devices support filesystems\n");
+		error(L"No devices support filesystems\n");
 		return err;
 	}
 

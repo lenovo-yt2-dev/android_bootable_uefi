@@ -151,16 +151,16 @@ static void uefi_print_battery_infos(void)
 	if (EFI_ERROR(ret))
 		goto error;
 
-	Print(L"BatteryPresent = 0x%x\n", status.BatteryPresent);
-	Print(L"BatteryValid = 0x%x\n", status.BatteryValid);
-	Print(L"CapacityReadable = 0x%x\n", status.CapacityReadable);
-	Print(L"BatteryVoltageLevel = 0x%x\n", status.BatteryVoltageLevel);
-	Print(L"BatteryCapacityLevel = 0x%x\n", status.BatteryCapacityLevel);
+	info(L"BatteryPresent = 0x%x\n", status.BatteryPresent);
+	info(L"BatteryValid = 0x%x\n", status.BatteryValid);
+	info(L"CapacityReadable = 0x%x\n", status.CapacityReadable);
+	info(L"BatteryVoltageLevel = 0x%x\n", status.BatteryVoltageLevel);
+	info(L"BatteryCapacityLevel = 0x%x\n", status.BatteryCapacityLevel);
 
-	Print(L"IA_APPS_RUN = 0x%x\n", em1_get_ia_apps_run());
-	Print(L"IA_APPS_CAP = 0x%x\n", em1_get_ia_apps_cap());
-	Print(L"CAP_OR_VOLT = 0x%x\n", em1_get_cap_or_volt());
-	Print(L"BOOT_ON_INVALID_BATT = 0x%x\n", em1_get_boot_on_invalid_batt());
+	info(L"IA_APPS_RUN = 0x%x\n", em1_get_ia_apps_run());
+	info(L"IA_APPS_CAP = 0x%x\n", em1_get_ia_apps_cap());
+	info(L"CAP_OR_VOLT = 0x%x\n", em1_get_cap_or_volt());
+	info(L"BOOT_ON_INVALID_BATT = 0x%x\n", em1_get_boot_on_invalid_batt());
 error:
 	if (EFI_ERROR(ret))
 		error(L"Failed to get battery status: %r\n", ret);

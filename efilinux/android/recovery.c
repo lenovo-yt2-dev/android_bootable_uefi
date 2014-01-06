@@ -64,7 +64,7 @@ EFI_STATUS android_load_bcb(
 
         ret = write_bcb(bcb_guid, &bcb);
         if (EFI_ERROR(ret)) {
-                Print(L"Unable to update BCB contents!\n");
+                error(L"Unable to update BCB contents!\n");
                 return ret;
         }
         if (reset) {

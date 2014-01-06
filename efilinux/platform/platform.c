@@ -34,165 +34,175 @@
 #include "fake_em.h"
 
 #include "platform.h"
+#include "x86.h"
 
-void init_cherrytrail(void);
-
-enum intel_platforms {
-	PLATFORM_CHERRYTRAIL,
-	PLATFORM_UNKNOWN,
-};
-
-enum intel_platforms identify_platform(void)
-{
-	/* TODO */
-	debug(L"NOT IMPLEMENTED\n");
-	return PLATFORM_CHERRYTRAIL;
-}
+void init_silvermont(void);
+void init_airmont(void);
 
 EFI_STATUS init_platform_functions(void)
 {
-	EFI_STATUS ret = EFI_SUCCESS;
-	switch (identify_platform()) {
-	case PLATFORM_CHERRYTRAIL:
-		init_cherrytrail();
+	enum cpu_id id = x86_identify_cpu();
+	switch (id) {
+	case CPU_SILVERMONT:
+		init_silvermont();
+		break;
+	case CPU_AIRMONT:
+		init_airmont();
 		break;
 	default:
-		Print(L"Error: unknown platform!\n");
-		ret = EFI_INVALID_PARAMETER;
+		warning(L"Unknown CPUID=%x, fallback on default X86\n", id);
 	}
-	return ret;
+	return EFI_SUCCESS;
 }
 
 /* Stub implementation of loader ops */
 static EFI_STATUS stub_check_partition_table(void)
 {
-	debug(L"WARNING: stubbed!\n");
+	warning(L"stubbed!\n");
 	return EFI_SUCCESS;
 }
 
 static enum flow_types stub_read_flow_type(void)
 {
-	debug(L"WARNING: stubbed!\n");
+	warning(L"stubbed!\n");
 	return FLOW_UNKNOWN;
 }
 
 static void stub_do_cold_off(void)
 {
-	debug(L"WARNING: stubbed!\n");
+	warning(L"stubbed!\n");
 	return;
 }
 
 static EFI_STATUS stub_populate_indicators(void)
 {
-	debug(L"WARNING: stubbed!\n");
+	warning(L"stubbed!\n");
 	return EFI_SUCCESS;
 }
 
 static EFI_STATUS stub_load_target(enum targets target, CHAR8 *cmdline)
 {
-	debug(L"WARNING: stubbed!\n");
+	warning(L"stubbed!\n");
 	return EFI_LOAD_ERROR;
 }
 
 static enum wake_sources stub_get_wake_source(void)
 {
-	debug(L"WARNING: stubbed!\n");
+	warning(L"stubbed!\n");
 	return WAKE_NOT_APPLICABLE;
 }
 
 static enum reset_sources stub_get_reset_source(void)
 {
-	debug(L"WARNING: stubbed!\n");
+	warning(L"stubbed!\n");
 	return WAKE_NOT_APPLICABLE;
 }
 
 static enum reset_types stub_get_reset_type(void)
 {
-	debug(L"WARNING: stubbed!\n");
+	warning(L"stubbed!\n");
 	return NOT_APPLICABLE;
 }
 
 static enum shutdown_sources stub_get_shutdown_source(void)
 {
-	debug(L"WARNING: stubbed!\n");
+	warning(L"stubbed!\n");
 	return SHTDWN_NOT_APPLICABLE;
 }
 
 static int stub_is_osnib_corrupted(void)
 {
-	debug(L"WARNING: stubbed!\n");
+	warning(L"stubbed!\n");
 	return 0;
 }
 
 static int stub_combo_key(enum combo_keys combo)
 {
-	debug(L"WARNING: stubbed!\n");
+	warning(L"stubbed!\n");
 	return 0;
 }
 
 static EFI_STATUS stub_save_target_mode(enum targets target)
 {
-	debug(L"WARNING: stubbed!\n");
+	warning(L"stubbed!\n");
 	return EFI_SUCCESS;
 }
 
 static EFI_STATUS stub_set_rtc_alarm_charging(int val)
 {
-	debug(L"WARNING: stubbed!\n");
+	warning(L"stubbed!\n");
 	return EFI_SUCCESS;
 }
 
 static EFI_STATUS stub_set_wdt_counter(int val)
 {
-	debug(L"WARNING: stubbed!\n");
+	warning(L"stubbed!\n");
 	return EFI_SUCCESS;
 }
 
 static enum targets stub_get_target_mode(void)
 {
-	debug(L"WARNING: stubbed!\n");
+	warning(L"stubbed!\n");
 	return TARGET_BOOT;
 }
 
 static int stub_get_rtc_alarm_charging(void)
 {
-	debug(L"WARNING: stubbed!\n");
+	warning(L"stubbed!\n");
 	return 0;
 }
 
 static int stub_get_wdt_counter(void)
 {
-	debug(L"WARNING: stubbed!\n");
+	warning(L"stubbed!\n");
 	return 0;
+}
+
+static void stub_hook_before_exit(void)
+{
+	warning(L"stubbed!\n");
 }
 
 static void stub_hook_bootlogic_begin(void)
 {
-	debug(L"WARNING: stubbed!\n");
+	warning(L"stubbed!\n");
 }
 
 static void stub_hook_bootlogic_end(void)
 {
-	debug(L"WARNING: stubbed!\n");
+	warning(L"stubbed!\n");
+}
+
+EFI_STATUS stub_update_boot(void)
+{
+	warning(L"stubbed!\n");
+	return EFI_SUCCESS;
 }
 
 EFI_STATUS stub_display_splash(void)
 {
-	debug(L"WARNING: stubbed!\n");
+	warning(L"stubbed!\n");
 	return EFI_SUCCESS;
 }
 
 static EFI_STATUS stub_hash_verify(VOID *blob, UINTN blob_size,
 		VOID *sig, UINTN sig_size)
 {
-	debug(L"WARNING: stubbed!\n");
+	warning(L"stubbed!\n");
 	return EFI_SUCCESS;
 }
 
 static CHAR8* stub_get_extra_cmdline(void)
 {
-	debug(L"WARNING: stubbed!\n");
+	warning(L"stubbed!\n");
 	return NULL;
+}
+
+static UINT64 stub_get_current_time_us(void)
+{
+	/* Don't call the warning function here to avoid a forever
+	 * recursive loop. */
+	return 0;
 }
 
 struct osloader_ops loader_ops = {
@@ -214,9 +224,11 @@ struct osloader_ops loader_ops = {
 	.get_target_mode = stub_get_target_mode,
 	.get_rtc_alarm_charging = stub_get_rtc_alarm_charging,
 	.get_wdt_counter = stub_get_wdt_counter,
+	.hook_before_exit = stub_hook_before_exit,
 	.hook_bootlogic_begin = stub_hook_bootlogic_begin,
 	.hook_bootlogic_end = stub_hook_bootlogic_end,
 	.display_splash = stub_display_splash,
 	.hash_verify = stub_hash_verify,
 	.get_extra_cmdline = stub_get_extra_cmdline,
+	.get_current_time_us = stub_get_current_time_us,
 };

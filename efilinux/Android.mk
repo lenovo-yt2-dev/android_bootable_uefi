@@ -24,8 +24,13 @@ endif
 EFI_TARGET := efi-app-$(EFI_ARCH)
 PRIVATE_EFI_FILE := $(PRODUCT_OUT)/efilinux.unsigned.efi
 
-ifeq ($(TARGET_BUILD_VARIANT),eng)
-	LOCAL_CFLAGS += -DRUNTIME_SETTINGS
+ifneq ($(filter $(TARGET_BUILD_VARIANT),eng userdebug),)
+	LOCAL_CFLAGS += -DRUNTIME_SETTINGS -DCONFIG_LOG_LEVEL=4 \
+			-DCONFIG_LOG_FLUSH_TO_VARIABLE
+endif
+
+ifeq ($(TARGET_BUILD_VARIANT),user)
+	LOCAL_CFLAGS += -DCONFIG_LOG_LEVEL=1
 endif
 
 OSLOADER_EM_POLICY ?= uefi
@@ -69,6 +74,8 @@ POST_SIGNING_COMMAND := @cat $(PRIVATE_EFI_FILE) $(OSLOADER_MANIFEST_OUT) > $(OS
 LOCAL_SRC_FILES := \
 	stack_chk.c \
 	malloc.c \
+	config.c \
+	log.c \
 	entry.c \
 	android/boot.c \
 	utils.c \
@@ -77,7 +84,8 @@ LOCAL_SRC_FILES := \
 	intel_partitions.c \
 	uefi_osnib.c \
 	platform/platform.c \
-	platform/cherrytrail.c \
+	platform/silvermont.c \
+	platform/airmont.c \
 	platform/x86.c \
 	uefi_keys.c \
 	uefi_boot.c \

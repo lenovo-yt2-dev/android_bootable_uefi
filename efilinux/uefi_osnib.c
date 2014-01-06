@@ -33,17 +33,14 @@
 #include "uefi_osnib.h"
 #include "bootlogic.h"
 #include "platform/platform.h"
-
-#define INTEL_OSNIB_GUID	{0x80868086, 0x8086, 0x8086, {0x80, 0x86, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00}}
-
-static EFI_GUID osnib_guid = INTEL_OSNIB_GUID;
+#include "config.h"
 
 /* Warning: These macros requires that the data is a contained in a BYTE ! */
 #define set_osnib_var(var, persistent)				\
-	uefi_set_simple_var(#var, &osnib_guid, 1, &var, persistent)
+	uefi_set_simple_var(#var, &osloader_guid, 1, &var, persistent)
 
 #define get_osnib_var(var)			\
-	uefi_get_simple_var(#var, &osnib_guid)
+	uefi_get_simple_var(#var, &osloader_guid)
 
 static EFI_STATUS uefi_set_simple_var(char *name, EFI_GUID *guid, int size, void *data,
 				      BOOLEAN persistent)
@@ -120,7 +117,7 @@ int uefi_get_wdt_counter(void)
 
 CHAR8 *uefi_get_extra_cmdline(void)
 {
-	return LibGetVariable(L"ExtraKernelCommandLine", &osnib_guid);
+	return LibGetVariable(L"ExtraKernelCommandLine", &osloader_guid);
 }
 
 void uefi_populate_osnib_variables(void)
@@ -141,7 +138,7 @@ void uefi_populate_osnib_variables(void)
 		struct int_var *var = int_vars + i;
 		int value = var->get_value();
 
-		ret = uefi_set_simple_var(var->name, &osnib_guid, 1, &value, FALSE);
+		ret = uefi_set_simple_var(var->name, &osloader_guid, 1, &value, FALSE);
 		if (EFI_ERROR(ret))
 			error(L"Failed to set %s osnib EFI variable", var->name, ret);
 	}

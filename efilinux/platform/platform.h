@@ -53,11 +53,13 @@ struct osloader_ops {
 	enum targets (*get_target_mode)(void);
 	int (*get_rtc_alarm_charging)(void);
 	int (*get_wdt_counter)(void);
+	void (*hook_before_exit)(void);
 	void (*hook_bootlogic_begin)(void);
 	void (*hook_bootlogic_end)(void);
 	EFI_STATUS (*display_splash)(void);
 	EFI_STATUS (*hash_verify)(VOID*, UINTN, VOID*, UINTN);
 	CHAR8* (*get_extra_cmdline)(void);
+	UINT64 (*get_current_time_us)(void);
 };
 
 extern struct osloader_ops loader_ops;

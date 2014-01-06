@@ -37,6 +37,7 @@
 #include "em.h"
 #include "uefi_em.h"
 #include "fake_em.h"
+#include "log.h"
 
 #if USE_INTEL_OS_VERIFICATION
 #include "os_verification.h"
@@ -46,6 +47,13 @@
 #include "shim_protocol.h"
 #endif
 
+#include "x86.h"
+
+static void x86_hook_before_exit()
+{
+	log_save_to_variable();
+}
+
 static void x86_hook_bootlogic_begin()
 {
 }
@@ -53,6 +61,36 @@ static void x86_hook_bootlogic_begin()
 static void x86_hook_bootlogic_end()
 {
 	uefi_populate_osnib_variables();
+}
+
+#define STR_TO_UINTN(a, b, c, d) ((a) + ((b) << 8) + ((c) << 16) + ((d) << 24))
+#define CPUID_MASK	0xffff0
+
+static inline void cpuid(uint32_t op, uint32_t reg[4])
+{
+	asm volatile("pushl %%ebx      \n\t" /* save %ebx */
+		     "cpuid            \n\t"
+		     "movl %%ebx, %1   \n\t" /* save what cpuid just put in %ebx */
+		     "popl %%ebx       \n\t" /* restore the old %ebx */
+		     : "=a"(reg[0]), "=r"(reg[1]), "=c"(reg[2]), "=d"(reg[3])
+		     : "a"(op)
+		     : "cc");
+}
+
+enum cpu_id x86_identify_cpu()
+{
+	uint32_t reg[4];
+
+	cpuid(0, reg);
+	if (reg[1] != STR_TO_UINTN('G', 'e', 'n', 'u') ||
+	    reg[3] != STR_TO_UINTN('i', 'n', 'e', 'I') ||
+	    reg[2] != STR_TO_UINTN('n', 't', 'e', 'l')) {
+		debug(L"Not executing on an Intel platform\n");
+		return CPU_UNKNOWN;
+	}
+
+	cpuid(1, reg);
+	return reg[0] & CPUID_MASK;
 }
 
 void x86_ops(struct osloader_ops *ops)
@@ -73,6 +111,7 @@ void x86_ops(struct osloader_ops *ops)
 	ops->set_wdt_counter = uefi_set_wdt_counter;
 	ops->get_rtc_alarm_charging = uefi_get_rtc_alarm_charging;
 	ops->get_wdt_counter = uefi_get_wdt_counter;
+	ops->hook_before_exit = x86_hook_before_exit;
 	ops->hook_bootlogic_begin = x86_hook_bootlogic_begin;
 	ops->hook_bootlogic_end = x86_hook_bootlogic_end;
 	ops->display_splash = uefi_display_splash;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, Intel Corporation
+ * Copyright (c) 2014, Intel Corporation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -25,23 +25,50 @@
  * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
  */
 
-#include <efi.h>
-#include <efilib.h>
 #include "efilinux.h"
-#include "platform/platform.h"
+#include "efistdarg.h"
+#include "platform.h"
+#include "log.h"
 
-void dump_infos(void)
+static CHAR16 buffer[LOG_BUF_SIZE / sizeof(CHAR16)];
+static CHAR16 *cur = buffer;
+
+void log(UINTN level, const CHAR16 *prefix, const void *func, const INTN line,
+	 const CHAR16* fmt, ...)
 {
-	info(L"Wake source = 0x%x\n", loader_ops.get_wake_source());
-	info(L"Reset source = 0x%x\n", loader_ops.get_reset_source());
-	info(L"Reset type = 0x%x\n", loader_ops.get_reset_type());
-	info(L"Shutdown source = 0x%x\n", loader_ops.get_shutdown_source());
-	info(L"Batt level = 0x%x\n", loader_ops.em_ops->get_battery_level());
-	info(L"Batt status = 0x%x\n", loader_ops.em_ops->is_battery_ok());
-	loader_ops.em_ops->print_battery_infos();
-	info(L"COMBO_FASTBOOT_MODE = 0x%x\n", loader_ops.combo_key(COMBO_FASTBOOT_MODE));
-	info(L"Target mode = 0x%x\n", loader_ops.get_target_mode());
-	info(L"Wdt counter = 0x%x\n", loader_ops.get_wdt_counter());
+	UINT64 time = loader_ops.get_current_time_us();
+	UINT64 sec = time / 1000000;
+	UINT64 usec = time - (sec * 1000000);
+	CHAR16 *start = cur;
+	va_list args;
+
+	va_start(args, fmt);
+
+	cur += SPrint(cur, sizeof(buffer) - (cur - buffer), L"[%5ld.%06ld] ",
+		      sec, usec);
+	cur += SPrint(cur, sizeof(buffer) - (cur - buffer), (CHAR16 *)prefix,
+		      func, line);
+	cur += VSPrint(cur, sizeof(buffer) - (cur - buffer), (CHAR16 *)fmt,
+		       args);
+	if (((cur - buffer) + LOG_LINE_LEN) * sizeof(CHAR16) >= LOG_BUF_SIZE)
+		cur = buffer;
+
+	va_end (args);
+
+	if (log_level >= level)
+		Print(L"EFILINUX %s", start);
+}
+
+void log_save_to_variable()
+{
+	if (log_flush_to_variable) {
+		EFI_STATUS status = LibSetVariable(L"EfilinuxLogs", &osloader_guid,
+						   (cur - buffer) * sizeof(CHAR16),
+						   buffer);
+		if (EFI_ERROR(status))
+			error(L"Save log into EFI variable failed\n");
+	}
 }

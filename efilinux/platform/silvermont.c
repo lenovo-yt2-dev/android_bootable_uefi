@@ -30,7 +30,43 @@
 #include "platform.h"
 #include "x86.h"
 
-void init_cherrytrail(void)
+#define MSR_PLATFORM_INFO	0x000000CE
+#define MSR_FSB_FREQ		0xCD
+
+static UINT64 get_tsc_freq(void)
+{
+	UINT64 platform_info;
+	UINT64 clk_info;
+	UINT64 bclk_khz;
+
+	platform_info = rdmsr(MSR_PLATFORM_INFO);
+	clk_info = rdmsr(MSR_FSB_FREQ);
+	switch (clk_info  & 0x3) {
+	case 0: bclk_khz =  83333; break;
+	case 1: bclk_khz = 100000; break;
+	case 2: bclk_khz = 133333; break;
+	case 3: bclk_khz = 116666; break;
+	}
+	return (bclk_khz * ((platform_info >> 8) & 0xff)) / 1000;
+}
+
+static UINT64 silvermont_get_current_time_us()
+{
+	static UINT64 tsc_freq, start;
+	UINT64 cur = rdtsc();
+
+	if (tsc_freq == 0)
+		tsc_freq = get_tsc_freq();
+
+	if (start == 0)
+		start = cur;
+
+	return (cur - start) / tsc_freq;
+}
+
+void init_silvermont(void)
 {
 	x86_ops(&loader_ops);
+
+	loader_ops.get_current_time_us = silvermont_get_current_time_us;
 }

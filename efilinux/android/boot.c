@@ -227,7 +227,7 @@ static EFI_STATUS setup_ramdisk(CHAR8 *bootimage)
                 return ret;
 
         if ((UINTN)ramdisk_addr > buf->hdr.initrd_addr_max) {
-                Print(L"Ramdisk address is too high!\n");
+                error(L"Ramdisk address is too high!\n");
                 ret = EFI_OUT_OF_RESOURCES;
                 goto out_error;
         }
@@ -509,6 +509,8 @@ static EFI_STATUS handover_kernel(CHAR8 *bootimage, EFI_HANDLE parent_image)
 	if (EFI_ERROR(ret))
 		debug(L"watchdog not started: %x\n", ret);
 
+	loader_ops.hook_before_exit();
+
 	UINTN map_key;
 	ret = setup_efi_memory_map(boot_params, &map_key);
 	if (EFI_ERROR(ret))
@@ -563,7 +565,7 @@ EFI_STATUS android_image_start_partition(
                 return ret;
         }
         if (strncmpa((CHAR8 *)BOOT_MAGIC, aosp_header.magic, BOOT_MAGIC_SIZE)) {
-                Print(L"This partition does not appear to contain an Android boot image\n");
+                error(L"This partition does not appear to contain an Android boot image\n");
                 return EFI_INVALID_PARAMETER;
         }
 
@@ -608,7 +610,7 @@ EFI_STATUS android_image_start_file(
         debug(L"Locating boot image from file %s\n", loader);
         path = FileDevicePath(device, loader);
         if (!path) {
-                Print(L"Error getting device path.");
+                error(L"Error getting device path.");
                 uefi_call_wrapper(BS->Stall, 1, 3 * 1000 * 1000);
                 return EFI_INVALID_PARAMETER;
         }
@@ -688,7 +690,7 @@ EFI_STATUS android_image_start_file(
         bsize = bootimage_size(aosp_header, TRUE);
         display_boot_img_hdr(aosp_header);
         if ((bsize - buffersize) > aosp_header->sig_size) {
-                Print(L"Boot image size mismatch; got %d expected %d\n",
+                error(L"Boot image size mismatch; got %d expected %d\n",
                                 buffersize, bsize);
                 ret = EFI_INVALID_PARAMETER;
                 goto out;
@@ -718,13 +720,13 @@ EFI_STATUS android_image_start_buffer(
 
         /* Check boot sector signature */
         if (buf->hdr.boot_flag != 0xAA55) {
-                Print(L"bzImage kernel corrupt\n");
+                error(L"bzImage kernel corrupt\n");
                 ret = EFI_INVALID_PARAMETER;
                 goto out_bootimage;
         }
 
         if (buf->hdr.header != SETUP_HDR) {
-                Print(L"Setup code version is invalid\n");
+                error(L"Setup code version is invalid\n");
                 ret = EFI_INVALID_PARAMETER;
                 goto out_bootimage;
         }

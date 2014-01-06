@@ -130,7 +130,7 @@ static void parse_initrd(EFI_LOADED_IMAGE *image, struct boot_params *buf, char 
 		goto close_handles;
 
 	if ((UINTN)addr > buf->hdr.ramdisk_max) {
-		Print(L"ramdisk address is too high!\n");
+		error(L"ramdisk address is too high!\n");
 		efree(addr, size);
 		goto close_handles;
 	}
@@ -225,13 +225,13 @@ load_kernel(EFI_HANDLE image, CHAR16 *name, char *_cmdline)
 
 	/* Check boot sector signature */
 	if (buf->hdr.signature != 0xAA55) {
-		Print(L"bzImage kernel corrupt");
+		error(L"bzImage kernel corrupt");
 		err = EFI_INVALID_PARAMETER;
 		goto out;
 	}
 
 	if (buf->hdr.header != SETUP_HDR) {
-		Print(L"Setup code version is invalid");
+		error(L"Setup code version is invalid");
 		err = EFI_INVALID_PARAMETER;
 		goto out;
 	}
@@ -243,13 +243,13 @@ load_kernel(EFI_HANDLE image, CHAR16 *name, char *_cmdline)
 	 * code version >= 2.05.
 	 */
 	if (buf->hdr.version < 0x205) {
-		Print(L"Setup code version unsupported (too old)");
+		error(L"Setup code version unsupported (too old)");
 		err = EFI_INVALID_PARAMETER;
 		goto out;
 	}
 
 	if (!buf->hdr.relocatable_kernel) {
-		Print(L"Expected relocatable kernel");
+		error(L"Expected relocatable kernel");
 		err = EFI_INVALID_PARAMETER;
 		goto out;
 	}

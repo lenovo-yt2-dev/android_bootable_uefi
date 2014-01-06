@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, Intel Corporation
+ * Copyright (c) 2014, Intel Corporation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -25,23 +25,28 @@
  * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
  */
 
-#include <efi.h>
-#include <efilib.h>
-#include "efilinux.h"
-#include "platform/platform.h"
+#ifndef __CONFIG_H__
+#define __CONFIG_H__
 
-void dump_infos(void)
-{
-	info(L"Wake source = 0x%x\n", loader_ops.get_wake_source());
-	info(L"Reset source = 0x%x\n", loader_ops.get_reset_source());
-	info(L"Reset type = 0x%x\n", loader_ops.get_reset_type());
-	info(L"Shutdown source = 0x%x\n", loader_ops.get_shutdown_source());
-	info(L"Batt level = 0x%x\n", loader_ops.em_ops->get_battery_level());
-	info(L"Batt status = 0x%x\n", loader_ops.em_ops->is_battery_ok());
-	loader_ops.em_ops->print_battery_infos();
-	info(L"COMBO_FASTBOOT_MODE = 0x%x\n", loader_ops.combo_key(COMBO_FASTBOOT_MODE));
-	info(L"Target mode = 0x%x\n", loader_ops.get_target_mode());
-	info(L"Wdt counter = 0x%x\n", loader_ops.get_wdt_counter());
-}
+#include "efilinux.h"
+
+#ifdef CONFIG_LOG_BUF_SIZE
+#define LOG_BUF_SIZE CONFIG_LOG_BUF_SIZE
+#else
+#define LOG_BUF_SIZE 10 * 1024
+#endif	/* CONFIG_LOG_BUF_SIZE */
+
+#ifdef CONFIG_LOG_LINE_LEN
+#define LOG_LINE_LEN CONFIG_LOG_LINE_LEN
+#else
+#define LOG_LINE_LEN 100
+#endif	/* CONFIG_LOG_LINE_LEN */
+
+extern UINTN log_level;
+extern BOOLEAN log_flush_to_variable;
+extern EFI_GUID osloader_guid;
+
+#endif	/* __CONFIG_H__ */

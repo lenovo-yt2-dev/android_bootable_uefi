@@ -185,8 +185,8 @@ EFI_STATUS open_partition(
                 }
         }
         if (NoHandles != 1) {
-                Print(L"%d handles found for GUID, expecting 1: %g\n",
-                                NoHandles, guid);
+                error(L"%d handles found for GUID, expecting 1: %g\n",
+                      NoHandles, guid);
                 ret = EFI_VOLUME_CORRUPTED;
                 goto out;
         }

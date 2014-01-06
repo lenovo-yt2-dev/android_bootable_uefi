@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, Intel Corporation
+ * Copyright (c) 2014, Intel Corporation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -25,23 +25,44 @@
  * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
  */
 
-#include <efi.h>
-#include <efilib.h>
-#include "efilinux.h"
-#include "platform/platform.h"
+#ifndef __LOG_H__
+#define __LOG_H__
 
-void dump_infos(void)
-{
-	info(L"Wake source = 0x%x\n", loader_ops.get_wake_source());
-	info(L"Reset source = 0x%x\n", loader_ops.get_reset_source());
-	info(L"Reset type = 0x%x\n", loader_ops.get_reset_type());
-	info(L"Shutdown source = 0x%x\n", loader_ops.get_shutdown_source());
-	info(L"Batt level = 0x%x\n", loader_ops.em_ops->get_battery_level());
-	info(L"Batt status = 0x%x\n", loader_ops.em_ops->is_battery_ok());
-	loader_ops.em_ops->print_battery_infos();
-	info(L"COMBO_FASTBOOT_MODE = 0x%x\n", loader_ops.combo_key(COMBO_FASTBOOT_MODE));
-	info(L"Target mode = 0x%x\n", loader_ops.get_target_mode());
-	info(L"Wdt counter = 0x%x\n", loader_ops.get_wdt_counter());
-}
+#define LEVEL_DEBUG		4
+#define LEVEL_INFO		3
+#define LEVEL_WARNING		2
+#define LEVEL_ERROR		1
+
+#include "config.h"
+
+#define LOGLEVEL(level)	(log_level >= LEVEL_##level)
+
+void log(UINTN level, const CHAR16 *prefix, const void *func, const INTN line,
+	 const CHAR16* fmt, ...);
+
+void log_save_to_variable(void);
+
+#define debug(...) { \
+		log(LEVEL_DEBUG, L"DEBUG [%a:%d] ", \
+		    __func__, __LINE__, __VA_ARGS__); \
+	}
+
+#define info(...) { \
+		log(LEVEL_INFO, L"INFO [%a:%d] ", \
+		    __func__, __LINE__, __VA_ARGS__); \
+	}
+
+#define warning(...) { \
+		log(LEVEL_WARNING, L"WARNING [%a:%d] ", \
+		    __func__, __LINE__, __VA_ARGS__); \
+	}
+
+#define error(...) { \
+		log(LEVEL_ERROR, L"ERROR [%a:%d] ", \
+		    __func__, __LINE__, __VA_ARGS__); \
+	}
+
+#endif	/* __LOG_H__ */

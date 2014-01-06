@@ -109,7 +109,7 @@ get_map:
 	err = allocate_pool(EfiLoaderData, *map_size,
 			    (void **)map_buf);
 	if (err != EFI_SUCCESS) {
-		Print(L"Failed to allocate pool for memory map");
+		error(L"Failed to allocate pool for memory map");
 		goto failed;
 	}
 
@@ -125,7 +125,7 @@ get_map:
 			goto get_map;
 		}
 
-		Print(L"Failed to get memory map");
+		error(L"Failed to get memory map");
 		goto failed;
 	}
 
@@ -148,10 +148,10 @@ static EFI_STATUS print_memory_map(void)
 	if (err != EFI_SUCCESS)
 		return err;
 
-	Print(L"System Memory Map\n");
-	Print(L"System Memory Map Size: %d\n", size);
-	Print(L"Descriptor Version: %d\n", desc_version);
-	Print(L"Descriptor Size: %d\n", desc_size);
+	info(L"System Memory Map\n");
+	info(L"System Memory Map Size: %d\n", size);
+	info(L"Descriptor Version: %d\n", desc_version);
+	info(L"Descriptor Size: %d\n", desc_size);
 
 	desc = buf;
 	i = 0;
@@ -161,20 +161,20 @@ static EFI_STATUS print_memory_map(void)
 
 		mapping_size = desc->NumberOfPages * PAGE_SIZE;
 
-		Print(L"[#%.2d] Type: %s\n", i,
-		      memory_type_to_str(desc->Type));
+		info(L"[#%.2d] Type: %s\n", i,
+		     memory_type_to_str(desc->Type));
 
-		Print(L"      Attr: 0x%016llx\n", desc->Attribute);
+		info(L"      Attr: 0x%016llx\n", desc->Attribute);
 
-		Print(L"      Phys: [0x%016llx - 0x%016llx]\n",
-		      desc->PhysicalStart,
-		      desc->PhysicalStart + mapping_size);
+		info(L"      Phys: [0x%016llx - 0x%016llx]\n",
+		     desc->PhysicalStart,
+		     desc->PhysicalStart + mapping_size);
 
-		Print(L"      Virt: [0x%016llx - 0x%016llx]",
-		      desc->VirtualStart,
-		      desc->VirtualStart + mapping_size);
+		info(L"      Virt: [0x%016llx - 0x%016llx]",
+		     desc->VirtualStart,
+		     desc->VirtualStart + mapping_size);
 
-		Print(L"\n");
+		info(L"\n");
 		desc = (void *)desc + desc_size;
 		i++;
 	}
@@ -207,7 +207,7 @@ static CHAR16 *get_argument(CHAR16 *n, CHAR16 **argument)
 
 	o = malloc(sizeof(*o) * (i + 1));
 	if (!o) {
-		Print(L"Unable to alloc argument memory\n");
+		error(L"Unable to alloc argument memory\n");
 		goto error;
 	}
 	o[i--] = '\0';
@@ -289,7 +289,7 @@ parse_args(CHAR16 *options, UINT32 size, CHAR16 *type, CHAR16 **name, CHAR8 **cm
 				goto fail;
 #endif	/* RUNTIME_SETTINGS */
 			default:
-				Print(L"Unknown command-line switch\n");
+				error(L"Unknown command-line switch\n");
 				goto usage;
 			}
 		} else {
@@ -300,7 +300,7 @@ parse_args(CHAR16 *options, UINT32 size, CHAR16 *type, CHAR16 **name, CHAR8 **cm
 			j = StrLen(n);
 			*cmdline = malloc(j + 1);
 			if (!*cmdline) {
-				Print(L"Unable to alloc cmdline memory\n");
+				error(L"Unable to alloc cmdline memory\n");
 				err = EFI_OUT_OF_RESOURCES;
 				goto free_name;
 			}
@@ -361,7 +361,7 @@ get_path(EFI_LOADED_IMAGE *image, CHAR16 *path, UINTN len)
 
 	dev = handle_to_dev(image->DeviceHandle);
 	if (dev == -1) {
-		Print(L"Couldn't find boot device handle\n");
+		error(L"Couldn't find boot device handle\n");
 		return FALSE;
 	}
 
@@ -377,7 +377,7 @@ get_path(EFI_LOADED_IMAGE *image, CHAR16 *path, UINTN len)
 
 	buf = malloc(i * sizeof(CHAR16));
 	if (!buf) {
-		Print(L"Failed to allocate buf\n");
+		error(L"Failed to allocate buf\n");
 		FreePool(p);
 		return FALSE;
 	}
@@ -424,19 +424,19 @@ read_config_file(EFI_LOADED_IMAGE *image, CHAR16 **options,
 
 	/* Make sure we don't overflow the UINT32 */
 	if (size > 0xffffffff || (size * 2) > 0xffffffff ) {
-		Print(L"Config file size too large. Ignoring.\n");
+		error(L"Config file size too large. Ignoring.\n");
 		goto fail;
 	}
 
 	a_buf = malloc((UINTN)size);
 	if (!a_buf) {
-		Print(L"Failed to alloc buffer %d bytes\n", size);
+		error(L"Failed to alloc buffer %d bytes\n", size);
 		goto fail;
 	}
 
 	u_buf = malloc((UINTN)size * 2);
 	if (!u_buf) {
-		Print(L"Failed to alloc buffer %d bytes\n", size);
+		error(L"Failed to alloc buffer %d bytes\n", size);
 		free(a_buf);
 		goto fail;
 	}
@@ -445,7 +445,7 @@ read_config_file(EFI_LOADED_IMAGE *image, CHAR16 **options,
 	if (err != EFI_SUCCESS)
 		goto fail;
 
-	Print(L"Using efilinux config file\n");
+	info(L"Using efilinux config file\n");
 
 	/*
 	 * Read one line. Stamp a NUL-byte into the buffer once we've
@@ -457,12 +457,12 @@ read_config_file(EFI_LOADED_IMAGE *image, CHAR16 **options,
 		*p++ = '\0';
 
 	if (i == size && *p) {
-		Print(L"Error: missing newline at end of config file?\n");
+		error(L"Missing newline at end of config file?\n");
 		goto fail;
 	}
 
 	if ((p - a_buf) < size)
-		Print(L"Warning: config file contains multiple lines?\n");
+		warning(L"config file contains multiple lines?\n");
 
 	p = a_buf;
 	q = u_buf;
@@ -563,26 +563,26 @@ efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *_table)
 	debug(L"shell cmdline=%a\n", cmdline);
 	switch(type) {
 	case 'f':
-		Print(L"Starting file %s\n", name);
+		info(L"Starting file %s\n", name);
 		err = android_image_start_file(image, info->DeviceHandle, name, cmdline);
 		break;
 	case 't': {
 		enum targets target;
 		if ((err = name_to_target(name, &target)) != EFI_SUCCESS) {
-			Print(L"Unknown target name %s\n", name);
+			error(L"Unknown target name %s\n", name);
 			goto free_args;
 		}
-		Print(L"Starting target %s\n", name);
+		info(L"Starting target %s\n", name);
 		loader_ops.load_target(target, cmdline);
 		break;
 	}
 	case 'p': {
 		EFI_GUID part_guid;
 		if ((err = name_to_guid(name, &part_guid)) != EFI_SUCCESS) {
-			Print(L"Unknown target name %s\n", name);
+			error(L"Unknown target name %s\n", name);
 			goto free_args;
 		}
-		Print(L"Starting partition %s\n", name);
+		info(L"Starting partition %s\n", name);
 		err = android_image_start_partition(image, &part_guid, cmdline);
 		break;
 	}
@@ -629,11 +629,14 @@ fs_deinit:
 	 */
 	if (allocate_pool(EfiLoaderData, ERROR_STRING_LENGTH,
 			  (void **)&error_buf) != EFI_SUCCESS) {
-		Print(L"Couldn't allocate pages for error string\n");
+		error(L"Couldn't allocate pages for error string\n");
 		return err;
 	}
 
 	StatusToString(error_buf, err);
-	Print(L": %s\n", error_buf);
+	error(L": %s\n", error_buf);
+
+	loader_ops.hook_before_exit();
+
 	return exit(image, err, ERROR_STRING_LENGTH, error_buf);
 }

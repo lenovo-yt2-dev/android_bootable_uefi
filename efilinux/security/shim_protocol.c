@@ -49,8 +49,8 @@ EFI_STATUS shim_blob_verify(IN VOID *blob, IN UINTN blob_size,
 	}
 
 	if (!sigsize) {
-		Print(L"Secure boot enabled,"
-				"but Android boot image is unsigned\n");
+		error(L"Secure boot enabled, "
+		      "but Android boot image is unsigned\n");
 		return EFI_ACCESS_DENIED;
 	}
 

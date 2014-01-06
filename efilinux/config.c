@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, Intel Corporation
+ * Copyright (c) 2014, Intel Corporation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -25,23 +25,25 @@
  * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
  */
 
-#include <efi.h>
-#include <efilib.h>
-#include "efilinux.h"
-#include "platform/platform.h"
+#include "log.h"
+#include "config.h"
 
-void dump_infos(void)
-{
-	info(L"Wake source = 0x%x\n", loader_ops.get_wake_source());
-	info(L"Reset source = 0x%x\n", loader_ops.get_reset_source());
-	info(L"Reset type = 0x%x\n", loader_ops.get_reset_type());
-	info(L"Shutdown source = 0x%x\n", loader_ops.get_shutdown_source());
-	info(L"Batt level = 0x%x\n", loader_ops.em_ops->get_battery_level());
-	info(L"Batt status = 0x%x\n", loader_ops.em_ops->is_battery_ok());
-	loader_ops.em_ops->print_battery_infos();
-	info(L"COMBO_FASTBOOT_MODE = 0x%x\n", loader_ops.combo_key(COMBO_FASTBOOT_MODE));
-	info(L"Target mode = 0x%x\n", loader_ops.get_target_mode());
-	info(L"Wdt counter = 0x%x\n", loader_ops.get_wdt_counter());
-}
+#ifdef CONFIG_LOG_LEVEL
+UINTN log_level = CONFIG_LOG_LEVEL;
+#else
+UINTN log_level = LOG_DEBUG;
+#endif	/* CONFIG_LOG_LEVEL */
+
+#ifdef CONFIG_LOG_FLUSH_TO_VARIABLE
+BOOLEAN log_flush_to_variable = TRUE;
+#else
+BOOLEAN log_flush_to_variable = FALSE;
+#endif	/* CONFIG_LOG_FLUSH_TO_VARIABLE */
+
+EFI_GUID osloader_guid = {
+	0x4a67b082, 0x0a4c, 0x41cf,
+	{ 0xb6, 0xc7, 0x44, 0x0b, 0x29, 0xbb, 0x8c, 0x4f }
+};

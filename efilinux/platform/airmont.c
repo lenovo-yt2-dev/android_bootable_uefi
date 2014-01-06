@@ -27,21 +27,10 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <efi.h>
-#include <efilib.h>
-#include "efilinux.h"
-#include "platform/platform.h"
+#include "platform.h"
+#include "x86.h"
 
-void dump_infos(void)
+void init_airmont(void)
 {
-	info(L"Wake source = 0x%x\n", loader_ops.get_wake_source());
-	info(L"Reset source = 0x%x\n", loader_ops.get_reset_source());
-	info(L"Reset type = 0x%x\n", loader_ops.get_reset_type());
-	info(L"Shutdown source = 0x%x\n", loader_ops.get_shutdown_source());
-	info(L"Batt level = 0x%x\n", loader_ops.em_ops->get_battery_level());
-	info(L"Batt status = 0x%x\n", loader_ops.em_ops->is_battery_ok());
-	loader_ops.em_ops->print_battery_infos();
-	info(L"COMBO_FASTBOOT_MODE = 0x%x\n", loader_ops.combo_key(COMBO_FASTBOOT_MODE));
-	info(L"Target mode = 0x%x\n", loader_ops.get_target_mode());
-	info(L"Wdt counter = 0x%x\n", loader_ops.get_wdt_counter());
+	x86_ops(&loader_ops);
 }

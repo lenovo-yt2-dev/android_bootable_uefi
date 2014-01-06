@@ -109,14 +109,13 @@ error:
 
 static const CHAR16	*target_mode_name      = L"LoaderEntryOneShot";
 static const CHAR16	*last_target_mode_name = L"LoaderEntryLast";
-static const EFI_GUID	 target_mode_guid      = { 0x4a67b082, 0x0a4c, 0x41cf, {0xb6, 0xc7, 0x44, 0x0b, 0x29, 0xbb, 0x8c, 0x4f} };
 
 enum targets get_entry_oneshot(void)
 {
 	CHAR16 *name;
 	enum targets target;
 
-	name = LibGetVariable((CHAR16 *)target_mode_name, (EFI_GUID *)&target_mode_guid);
+	name = LibGetVariable((CHAR16 *)target_mode_name, (EFI_GUID *)&osloader_guid);
 	if (!name)
 		return TARGET_UNKNOWN;
 	return EFI_ERROR(name_to_target(name, &target)) ? TARGET_UNKNOWN : target;
@@ -133,10 +132,10 @@ EFI_STATUS set_entry_last(enum targets target)
 		return status;
 	}
 
-	status = LibDeleteVariable(target_mode_name, &target_mode_guid);
+	status = LibDeleteVariable((CHAR16 *)target_mode_name, &osloader_guid);
 	if (status != EFI_NOT_FOUND)
 		error(L"Failed to delete %s variable\n", name);
 
-	return LibSetNVVariable((CHAR16*)last_target_mode_name, (EFI_GUID *)&target_mode_guid,
+	return LibSetNVVariable((CHAR16 *)last_target_mode_name, (EFI_GUID *)&osloader_guid,
 				StrSize(name), name);
 }

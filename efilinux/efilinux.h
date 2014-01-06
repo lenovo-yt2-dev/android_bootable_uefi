@@ -45,23 +45,7 @@
 
 #include "utils.h"
 #include "watchdog/watchdog.h"
-
-#define LEVEL_DEBUG		4
-#define LEVEL_INFO		3
-#define LEVEL_WARNING		2
-#define LEVEL_ERROR		1
-
-#define LOG_LEVEL LEVEL_DEBUG
-#define LOGLEVEL(level)	(LOG_LEVEL >= LEVEL_##level)
-
-#define debug(...)	{			\
-	Print(L"efilinux [%a:%d] ",__func__, __LINE__); \
-	Print("" __VA_ARGS__);	\
-	}
-
-#define error(...) { \
-        Print(L"ERROR:" __VA_ARGS__); \
-	}
+#include "log.h"
 
 extern EFI_SYSTEM_TABLE *sys_table;
 extern EFI_BOOT_SERVICES *boot;

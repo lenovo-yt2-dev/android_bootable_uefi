@@ -85,7 +85,7 @@ EFI_STATUS get_rsdt_table(struct RSDT_TABLE **rsdt)
 
 	if (strncmpa((CHAR8 *)rsdp->signature, (CHAR8 *)RSDP_SIG, sizeof(RSDP_SIG) - 1)) {
 		CHAR8 *s = rsdp->signature;
-		Print(L"RSDP table has wrong signature (%c%c%c%c%c%c%c%c)\n",
+		error(L"RSDP table has wrong signature (%c%c%c%c%c%c%c%c)\n",
 		      s[0], s[1], s[2], s[3], s[4], s[5], s[6], s[7]);
 		ret = EFI_COMPROMISED_DATA;
 		goto out;
@@ -94,7 +94,7 @@ EFI_STATUS get_rsdt_table(struct RSDT_TABLE **rsdt)
 	*rsdt = (struct RSDT_TABLE *)rsdp->rsdt_address;
 	if (strncmpa((CHAR8 *)(*rsdt)->header.signature, (CHAR8 *)RSDT_SIG, sizeof(RSDT_SIG) - 1)) {
 		CHAR8 *s = (*rsdt)->header.signature;
-		Print(L"RSDT table has wrong signature (%c%c%c%c)\n", s[0], s[1], s[2], s[3]);
+		error(L"RSDT table has wrong signature (%c%c%c%c)\n", s[0], s[1], s[2], s[3]);
 		ret = EFI_COMPROMISED_DATA;
 		goto out;
 	}
@@ -115,7 +115,7 @@ void dump_acpi_tables(void)
 	}
 
 	int nb_acpi_tables = (rsdt->header.length - sizeof(rsdt->header)) / sizeof(rsdt->entry[1]);
-	Print(L"Listing %d tables\n", nb_acpi_tables);
+	info(L"Listing %d tables\n", nb_acpi_tables);
 
         ret = uefi_call_wrapper(BS->HandleProtocol, 3, efilinux_image,
                         &FileSystemProtocol,
@@ -133,7 +133,7 @@ void dump_acpi_tables(void)
 		CHAR16 *filename;
 		UINTN size = ((struct ACPI_DESC_HEADER *)s)->length;
 		UINTN written_size = size;
-		Print(L"RSDT[%d] = %c%c%c%c\n", i, s[0], s[1], s[2], s[3]);
+		info(L"RSDT[%d] = %c%c%c%c\n", i, s[0], s[1], s[2], s[3]);
 
 		memcpy(signature, s, 4);
 		signature[4] = 0;
@@ -180,12 +180,12 @@ EFI_STATUS list_acpi_tables(void)
 		return ret;
 
 	int nb_acpi_tables = (rsdt->header.length - sizeof(rsdt->header)) / sizeof(rsdt->entry[1]);
-	Print(L"Listing %d tables\n", nb_acpi_tables);
+	info(L"Listing %d tables\n", nb_acpi_tables);
 
 	int i;
 	for (i = 0 ; i < nb_acpi_tables; i++) {
 		CHAR8 *s = ((struct ACPI_DESC_HEADER *)rsdt->entry[i])->signature;
-		Print(L"RSDT[%d] = %c%c%c%c\n", i, s[0], s[1], s[2], s[3]);
+		info(L"RSDT[%d] = %c%c%c%c\n", i, s[0], s[1], s[2], s[3]);
 	}
 
 	return EFI_SUCCESS;
@@ -290,28 +290,28 @@ void print_pidv(void)
 		return;
 	}
 
-	Print(L"part_number      	=%a\n", pidv->part_number);
-	Print(L"ext_id_1 x_id1:\n");
-	Print(L"customer		=0x%x\n",pidv->x_id1.customer);
-	Print(L"vendor			=0x%x\n",pidv->x_id1.vendor);
-	Print(L"device_manufacturer	=0x%x\n",pidv->x_id1.device_manufacturer);
-	Print(L"platform_family		=0x%x\n",pidv->x_id1.platform_family);
-	Print(L"product_line		=0x%x\n",pidv->x_id1.product_line);
-	Print(L"hardware		=0x%x\n",pidv->x_id1.hardware);
-	Print(L"spid_checksum		=0x%x\n",pidv->x_id1.spid_checksum);
-	Print(L"fru			=0x%x");
+	info(L"part_number      	=%a\n", pidv->part_number);
+	info(L"ext_id_1 x_id1:\n");
+	info(L"customer		=0x%x\n",pidv->x_id1.customer);
+	info(L"vendor			=0x%x\n",pidv->x_id1.vendor);
+	info(L"device_manufacturer	=0x%x\n",pidv->x_id1.device_manufacturer);
+	info(L"platform_family		=0x%x\n",pidv->x_id1.platform_family);
+	info(L"product_line		=0x%x\n",pidv->x_id1.product_line);
+	info(L"hardware		=0x%x\n",pidv->x_id1.hardware);
+	info(L"spid_checksum		=0x%x\n",pidv->x_id1.spid_checksum);
+	info(L"fru			=0x%x");
 	int i;
 	for (i = 0; i < sizeof(pidv->x_id1.fru); i++)
-		Print(L"%02x", pidv->x_id1.fru[i]);
-	Print(L"\n");
-	Print(L"fru_checksum		=0x%x\n",pidv->x_id1.fru_checksum);
-	Print(L"reseprved		=0x%x\n",pidv->x_id1.reserved);
-	Print(L"ext_id_2 x_id2:\n");
-	Print(L"data1			=0x%x\n", pidv->x_id2.data1);
-	Print(L"data2			=0x%x\n", pidv->x_id2.data2);
-	Print(L"data3			=0x%x\n", pidv->x_id2.data3);
-	Print(L"data4			=0x%x\n", pidv->x_id2.data4);
-	Print(L"system_uuid		=0x%x\n", pidv->system_uuid);
+		info(L"%02x", pidv->x_id1.fru[i]);
+	info(L"\n");
+	info(L"fru_checksum		=0x%x\n",pidv->x_id1.fru_checksum);
+	info(L"reseprved		=0x%x\n",pidv->x_id1.reserved);
+	info(L"ext_id_2 x_id2:\n");
+	info(L"data1			=0x%x\n", pidv->x_id2.data1);
+	info(L"data2			=0x%x\n", pidv->x_id2.data2);
+	info(L"data3			=0x%x\n", pidv->x_id2.data3);
+	info(L"data4			=0x%x\n", pidv->x_id2.data4);
+	info(L"system_uuid		=0x%x\n", pidv->system_uuid);
 }
 
 void print_rsci(void)
@@ -323,11 +323,11 @@ void print_rsci(void)
 		return;
 	}
 
-	Print(L"wake_source	=0x%x\n", rsci->wake_source);
-	Print(L"reset_source	=0x%x\n", rsci->reset_source);
-	Print(L"reset_type	=0x%x\n", rsci->reset_type);
-	Print(L"shutdown_source	=0x%x\n", rsci->shutdown_source);
-	Print(L"indicators	=0x%x\n", rsci->indicators);
+	info(L"wake_source	=0x%x\n", rsci->wake_source);
+	info(L"reset_source	=0x%x\n", rsci->reset_source);
+	info(L"reset_type	=0x%x\n", rsci->reset_type);
+	info(L"shutdown_source	=0x%x\n", rsci->shutdown_source);
+	info(L"indicators	=0x%x\n", rsci->indicators);
 }
 
 void load_dsdt(void)
@@ -343,7 +343,7 @@ void load_dsdt(void)
 	}
 
 	int nb_acpi_tables = (rsdt->header.length - sizeof(rsdt->header)) / sizeof(rsdt->entry[1]);
-	Print(L"Listing %d tables\n", nb_acpi_tables);
+	info(L"Listing %d tables\n", nb_acpi_tables);
 
         ret = uefi_call_wrapper(BS->HandleProtocol, 3, efilinux_image,
                         &FileSystemProtocol,
@@ -358,7 +358,7 @@ void load_dsdt(void)
 		CHAR8 *s = ((struct ACPI_DESC_HEADER *)rsdt->entry[i])->signature;
 		CHAR8 signature[5];
 		UINTN size = ((struct ACPI_DESC_HEADER *)s)->length;
-		Print(L"RSDT[%d] = %c%c%c%c\n", i, s[0], s[1], s[2], s[3]);
+		info(L"RSDT[%d] = %c%c%c%c\n", i, s[0], s[1], s[2], s[3]);
 		memcpy(signature, s, 4);
 		signature[4] = 0;
 
@@ -375,7 +375,7 @@ void load_dsdt(void)
 			}
 			debug(L"Read %d bytes\n", size);
 			*((UINT32 *)s) = (UINT32)dsdt;
-			Print(L"DSDT = %c%c%c%c\n", dsdt[0], dsdt[1], dsdt[2], dsdt[3]);
+			info(L"DSDT = %c%c%c%c\n", dsdt[0], dsdt[1], dsdt[2], dsdt[3]);
 		}
 	}
 out:

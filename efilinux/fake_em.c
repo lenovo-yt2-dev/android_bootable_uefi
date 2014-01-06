@@ -30,6 +30,7 @@
 
 #include <efi.h>
 #include <efilib.h>
+#include "log.h"
 #include "fake_em.h"
 
 static enum batt_levels fake_get_battery_level(void)
@@ -44,7 +45,7 @@ static BOOLEAN fake_is_battery_ok(void)
 
 static void fake_print_battery_infos(void)
 {
-	Print(L"Fake Battery, no info\n");
+	info(L"Fake Battery, no info\n");
 }
 
 struct energy_mgmt_ops fake_em_ops = {
