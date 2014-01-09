@@ -128,22 +128,18 @@ error:
 	return BATT_ERROR;
 }
 
-static int uefi_is_battery_ok(void)
+static BOOLEAN uefi_is_battery_ok(void)
 {
 	struct battery_status status;
 	EFI_STATUS ret;
 
 	ret = uefi_get_battery_status(&status);
-	if (EFI_ERROR(ret))
-		goto error;
+	if (EFI_ERROR(ret)) {
+		error(L"Failed to get battery status: %r\n", ret);
+		return FALSE;
+	}
 
-	if (!status.BatteryPresent)
-		return 0;
-	return status.BatteryValid || em1_get_boot_on_invalid_batt();
-
-error:
-	error(L"Failed to get battery status: %r\n", ret);
-	return em1_get_boot_on_invalid_batt();
+	return status.BatteryPresent;
 }
 
 static void uefi_print_battery_infos(void)

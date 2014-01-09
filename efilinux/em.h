@@ -36,7 +36,7 @@
 
 struct energy_mgmt_ops {
 	enum batt_levels (*get_battery_level)(void);
-	int (*is_battery_ok)(void);
+	BOOLEAN (*is_battery_ok)(void);
 	void (*print_battery_infos)(void);
 };
 

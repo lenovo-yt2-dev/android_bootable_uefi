@@ -37,7 +37,7 @@ static enum batt_levels fake_get_battery_level(void)
 	return BATT_BOOT_OS;
 }
 
-static int fake_is_battery_ok(void)
+static BOOLEAN fake_is_battery_ok(void)
 {
 	return TRUE;
 }
