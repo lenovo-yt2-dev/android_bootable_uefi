@@ -15,11 +15,6 @@ ifeq ($(TARGET_ARCH),x86-64)
 	SPECIFIC_GNU_EFI_SRC := $(EFI_ARCH)/callwrap.c $(EFI_ARCH)/efi_stub.S
 endif
 
-ifeq ($(BOARD_HAVE_LIMITED_POWERON_FEATURES),true)
-	OSLOADER_EM_POLICY := fake
-	LOCAL_CFLAGS += -DDISABLE_SECURE_BOOT
-endif
-
 EFI_TARGET := efi-app-$(EFI_ARCH)
 PRIVATE_EFI_FILE := $(PRODUCT_OUT)/efilinux.unsigned.efi
 

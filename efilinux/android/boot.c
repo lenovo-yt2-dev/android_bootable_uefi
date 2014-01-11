@@ -729,7 +729,6 @@ EFI_STATUS android_image_start_buffer(
                 goto out_bootimage;
         }
 
-#ifndef DISABLE_SECURE_BOOT
         if (is_secure_boot_enabled()) {
                  debug(L"Verifying the boot image\n");
                  ret = verify_boot_image(bootimage);
@@ -738,7 +737,6 @@ EFI_STATUS android_image_start_buffer(
                          goto out_bootimage;
                  }
          }
-#endif
 
         debug(L"Creating command line\n");
         ret = setup_command_line(bootimage, cmdline);
