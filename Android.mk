@@ -16,6 +16,6 @@
 
 LOCAL_PATH := $(call my-dir)
 
-uefi_osloader: efilinux
+uefi_osloader: gnu-efi efilinux
 
 include $(call all-subdir-makefiles)
