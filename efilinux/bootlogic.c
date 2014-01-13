@@ -288,7 +288,7 @@ EFI_STATUS start_boot_logic(CHAR8 *cmdline)
 	EFI_STATUS ret;
 	enum flow_types flow_type;
 	enum targets target;
-	CHAR8 *updated_cmdline;
+	CHAR8 *updated_cmdline = NULL;
 
 	loader_ops.hook_bootlogic_begin();
 
@@ -323,7 +323,9 @@ EFI_STATUS start_boot_logic(CHAR8 *cmdline)
 
 	debug(L"Booting target %a\n", target_strings[target]);
 
+#ifdef RUNTIME_SETTINGS
 	updated_cmdline = get_cmdline(cmdline);
+#endif
 
 	loader_ops.hook_bootlogic_end();
 

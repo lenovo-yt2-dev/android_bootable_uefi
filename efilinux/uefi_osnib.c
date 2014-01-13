@@ -120,7 +120,7 @@ int uefi_get_wdt_counter(void)
 
 CHAR8 *uefi_get_extra_cmdline(void)
 {
-	return LibGetVariable(L"cmdline", &osnib_guid);
+	return LibGetVariable(L"ExtraKernelCommandLine", &osnib_guid);
 }
 
 void uefi_populate_osnib_variables(void)
