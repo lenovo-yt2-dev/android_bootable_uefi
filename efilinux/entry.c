@@ -487,6 +487,7 @@ efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *_table)
 	UINT32 options_size;
 	CHAR8 *cmdline = NULL;
 
+	main_image_handle = image;
 	InitializeLib(image, _table);
 	sys_table = _table;
 	boot = sys_table->BootServices;

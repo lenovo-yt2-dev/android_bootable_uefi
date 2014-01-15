@@ -6,8 +6,9 @@ ifeq ($(TARGET_ARCH),x86)
 	EFI_ARCH := ia32
 	SPECIFIC_GNU_EFI_SRC := ""
 	LOCAL_CFLAGS := \
-		-fPIC -fshort-wchar -ffreestanding -Wall -fno-stack-protector -m32 \
-		-D$(EFI_ARCH)
+		-fPIC -fPIE -fshort-wchar -ffreestanding -Wall -m32 \
+		-fstack-protector -Wl,-z,noexecstack -O2 \
+		-D_FORTIFY_SOURCE=2 -D$(EFI_ARCH)
 endif
 
 ifeq ($(TARGET_ARCH),x86-64)
@@ -66,6 +67,7 @@ SIGNING_COMMAND :=  $(OSLOADER_SIGNING_TOOL) -h 0 -i $(PRIVATE_EFI_FILE) -o  $(O
 POST_SIGNING_COMMAND := @cat $(PRIVATE_EFI_FILE) $(OSLOADER_MANIFEST_OUT) > $(OSLOADER_SIGNED_OUT)
 
 LOCAL_SRC_FILES := \
+	stack_chk.c \
 	malloc.c \
 	entry.c \
 	android/boot.c \
@@ -111,8 +113,7 @@ LOCAL_MODULE_CLASS := EXECUTABLES
 LOCAL_FORCE_STATIC_EXECUTABLE := true
 
 LOCAL_CFLAGS  += -g -Wall -fshort-wchar -fno-strict-aliasing \
-           -fno-merge-constants -fno-stack-protector \
-           -fno-stack-check
+           -fno-merge-constants
 
 GNUEFI_PATH := $(call intermediates-dir-for, STATIC_LIBRARIES, libgnuefi)
 EFI_CRT0 := $(GNUEFI_PATH)/gnuefi/crt0-efi-$(EFI_ARCH).o
@@ -133,6 +134,9 @@ $(LOCAL_BUILT_MODULE): $(GNUEFI_PATH)/libgnuefi.a $(LDS) $(all_objects) | $(HOST
 	$(TARGET_LD).bfd \
 		-Bsymbolic \
 		-shared \
+		-z relro -z now \
+		-fstack-protector \
+		-fPIC -pie \
 		-nostdlib \
 		-znocombreloc \
 		-L$(shell dirname $(TARGET_LIBGCC)) \
