@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, Intel Corporation
+ * Copyright (c) 2011-2014, Intel Corporation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -248,6 +248,7 @@ parse_args(CHAR16 *options, UINT32 size, CHAR16 *type, CHAR16 **name, CHAR8 **cm
 			switch (*++n) {
 			case 'h':
 				goto usage;
+#ifdef RUNTIME_SETTINGS
 			case 'l':
 				blk_init();
 				list_blk_devices();
@@ -261,6 +262,7 @@ parse_args(CHAR16 *options, UINT32 size, CHAR16 *type, CHAR16 **name, CHAR8 **cm
 			case 'p':
 			case 't':
 			case 'c':
+#endif	/* RUNTIME_SETTINGS */
 			case 'a':
 				*type = *n;
 				n++;
@@ -282,10 +284,10 @@ parse_args(CHAR16 *options, UINT32 size, CHAR16 *type, CHAR16 **name, CHAR8 **cm
 					goto usage;
 				break;
 			}
-#endif	/* RUNTIME_SETTINGS */
 			case 'A':
 				list_acpi_tables();
 				goto fail;
+#endif	/* RUNTIME_SETTINGS */
 			default:
 				Print(L"Unknown command-line switch\n");
 				goto usage;
@@ -319,18 +321,24 @@ parse_args(CHAR16 *options, UINT32 size, CHAR16 *type, CHAR16 **name, CHAR8 **cm
 	return EFI_SUCCESS;
 
 usage:
-	Print(L"usage: efilinux [-hlma] [-f <filename> | -p <partname>] <args>\n\n");
+#ifdef RUNTIME_SETTINGS
+	Print(L"usage: efilinux [OPTIONS] <kernel-command-line-args>\n\n");
 	Print(L"\t-h:             display this help menu\n");
 	Print(L"\t-l:             list boot devices\n");
 	Print(L"\t-m:             print memory map\n");
-	Print(L"\t-a:             ACPI variables\n");
-	Print(L"\t-A:             List ACPI tables\n");
-#ifdef RUNTIME_SETTINGS
-	Print(L"\t-e <policy>:    Set the energy management policy ('uefi', 'fake')\n");
+#else
+	Print(L"usage: efilinux [OPTIONS]\n\n");
 #endif	/* RUNTIME_SETTINGS */
+	Print(L"\t-a <address>:   boot an already in memory image\n");
+#ifdef RUNTIME_SETTINGS
+	Print(L"\t-A:             List ACPI tables\n");
+	Print(L"\t-e <policy>:    Set the energy management policy ('uefi', 'fake')\n");
 	Print(L"\t-f <filename>:  image to load\n");
 	Print(L"\t-p <partname>:  partition to load\n");
 	Print(L"\t-t <target>:    target to boot\n");
+	Print(L"\t-c <command>:   debug commands (dump_infos, print_pidv, print_rsci,\n");
+	Print(L"\t                dump_acpi_tables or load_dsdt)\n");
+#endif	/* RUNTIME_SETTINGS */
 
 fail:
 	err = EFI_INVALID_PARAMETER;
@@ -383,6 +391,7 @@ get_path(EFI_LOADED_IMAGE *image, CHAR16 *path, UINTN len)
 	return TRUE;
 }
 
+#ifdef RUNTIME_SETTINGS
 static BOOLEAN
 read_config_file(EFI_LOADED_IMAGE *image, CHAR16 **options,
 		 UINT32 *options_size)
@@ -470,6 +479,14 @@ fail:
 	file_close(file);
 	return FALSE;
 }
+#else
+static BOOLEAN
+read_config_file(EFI_LOADED_IMAGE *image, CHAR16 **options,
+		 UINT32 *options_size)
+{
+	return FALSE;
+}
+#endif
 
 /**
  * efi_main - The entry point for the OS loader image.
@@ -605,7 +622,6 @@ free_args:
 		free(name);
 fs_deinit:
 	fs_exit();
-failed:
 	/*
 	 * We need to be careful not to trash 'err' here. If we fail
 	 * to allocate enough memory to hold the error string fallback
