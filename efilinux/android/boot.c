@@ -240,6 +240,28 @@ out_error:
         return ret;
 }
 
+extern EFI_GUID GraphicsOutputProtocol;
+#define VIDEO_TYPE_EFI	0x70
+
+static void setup_screen_info_from_gop(struct screen_info *pinfo)
+{
+	EFI_GRAPHICS_OUTPUT_PROTOCOL *gop;
+	EFI_STATUS ret;
+
+	ret = LibLocateProtocol(&GraphicsOutputProtocol, (void **)&gop);
+	if (EFI_ERROR(ret) || gop == NULL || gop->Mode == NULL) {
+		warning(L"Failed to locate GOP\n");
+		return;
+	}
+
+	pinfo->orig_video_isVGA = VIDEO_TYPE_EFI;
+	pinfo->lfb_base = (UINT32)gop->Mode->FrameBufferBase;
+	pinfo->lfb_size = gop->Mode->FrameBufferSize;
+	pinfo->lfb_width = gop->Mode->Info->HorizontalResolution;
+	pinfo->lfb_height= gop->Mode->Info->VerticalResolution;
+	pinfo->lfb_linelength = gop->Mode->Info->PixelsPerScanLine * 4;
+}
+
 static EFI_STATUS setup_command_line(UINT8 *bootimage,
                 CHAR8 *append)
 {
@@ -462,6 +484,8 @@ static EFI_STATUS handover_kernel(CHAR8 *bootimage, EFI_HANDLE parent_image)
         buf->hdr.type_of_loader = 0xff;
 
         memset((CHAR8 *)&buf->screen_info, 0x0, sizeof(buf->screen_info));
+
+	setup_screen_info_from_gop(&buf->screen_info);
 
         ret = allocate_pages(AllocateAddress, EfiLoaderData,
                              EFI_SIZE_TO_PAGES(init_size), &kernel_start);
