@@ -216,7 +216,7 @@ static const CHAR16 *memory_types[] = {
 
 static inline const CHAR16 *memory_type_to_str(UINT32 type)
 {
-	if (type > sizeof(memory_types)/sizeof(CHAR16 *))
+	if (type >= sizeof(memory_types)/sizeof(CHAR16 *))
 		return L"Unknown";
 
 	return memory_types[type];

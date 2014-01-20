@@ -294,6 +294,9 @@ EFI_STATUS uefi_read_file(EFI_FILE_IO_INTERFACE *io, CHAR16 *filename, void **da
 	info_size = SIZE_OF_EFI_FILE_INFO + 200;
 
 	info = malloc(info_size);
+	if (!info)
+		goto close;
+
 	ret = uefi_call_wrapper(file->GetInfo, 4, file, &GenericFileInfo, &info_size, info);
 	if (EFI_ERROR(ret))
 		goto free_info;
@@ -314,6 +317,7 @@ retry:
 
 free_info:
 	free(info);
+close:
 	uefi_call_wrapper(file->Close, 1, file);
 out:
 	if (EFI_ERROR(ret))
@@ -381,12 +385,8 @@ EFI_STATUS uefi_write_file(EFI_FILE_IO_INTERFACE *io, CHAR16 *filename, void *da
 		goto out;
 
 	ret = uefi_call_wrapper(file->Write, 3, file, size, data);
-	if (EFI_ERROR(ret))
-		goto close;
+	uefi_call_wrapper(file->Close, 1, file);
 
-close:
-	if(file)
-		uefi_call_wrapper(file->Close, 1, file);
 out:
 	if (EFI_ERROR(ret))
 		error(L"Failed to write file %s:%r\n", filename, ret);

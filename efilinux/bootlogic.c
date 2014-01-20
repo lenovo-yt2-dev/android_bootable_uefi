@@ -301,6 +301,8 @@ EFI_STATUS start_boot_logic(CHAR8 *cmdline)
 	flow_type = loader_ops.read_flow_type();
 
 	target = target_from_inputs(flow_type);
+	if (target == TARGET_ERROR)
+		goto error;
 	if (target == TARGET_UNKNOWN) {
 		error(L"No valid target found. Fallbacking to MOS\n");
 		target = TARGET_BOOT;
@@ -321,7 +323,7 @@ EFI_STATUS start_boot_logic(CHAR8 *cmdline)
 
 	ret = loader_ops.save_target_mode(target);
 	if (EFI_ERROR(ret))
-		error(L"Failed to save the target_mode: %r\n", ret);
+		warning(L"Failed to save the target_mode: %r\n", ret);
 
 	debug(L"Booting target %a\n", target_strings[target]);
 

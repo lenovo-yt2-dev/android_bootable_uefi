@@ -271,7 +271,7 @@ parse_args(CHAR16 *options, UINT32 size, CHAR16 *type, CHAR16 **name, CHAR8 **cm
 
 				n = get_argument(n, name);
 				if (!*name)
-					goto out;
+					goto fail;
 				break;
 #ifdef RUNTIME_SETTINGS
 			case 'e': {
@@ -351,7 +351,6 @@ fail:
 free_name:
 	if (*name)
 		free(*name);
-out:
 	return err;
 }
 
@@ -377,7 +376,7 @@ get_path(EFI_LOADED_IMAGE *image, CHAR16 *path, UINTN len)
 		i--;
 	}
 
-	buf = malloc(i * sizeof(CHAR16));
+	buf = malloc((i + 1) * sizeof(CHAR16));
 	if (!buf) {
 		error(L"Failed to allocate buf\n");
 		FreePool(p);
@@ -503,6 +502,7 @@ efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *_table)
 	EFI_LOADED_IMAGE *info;
 	CHAR16 *name = NULL;
 	CHAR16 *options;
+	BOOLEAN options_from_conf_file = FALSE;
 	UINT32 options_size;
 	CHAR8 *cmdline = NULL;
 
@@ -541,7 +541,8 @@ efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *_table)
 			;
 		options = &options[i];
 		options_size -= i;
-	}
+	} else
+		options_from_conf_file = TRUE;
 
 	err = init_platform_functions();
 	if (EFI_ERROR(err)) {
@@ -552,6 +553,9 @@ efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *_table)
 	CHAR16 type = '\0';
 	if (options && options_size != 0) {
 		err = parse_args(options, options_size, &type, &name, &cmdline);
+
+		if (options_from_conf_file)
+			free(options);
 
 		/* We print the usage message in case of invalid args */
 		if (err == EFI_INVALID_PARAMETER) {

@@ -64,11 +64,11 @@ static INT8 uefi_get_simple_var(char *name, EFI_GUID *guid)
 	UINTN size;
 	CHAR16 *name16 = stra_to_str((CHAR8 *)name);
 	buffer = LibGetVariableAndSize(name16, guid, &size);
-	free(name16);
 
 	if (buffer == NULL) {
 		error(L"Failed to get variable %s\n", name16);
-		return -1;
+		ret = -1;
+		goto out;
 	}
 
 	if (size > sizeof(ret)) {
@@ -80,7 +80,9 @@ static INT8 uefi_get_simple_var(char *name, EFI_GUID *guid)
 
 	ret = *(INT8 *)buffer;
 out:
-	free(buffer);
+	free(name16);
+	if (buffer)
+		free(buffer);
 	return ret;
 }
 

@@ -137,7 +137,7 @@ void dump_acpi_tables(void)
 		CHAR8 *s = ((struct ACPI_DESC_HEADER *)rsdt->entry[i])->signature;
 		CHAR8 signature[5];
 		CHAR16 *tmp;
-		CHAR16 *filename;
+		CHAR16 filename[11 * sizeof(CHAR16)];
 		UINTN size = ((struct ACPI_DESC_HEADER *)s)->length;
 		UINTN written_size = size;
 		info(L"RSDT[%d] = %c%c%c%c\n", i, s[0], s[1], s[2], s[3]);
@@ -163,12 +163,12 @@ void dump_acpi_tables(void)
 			written_size = ((struct ACPI_DESC_HEADER *)s)->length;;
 			size = written_size;
 
-			filename = L"ACPI\\DSDT";
-			ret = uefi_write_file(io, filename, s, &written_size);
+			CHAR16 *dsdt_filename = L"ACPI\\DSDT";
+			ret = uefi_write_file(io, dsdt_filename, s, &written_size);
 			if (size != written_size)
 				error(L"Written %d/%d bytes\n", written_size, size);
 			if (EFI_ERROR(ret)) {
-				error(L"Failed to write file %s: %r\n", filename, ret);
+				error(L"Failed to write file %s: %r\n", dsdt_filename, ret);
 				goto out;
 			}
 		}
@@ -373,15 +373,15 @@ void load_dsdt(void)
 			CHAR8 *facp = s;
 			CHAR8 *dsdt;
 			facp += 0x28;
-			dsdt = (CHAR8 *) (*((UINT32 *)s));
-			free(s);
+			dsdt = (CHAR8 *) (*((UINT32 *)facp));
+			free(dsdt);
 			ret = uefi_read_file(io, L"DSDT", (void **)&dsdt, &size);
 			if (EFI_ERROR(ret)) {
 				error(L"Failed to read file DSDT:%r\n", ret);
 				goto out;
 			}
 			debug(L"Read %d bytes\n", size);
-			*((UINT32 *)s) = (UINT32)dsdt;
+			*((UINT32 *)facp) = (UINT32)dsdt;
 			info(L"DSDT = %c%c%c%c\n", dsdt[0], dsdt[1], dsdt[2], dsdt[3]);
 		}
 	}

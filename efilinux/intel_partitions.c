@@ -127,11 +127,12 @@ EFI_STATUS intel_load_target(enum targets target, CHAR8 *cmdline)
 		return intel_go_to_rescue_mode();
 
 	updated_cmdline = append_strings(cmdline, entry->cmdline);
-	if (cmdline)
-		free(cmdline);
 
 	debug(L"target cmdline = %a\n", cmdline);
 	debug(L"Loading target %s\n", entry->name);
+
+	if (cmdline)
+		free(cmdline);
 
 	return android_image_start_partition(NULL, &entry->guid, updated_cmdline);
 }
