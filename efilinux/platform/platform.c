@@ -146,6 +146,12 @@ static enum targets stub_get_target_mode(void)
 	return TARGET_BOOT;
 }
 
+static enum targets stub_get_last_target_mode(void)
+{
+	debug(L"WARNING: stubbed!\n");
+	return TARGET_BOOT;
+}
+
 static int stub_get_rtc_alarm_charging(void)
 {
 	warning(L"stubbed!\n");
@@ -222,6 +228,7 @@ struct osloader_ops loader_ops = {
 	.set_rtc_alarm_charging = stub_set_rtc_alarm_charging,
 	.set_wdt_counter = stub_set_wdt_counter,
 	.get_target_mode = stub_get_target_mode,
+	.get_last_target_mode = stub_get_last_target_mode,
 	.get_rtc_alarm_charging = stub_get_rtc_alarm_charging,
 	.get_wdt_counter = stub_get_wdt_counter,
 	.hook_before_exit = stub_hook_before_exit,

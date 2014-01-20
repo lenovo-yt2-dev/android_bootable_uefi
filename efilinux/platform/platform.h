@@ -50,6 +50,7 @@ struct osloader_ops {
 	EFI_STATUS (*save_target_mode)(enum targets);
 	EFI_STATUS (*set_rtc_alarm_charging)(int);
 	EFI_STATUS (*set_wdt_counter)(int);
+	enum targets (*get_last_target_mode)(void);
 	enum targets (*get_target_mode)(void);
 	int (*get_rtc_alarm_charging)(void);
 	int (*get_wdt_counter)(void);

@@ -84,11 +84,6 @@ out:
 	return ret;
 }
 
-EFI_STATUS uefi_set_target_mode(enum targets TargetMode)
-{
-	return set_osnib_var(TargetMode, FALSE);
-}
-
 EFI_STATUS uefi_set_rtc_alarm_charging(int RtcAlarmCharging)
 {
 	return set_osnib_var(RtcAlarmCharging, TRUE);
@@ -97,11 +92,6 @@ EFI_STATUS uefi_set_rtc_alarm_charging(int RtcAlarmCharging)
 EFI_STATUS uefi_set_wdt_counter(int WdtCounter)
 {
 	return set_osnib_var(WdtCounter, TRUE);
-}
-
-enum targets uefi_get_target_mode(void)
-{
-	return get_osnib_var(TargetMode);
 }
 
 int uefi_get_rtc_alarm_charging(void)

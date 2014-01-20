@@ -187,7 +187,7 @@ enum targets boot_watchdog(enum reset_sources rs)
 		return TARGET_UNKNOWN;
 
 	int wdt_counter = loader_ops.get_wdt_counter();
-	enum targets last_target = loader_ops.get_target_mode();
+	enum targets last_target = loader_ops.get_last_target_mode();
 
 	wdt_counter++;
 	debug(L"watchdog counter = %d\n", wdt_counter);

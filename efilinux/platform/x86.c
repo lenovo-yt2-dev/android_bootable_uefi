@@ -103,6 +103,7 @@ void x86_ops(struct osloader_ops *ops)
 	ops->get_wake_source = rsci_get_wake_source;
 	ops->get_reset_source = rsci_get_reset_source;
 	ops->get_reset_type = rsci_get_reset_type;
+	ops->get_last_target_mode = get_entry_last;
 	ops->get_target_mode = get_entry_oneshot;
 	ops->save_target_mode = set_entry_last;
 	ops->get_shutdown_source = rsci_get_shutdown_source;

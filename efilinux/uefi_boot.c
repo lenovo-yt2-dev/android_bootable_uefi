@@ -110,15 +110,25 @@ error:
 static const CHAR16	*target_mode_name      = L"LoaderEntryOneShot";
 static const CHAR16	*last_target_mode_name = L"LoaderEntryLast";
 
-enum targets get_entry_oneshot(void)
+static enum targets get_target_from_var(const CHAR16 *varname)
 {
 	CHAR16 *name;
 	enum targets target;
 
-	name = LibGetVariable((CHAR16 *)target_mode_name, (EFI_GUID *)&osloader_guid);
+	name = LibGetVariable((CHAR16 *)varname, (EFI_GUID *)&osloader_guid);
 	if (!name)
 		return TARGET_UNKNOWN;
 	return EFI_ERROR(name_to_target(name, &target)) ? TARGET_UNKNOWN : target;
+}
+
+enum targets get_entry_oneshot(void)
+{
+	return get_target_from_var(target_mode_name);
+}
+
+enum targets get_entry_last(void)
+{
+	return get_target_from_var(last_target_mode_name);
 }
 
 EFI_STATUS set_entry_last(enum targets target)
