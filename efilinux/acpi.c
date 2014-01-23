@@ -54,12 +54,17 @@ static struct EM_1_TABLE *EM_1_table = NULL;
  */
 #define get_acpi_field(table, field)				\
 	(typeof(table##_table->field))				\
-	_get_acpi_field(#table,					\
+	_get_acpi_field(#table,	#field,				\
 			(VOID **)&table##_table,		\
-			offsetof(struct table##_TABLE, field))
+			offsetof(struct table##_TABLE, field), sizeof(table##_table->field))
 
-static UINT64 _get_acpi_field(char *name, VOID **var, UINTN offset)
+static UINT64 _get_acpi_field(CHAR8 *name, CHAR8 *fieldname, VOID **var, UINTN offset, UINTN size)
 {
+	if (size > sizeof(UINT64)) {
+		error(L"Can't get field %a of ACPI table %a : sizeof of field is %d > %d bytes\n", fieldname, name, size, sizeof(UINT64));
+		return -1;
+	}
+
 	if (!*var) {
 		EFI_STATUS ret = get_acpi_table((CHAR8 *)name, (VOID **)var);
 		if (EFI_ERROR(ret)) {
@@ -68,7 +73,9 @@ static UINT64 _get_acpi_field(char *name, VOID **var, UINTN offset)
 		}
 	}
 
-	return *((CHAR8 *)*var + offset);
+	UINT64 ret = 0;
+	memcpy(&ret, (CHAR8 *)*var + offset, size);
+	return ret;
 }
 
 EFI_STATUS get_rsdt_table(struct RSDT_TABLE **rsdt)
