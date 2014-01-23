@@ -59,6 +59,7 @@
 static CHAR16 *banner = L"efilinux loader %d.%d %s %s %s\n";
 EFI_HANDLE efilinux_image;
 void *efilinux_image_base;
+EFI_HANDLE main_image_handle;
 
 EFI_SYSTEM_TABLE *sys_table;
 EFI_BOOT_SERVICES *boot;

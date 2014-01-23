@@ -31,6 +31,8 @@
 #include <efilib.h>
 #include "efilinux.h"
 
+unsigned long __stack_chk_guard = 0xdeadbeef;
+
 __attribute__ ((visibility ("hidden")))
 void __stack_chk_fail_local()
 {
