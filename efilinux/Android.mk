@@ -26,7 +26,9 @@ PRIVATE_EFI_FILE := $(PRODUCT_OUT)/efilinux.unsigned.efi
 
 ifneq ($(filter $(TARGET_BUILD_VARIANT),eng userdebug),)
 	LOCAL_CFLAGS += -DRUNTIME_SETTINGS -DCONFIG_LOG_LEVEL=4 \
-			-DCONFIG_LOG_FLUSH_TO_VARIABLE
+			-DCONFIG_LOG_FLUSH_TO_VARIABLE -DCONFIG_LOG_BUF_SIZE=51200
+	LOCAL_CFLAGS += -finstrument-functions -finstrument-functions-exclude-file-list=stack_chk.c,profiling.c,efilinux.h,malloc.c,stdlib.h,boot.c,log.c,platform/silvermont.c,loaders/ -finstrument-functions-exclude-function-list=handover_kernel,checkpoint,exit_boot_services,setup_efi_memory_map,Print,SPrint,VSPrint,memory_map,stub_get_current_time_us,rdtsc,rdmsr
+	PROFILING_SRC_FILES := profiling.c
 endif
 
 ifeq ($(TARGET_BUILD_VARIANT),user)
@@ -96,6 +98,7 @@ LOCAL_SRC_FILES := \
 	uefi_em.c \
 	$(security_src_files) \
 	$(watchdog_src_files) \
+	$(PROFILING_SRC_FILES) \
 	fs/fs.c
 
 SPLASH_BMP := $(LOCAL_PATH)/splash.bmp

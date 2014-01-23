@@ -52,6 +52,7 @@ extern EFI_BOOT_SERVICES *boot;
 extern EFI_RUNTIME_SERVICES *runtime;
 extern EFI_HANDLE efilinux_image;
 extern EFI_HANDLE main_image_handle;
+extern void *efilinux_image_base;
 
 /**
  * allocate_pages - Allocate memory pages from the system

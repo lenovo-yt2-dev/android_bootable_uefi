@@ -25,50 +25,21 @@
  * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
- *
  */
 
-#ifndef __LOG_H__
-#define __LOG_H__
+#include "log.h"
 
-#define LEVEL_PROFILE		5
-#define LEVEL_DEBUG		4
-#define LEVEL_INFO		3
-#define LEVEL_WARNING		2
-#define LEVEL_ERROR		1
+#define trace(func, caller) \
+	if (efilinux_image_base) \
+		profile(L"func=%x caller=%x\n", func - efilinux_image_base, \
+			caller - efilinux_image_base);
 
-#include "config.h"
+void __cyg_profile_func_enter(void *func, void *caller)
+{
+	trace(func, caller);
+}
 
-#define LOGLEVEL(level)	(log_level >= LEVEL_##level)
-
-void log(UINTN level, const CHAR16 *prefix, const void *func, const INTN line,
-	 const CHAR16* fmt, ...);
-
-void log_save_to_variable(void);
-
-#define profile(...) { \
-		log(LEVEL_PROFILE, L"PROFILE [%a:%d] ", \
-		    __func__, __LINE__, __VA_ARGS__); \
-	}
-
-#define debug(...) { \
-		log(LEVEL_DEBUG, L"DEBUG [%a:%d] ", \
-		    __func__, __LINE__, __VA_ARGS__); \
-	}
-
-#define info(...) { \
-		log(LEVEL_INFO, L"INFO [%a:%d] ", \
-		    __func__, __LINE__, __VA_ARGS__); \
-	}
-
-#define warning(...) { \
-		log(LEVEL_WARNING, L"WARNING [%a:%d] ", \
-		    __func__, __LINE__, __VA_ARGS__); \
-	}
-
-#define error(...) { \
-		log(LEVEL_ERROR, L"ERROR [%a:%d] ", \
-		    __func__, __LINE__, __VA_ARGS__); \
-	}
-
-#endif	/* __LOG_H__ */
+void __cyg_profile_func_exit(void *func, void *caller)
+{
+	trace(func, caller);
+}

@@ -58,6 +58,7 @@
 
 static CHAR16 *banner = L"efilinux loader %d.%d %s %s %s\n";
 EFI_HANDLE efilinux_image;
+void *efilinux_image_base;
 
 EFI_SYSTEM_TABLE *sys_table;
 EFI_BOOT_SERVICES *boot;
@@ -525,6 +526,7 @@ efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *_table)
 	if (err != EFI_SUCCESS)
 		goto fs_deinit;
 
+	efilinux_image_base = info->ImageBase;
 	efilinux_image = info->DeviceHandle;
 
 	if (!read_config_file(info, &options, &options_size)) {
