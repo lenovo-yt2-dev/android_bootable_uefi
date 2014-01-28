@@ -118,7 +118,7 @@ static enum batt_levels uefi_get_battery_level(void)
 	else {
 		value = status.BatteryVoltageLevel;
 		threshold = em1_get_ia_apps_run();
-		debug(L"Battery: %dmA Threshold: %dmA\n", value, threshold);
+		debug(L"Battery: %dmV Threshold: %dmV\n", value, threshold);
 	}
 
 	return value > threshold ? BATT_BOOT_OS : BATT_BOOT_CHARGING;
@@ -154,11 +154,11 @@ static void uefi_print_battery_infos(void)
 	info(L"BatteryPresent = 0x%x\n", status.BatteryPresent);
 	info(L"BatteryValid = 0x%x\n", status.BatteryValid);
 	info(L"CapacityReadable = 0x%x\n", status.CapacityReadable);
-	info(L"BatteryVoltageLevel = 0x%x\n", status.BatteryVoltageLevel);
-	info(L"BatteryCapacityLevel = 0x%x\n", status.BatteryCapacityLevel);
+	info(L"BatteryVoltageLevel = %dmV\n", status.BatteryVoltageLevel);
+	info(L"BatteryCapacityLevel = %d%%\n", status.BatteryCapacityLevel);
 
-	info(L"IA_APPS_RUN = 0x%x\n", em1_get_ia_apps_run());
-	info(L"IA_APPS_CAP = 0x%x\n", em1_get_ia_apps_cap());
+	info(L"IA_APPS_RUN = %dmV\n", em1_get_ia_apps_run());
+	info(L"IA_APPS_CAP = %d%%\n", em1_get_ia_apps_cap());
 	info(L"CAP_OR_VOLT = 0x%x\n", em1_get_cap_or_volt());
 	info(L"BOOT_ON_INVALID_BATT = 0x%x\n", em1_get_boot_on_invalid_batt());
 error:
