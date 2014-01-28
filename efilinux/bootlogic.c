@@ -160,6 +160,7 @@ enum targets fallback_target(enum targets target)
 	enum targets fallback;
 	switch (target) {
 	case TARGET_BOOT:
+	case TARGET_CHARGING:
 		fallback = TARGET_RECOVERY;
 		break;
 	case TARGET_RECOVERY:
