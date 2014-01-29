@@ -149,7 +149,9 @@ enum targets boot_fw_update(enum reset_sources rs)
 
 enum targets boot_reset(enum reset_sources rs)
 {
-	if (rs == RESET_OS_INITIATED || rs == RESET_FORCED)
+	if (rs == RESET_OS_INITIATED
+	    || rs == RESET_FORCED
+	    || rs == RESET_SECURITY_INITIATED)
 		return loader_ops.get_target_mode();
 	else
 		return TARGET_UNKNOWN;
@@ -181,7 +183,6 @@ enum targets boot_watchdog(enum reset_sources rs)
 {
 	if (rs != RESET_KERNEL_WATCHDOG
 	    && rs != RESET_SECURITY_WATCHDOG
-	    && rs != RESET_SECURITY_INITIATED
 	    && rs != RESET_PMC_WATCHDOG
 	    && rs != RESET_EC_WATCHDOG
 	    && rs != RESET_PLATFORM_WATCHDOG)
