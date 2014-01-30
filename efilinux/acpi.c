@@ -54,7 +54,7 @@ static struct EM_1_TABLE *EM_1_table = NULL;
  */
 #define get_acpi_field(table, field)				\
 	(typeof(table##_table->field))				\
-	_get_acpi_field(#table,	#field,				\
+	_get_acpi_field((CHAR8 *)#table, (CHAR8 *)#field,	\
 			(VOID **)&table##_table,		\
 			offsetof(struct table##_TABLE, field), sizeof(table##_table->field))
 
@@ -74,7 +74,7 @@ static UINT64 _get_acpi_field(CHAR8 *name, CHAR8 *fieldname, VOID **var, UINTN o
 	}
 
 	UINT64 ret = 0;
-	memcpy(&ret, (CHAR8 *)*var + offset, size);
+	memcpy((CHAR8 *)&ret, (CHAR8 *)*var + offset, size);
 	return ret;
 }
 
