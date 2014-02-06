@@ -82,7 +82,7 @@ static EFI_STATUS uefi_get_battery_status(struct battery_status *status)
 	EFI_STATUS ret;
 
 	ret = LibLocateProtocol(&DeviceInfoProtocolGuid, (VOID **)&dev_info);
-	if (EFI_ERROR(ret))
+	if (EFI_ERROR(ret) || !dev_info)
 		goto error;
 
 	ret = dev_info->GetBatteryStatus(

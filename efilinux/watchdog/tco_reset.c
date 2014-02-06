@@ -44,7 +44,7 @@ static EFI_STATUS start_tco_watchdog(struct watchdog *wd)
 
 	debug(L"timeout = %d\n", wd->reg);
 	ret = LibLocateProtocol(&gEfiTcoResetProtocolGuid, (void **)&tco);
-	if (EFI_ERROR(ret)) {
+	if (EFI_ERROR(ret) || !tco) {
 		error(L"%x failure\n", __func__);
 		goto out;
 	}
@@ -61,7 +61,7 @@ static EFI_STATUS stop_tco_watchdog(struct watchdog *wd)
 	EFI_STATUS ret;
 
 	ret = LibLocateProtocol(&gEfiTcoResetProtocolGuid, (void **)&tco);
-	if (EFI_ERROR(ret)) {
+	if (EFI_ERROR(ret) || !tco) {
 		error(L"%x failure\n", __func__);
 		goto out;
 	}

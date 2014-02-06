@@ -421,7 +421,7 @@ EFI_STATUS gop_display_blt(EFI_GRAPHICS_OUTPUT_BLT_PIXEL *Blt, UINTN blt_size, U
 	EFI_STATUS ret;
 
 	ret = LibLocateProtocol(&GraphicsOutputProtocol, (void **)&gop);
- 	if (EFI_ERROR(ret))
+ 	if (EFI_ERROR(ret) || !gop)
 		goto out;
 
 	hres = gop->Mode->Info->HorizontalResolution;

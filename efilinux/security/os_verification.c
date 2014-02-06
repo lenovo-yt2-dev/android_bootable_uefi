@@ -43,7 +43,7 @@ EFI_STATUS intel_os_verify(IN VOID *os, IN UINTN os_size,
 	EFI_STATUS ret;
 
 	ret = LibLocateProtocol(&gOsVerificationProtocolGuid, (void **)&ovp);
-	if (EFI_ERROR(ret)) {
+	if (EFI_ERROR(ret) || !ovp) {
 		error(L"%x failure\n", __func__);
 		goto out;
 	}
@@ -63,7 +63,7 @@ BOOLEAN is_secure_boot_enabled(void)
 	BOOLEAN unsigned_allowed;
 
 	ret = LibLocateProtocol(&gOsVerificationProtocolGuid, (void **)&ovp);
-	if (EFI_ERROR(ret)) {
+	if (EFI_ERROR(ret) || !ovp) {
 		error(L"%x failure\n", __func__);
 		goto out;
 	}

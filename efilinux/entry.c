@@ -513,6 +513,10 @@ efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *_table)
 	debug(L"shell cmdline=%a\n", cmdline);
 	switch(type) {
 	case 'f':
+		if (!name) {
+			error(L"No file name specified or name is empty\n");
+			goto free_args;
+		}
 		info(L"Starting file %s\n", name);
 		err = android_image_start_file(image, info->DeviceHandle, name, cmdline);
 		break;

@@ -405,7 +405,7 @@ void load_dsdt(void)
 			dsdt = (CHAR8 *) (*((UINT32 *)facp));
 			free(dsdt);
 			ret = uefi_read_file(io, L"DSDT", (void **)&dsdt, &size);
-			if (EFI_ERROR(ret)) {
+			if (EFI_ERROR(ret) || !dsdt) {
 				error(L"Failed to read file DSDT:%r\n", ret);
 				goto out;
 			}
