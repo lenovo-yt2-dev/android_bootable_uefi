@@ -57,7 +57,7 @@ int batt_boot_os(void)
 
 void forced_shutdown(void)
 {
-	DEBUG(L"Forced shutdown occured\n");
+	debug(L"Forced shutdown occured\n");
 	loader_ops.set_rtc_alarm_charging(0);
 	loader_ops.set_wdt_counter(0);
 }
@@ -300,7 +300,7 @@ CHAR8 *get_cmdline(CHAR8 *cmdline)
 	CHAR8 *updated_cmdline;
 
 	extra_cmdline = loader_ops.get_extra_cmdline();
-	debug(L"Getting extra commandline: %a\n", extra_cmdline);
+	debug(L"Getting extra commandline: %a\n", extra_cmdline ? extra_cmdline : (CHAR8 *)"");
 
 	updated_cmdline = append_strings(extra_cmdline, cmdline);
 

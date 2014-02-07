@@ -130,7 +130,7 @@ EFI_STATUS intel_load_target(enum targets target, CHAR8 *cmdline)
 
 	updated_cmdline = append_strings(cmdline, entry->cmdline);
 
-	debug(L"target cmdline = %a\n", cmdline);
+	debug(L"target cmdline = %a\n", updated_cmdline ? updated_cmdline : (CHAR8 *)"");
 	debug(L"Loading target %s\n", entry->name);
 
 	if (cmdline)
