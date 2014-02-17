@@ -51,6 +51,12 @@
 #define LOG_LINE_LEN 100
 #endif	/* CONFIG_LOG_LINE_LEN */
 
+#ifdef CONFIG_EFILINUX_VAR_PREFIX
+#define EFILINUX_VAR_PREFIX CONFIG_EFILINUX_VAR_PREFIX
+#else
+#define EFILINUX_VAR_PREFIX "Efilinux"
+#endif	/* CONFIG_EFILINUX_VAR_PREFIX */
+
 extern UINTN log_level;
 extern BOOLEAN log_flush_to_variable;
 extern BOOLEAN has_warmdump;

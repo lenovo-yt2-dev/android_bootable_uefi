@@ -39,8 +39,10 @@
 #include "bootlogic.h"
 #include "platform/platform.h"
 #include "commands.h"
+#include "uefi_utils.h"
 #include "utils.h"
 #include "em.h"
+#include "config.h"
 
 #define ERROR_STRING_LENGTH	32
 
@@ -56,7 +58,7 @@
 #define EFILINUX_VERSION_DATE L"undef"
 #endif
 
-static CHAR16 *banner = L"efilinux loader %d.%d %s %s %s\n";
+static CHAR16 *banner = L"efilinux loader %d.%d %a %a %a\n";
 EFI_HANDLE efilinux_image;
 void *efilinux_image_base;
 EFI_HANDLE main_image_handle;
@@ -432,6 +434,18 @@ read_config_file(EFI_LOADED_IMAGE *image, CHAR16 **options,
 }
 #endif
 
+#define EFILINUX_VERSION_VARNAME EFILINUX_VAR_PREFIX "Version"
+static EFI_STATUS store_osloader_version(char *version)
+{
+	EFI_STATUS ret;
+
+	ret = uefi_set_simple_var(EFILINUX_VERSION_VARNAME, &osloader_guid, strlen(version) + 1, version, FALSE);
+	if (EFI_ERROR(ret))
+		warning(L"Failed to set %a EFI variable\n", EFILINUX_VERSION_VARNAME, ret);
+
+	return ret;
+}
+
 /**
  * efi_main - The entry point for the OS loader image.
  * @image: firmware-allocated handle that identifies the image
@@ -458,9 +472,11 @@ efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *_table)
 	if (CheckCrc(sys_table->Hdr.HeaderSize, &sys_table->Hdr) != TRUE)
 		return EFI_LOAD_ERROR;
 
-	Print(banner, EFILINUX_VERSION_MAJOR, EFILINUX_VERSION_MINOR,
+	info(banner, EFILINUX_VERSION_MAJOR, EFILINUX_VERSION_MINOR,
 		EFILINUX_BUILD_STRING, EFILINUX_VERSION_STRING,
 		EFILINUX_VERSION_DATE);
+
+	store_osloader_version(EFILINUX_BUILD_STRING);
 
 	err = fs_init();
 	if (err != EFI_SUCCESS)

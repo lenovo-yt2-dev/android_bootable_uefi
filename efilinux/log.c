@@ -33,6 +33,7 @@
 
 #include "platform.h"
 #include "log.h"
+#include "uefi_utils.h"
 
 static CHAR16 buffer[LOG_BUF_SIZE / sizeof(CHAR16)];
 static CHAR16 *cur = buffer;
@@ -67,13 +68,14 @@ void log(UINTN level, const CHAR16 *prefix, const void *func, const INTN line,
 	va_end (args);
 }
 
+#define EFILINUX_LOGS_VARNAME EFILINUX_VAR_PREFIX "Logs"
 void log_save_to_variable()
 {
 	if (log_flush_to_variable) {
-		EFI_STATUS status = LibSetVariable(L"EfilinuxLogs", &osloader_guid,
-						   (cur - buffer) * sizeof(CHAR16),
-						   buffer);
+		EFI_STATUS status = uefi_set_simple_var(EFILINUX_LOGS_VARNAME, &osloader_guid,
+							(cur - buffer) * sizeof(CHAR16),
+							buffer, FALSE);
 		if (EFI_ERROR(status))
-			error(L"Save log into EFI variable failed\n");
+			warning(L"Save log into EFI variable failed\n");
 	}
 }

@@ -99,6 +99,6 @@ void uefi_populate_osnib_variables(void)
 
 		ret = uefi_set_simple_var(var->name, &osloader_guid, 1, &value, FALSE);
 		if (EFI_ERROR(ret))
-			error(L"Failed to set %s osnib EFI variable", var->name, ret);
+			error(L"Failed to set %a osnib EFI variable", var->name, ret);
 	}
 }
