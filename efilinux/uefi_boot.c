@@ -99,7 +99,7 @@ EFI_STATUS set_entry_last(enum targets target)
 
 	status = LibDeleteVariable((CHAR16 *)target_mode_name, &osloader_guid);
 	if (status != EFI_NOT_FOUND)
-		error(L"Failed to delete %s variable\n", name);
+		warning(L"Failed to delete %s variable\n", target_mode_name);
 
 	return LibSetNVVariable((CHAR16 *)last_target_mode_name, (EFI_GUID *)&osloader_guid,
 				StrSize(name), name);
