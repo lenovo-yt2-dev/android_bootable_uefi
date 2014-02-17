@@ -100,6 +100,12 @@ include $(LOCAL_PATH)/uefi_executable.mk
 
 ################################################################################
 include $(CLEAR_VARS)
+LOCAL_COPY_HEADERS := bootlogic.h
+LOCAL_COPY_HEADERS_TO := efilinux
+include $(BUILD_COPY_HEADERS)
+
+################################################################################
+include $(CLEAR_VARS)
 
 LOCAL_MODULE := warmdump
 LOCAL_MODULE_TAGS := optional

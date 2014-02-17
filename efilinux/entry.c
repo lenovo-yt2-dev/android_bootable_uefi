@@ -67,6 +67,8 @@ EFI_SYSTEM_TABLE *sys_table;
 EFI_BOOT_SERVICES *boot;
 EFI_RUNTIME_SERVICES *runtime;
 
+extern EFI_STATUS start_boot_logic(CHAR8 *cmdline);
+
 struct efilinux_commands {
 	CHAR16 *name;
 	void (*func)(void);

@@ -25,6 +25,9 @@
  * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * This file defines bootlogic data structures, try to keep it without
+ * any external definitions in order to ease export of it.
  */
 
 #ifndef _BOOTLOGIC_H_
@@ -123,7 +126,5 @@ enum combo_keys {
 	COMBO_FASTBOOT_MODE,
 	COMBO_ERROR = -1,
 };
-
-EFI_STATUS start_boot_logic(CHAR8 *cmdline);
 
 #endif /* _BOOTLOGIC_H_ */
