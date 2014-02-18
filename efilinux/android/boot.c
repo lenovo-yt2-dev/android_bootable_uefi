@@ -42,7 +42,7 @@
 #include "platform.h"
 #include "secure_boot.h"
 
-#ifdef x86_64
+#ifdef CONFIG_X86_64
 #include "bzimage/x86_64.h"
 #else
 #include "bzimage/i386.h"
@@ -443,7 +443,7 @@ static EFI_STATUS setup_efi_memory_map(struct boot_params *boot_params, UINTN *m
 	efi->efi_memdesc_version = descr_version;
 	efi->efi_memmap = (UINT32)(UINTN)map_buf;
 	efi->efi_memmap_size = map_size;
-#ifdef x86_64
+#ifdef CONFIG_X86_64
 	efi->efi_systab_hi = (unsigned long)sys_table >> 32;
 	efi->efi_memmap_hi = (unsigned long)map_buf >> 32;
 #endif

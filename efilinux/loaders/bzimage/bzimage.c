@@ -36,7 +36,7 @@
 #include "protocol.h"
 #include "stdlib.h"
 
-#ifdef x86_64
+#ifdef CONFIG_X86_64
 #include "x86_64.h"
 #else
 #include "i386.h"
@@ -411,7 +411,7 @@ again:
 	efi->efi_memdesc_version = desc_version;
 	efi->efi_memmap = (UINT32)(UINTN)map_buf;
 	efi->efi_memmap_size = map_size;
-#ifdef x86_64
+#ifdef CONFIG_X86_64
 	efi->efi_systab_hi = (unsigned long)sys_table >> 32;
 	efi->efi_memmap_hi = (unsigned long)map_buf >> 32;
 #endif

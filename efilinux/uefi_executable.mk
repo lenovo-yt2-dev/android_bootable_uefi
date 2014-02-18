@@ -1,10 +1,9 @@
 ifeq ($(TARGET_ARCH),x86)
 	EFI_ARCH := ia32
-	SPECIFIC_GNU_EFI_SRC := ""
 	LOCAL_CFLAGS += \
 		-fPIC -fPIE -fshort-wchar -ffreestanding -Wall -m32 \
 		-fstack-protector -Wl,-z,noexecstack -O2 \
-		-D_FORTIFY_SOURCE=2 -D$(EFI_ARCH)
+		-D_FORTIFY_SOURCE=2 -DCONFIG_X86
 endif
 
 ifeq ($(TARGET_ARCH),x86-64)

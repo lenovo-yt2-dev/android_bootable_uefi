@@ -33,6 +33,7 @@
 
 unsigned long __stack_chk_guard = 0xdeadbeef;
 
+/* Code requested to x86 build */
 __attribute__ ((visibility ("hidden")))
 void __stack_chk_fail_local()
 {
@@ -40,4 +41,11 @@ void __stack_chk_fail_local()
 
 	exit(main_image_handle, EFI_SECURITY_VIOLATION, sizeof(ERROR_MSG),
 	     (CHAR16*)ERROR_MSG);
+}
+
+/* Code requested to x86_64 build (missing symbol) */
+__attribute__ ((visibility ("hidden")))
+void __stack_chk_fail()
+{
+	__stack_chk_fail_local();
 }

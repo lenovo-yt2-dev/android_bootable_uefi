@@ -69,6 +69,7 @@ static void x86_hook_bootlogic_end()
 
 static inline void cpuid(uint32_t op, uint32_t reg[4])
 {
+#ifdef CONFIG_X86
 	asm volatile("pushl %%ebx      \n\t" /* save %ebx */
 		     "cpuid            \n\t"
 		     "movl %%ebx, %1   \n\t" /* save what cpuid just put in %ebx */
@@ -76,6 +77,13 @@ static inline void cpuid(uint32_t op, uint32_t reg[4])
 		     : "=a"(reg[0]), "=r"(reg[1]), "=c"(reg[2]), "=d"(reg[3])
 		     : "a"(op)
 		     : "cc");
+#elif CONFIG_X86_64
+	asm volatile("xchg{q}\t{%%}rbx, %q1\n\t"
+		     "cpuid\n\t"
+		     "xchg{q}\t{%%}rbx, %q1\n\t"
+		     : "=a" (reg[0]), "=&r" (reg[1]), "=c" (reg[2]), "=d" (reg[3])
+		     : "a" (op));
+#endif
 }
 
 enum cpu_id x86_identify_cpu()
