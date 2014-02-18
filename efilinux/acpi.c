@@ -85,9 +85,9 @@ static UINT64 _get_acpi_field(CHAR8 *name, CHAR8 *fieldname, VOID **var, UINTN o
 	return ret;
 }
 
-static EFI_STATUS _set_acpi_field(CHAR8 *name, CHAR8 *fieldname, VOID **var, UINTN offset, UINTN size, CHAR8 value)
+static EFI_STATUS _set_acpi_field(CHAR8 *name, CHAR8 *fieldname, VOID **var, UINTN offset, UINTN size, UINT64 value)
 {
-	if (size > sizeof(UINT64)) {
+	if (size > sizeof(value)) {
 		error(L"Can't set field %a of ACPI table %a : sizeof of field is %d > %d bytes\n", fieldname, name, size, sizeof(UINT64));
 		return -1;
 	}
@@ -100,7 +100,7 @@ static EFI_STATUS _set_acpi_field(CHAR8 *name, CHAR8 *fieldname, VOID **var, UIN
 		}
 	}
 
-	memcpy((CHAR8 *)*var + offset, &value, size);
+	memcpy((CHAR8 *)*var + offset, (CHAR8 *)&value, size);
 	return EFI_SUCCESS;
 }
 
