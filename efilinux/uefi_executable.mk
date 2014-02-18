@@ -1,14 +1,20 @@
 ifeq ($(TARGET_ARCH),x86)
 	EFI_ARCH := ia32
-	LOCAL_CFLAGS += \
-		-fPIC -fPIE -fshort-wchar -ffreestanding -Wall -m32 \
-		-fstack-protector -Wl,-z,noexecstack -O2 \
-		-D_FORTIFY_SOURCE=2 -DCONFIG_X86
+	LOCAL_TARGET_ARCH := -m32
+	LOCAL_TARGET_CFLAGS := -DCONFIG_X86
+	LOCAL_TARGET_LIBGCC := $(shell dirname $(TARGET_LIBGCC))
 endif
 
-ifeq ($(TARGET_ARCH),x86-64)
+ifneq (,$(filter $(TARGET_ARCH),x86-64)$(filter $(BOARD_USE_64BIT_KERNEL),true))
 	EFI_ARCH := x86_64
+	LOCAL_TARGET_ARCH := -m64
+	LOCAL_TARGET_CFLAGS := -DCONFIG_X86_64
+	LOCAL_TARGET_LIBGCC := $(shell dirname $(TARGET_LIBGCC))/..
 endif
+
+LOCAL_CFLAGS += -fPIC -fPIE -fshort-wchar -ffreestanding -Wall \
+	-fstack-protector -Wl,-z,noexecstack -O2 \
+	-D_FORTIFY_SOURCE=2 $(LOCAL_TARGET_ARCH) $(LOCAL_TARGET_CFLAGS)
 
 EFI_TARGET := efi-app-$(EFI_ARCH)
 
@@ -45,7 +51,7 @@ $(LOCAL_BUILT_MODULE): EFI_SIGNED_OUT := $(PRODUCT_OUT)/$(PRIVATE_MODULE).efi
 
 $(LOCAL_BUILT_MODULE): $(GNUEFI_PATH)/libgnuefi.a $(LDS) $(all_objects) | $(HOST_OUT_EXECUTABLES)/prebuilt-bin-to-hex $(EFI_SIGNING_TOOL)
 	@mkdir -p $(dir $@)
-	prebuilt-bin-to-hex splash_bmp < $(SPLASH_BMP) | $(TARGET_CC) -x c - -c $(TARGET_GLOBAL_CFLAGS) -o $(SPLASH_OBJ)
+	prebuilt-bin-to-hex splash_bmp < $(SPLASH_BMP) | $(TARGET_CC) -x c - -c $(TARGET_GLOBAL_CFLAGS) $(LOCAL_TARGET_ARCH) -o $(SPLASH_OBJ)
 	@echo "linking $@"
 	$(TARGET_TOOLS_PREFIX)ld$(HOST_EXECUTABLE_SUFFIX).bfd \
 		-Bsymbolic \
@@ -55,7 +61,7 @@ $(LOCAL_BUILT_MODULE): $(GNUEFI_PATH)/libgnuefi.a $(LDS) $(all_objects) | $(HOST
 		-fPIC -pie \
 		-nostdlib \
 		-znocombreloc \
-		-L$(shell dirname $(TARGET_LIBGCC)) \
+		-L$(LOCAL_TARGET_LIBGCC) \
 		-L$(GNUEFI_PATH) \
 		-T $(LDS) \
 		$(EFI_APP_OBJS) \
