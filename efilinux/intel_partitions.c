@@ -57,8 +57,10 @@ static struct target_entry android_entries[] = {
 	{TARGET_FASTBOOT , L"bootloader", FASTBOOT_GUID , (CHAR8 *) "androidboot.mode=fastboot"},
 	{TARGET_TEST	 , L"test"	, TEST_GUID     , (CHAR8 *) "androidboot.mode=test"},
 	{TARGET_CHARGING , L"charging"	, BOOT_GUID     , (CHAR8 *) "androidboot.mode=charger"},
+#ifdef CONFIG_ENABLE_FACTORY_MODES
 	{TARGET_FACTORY  , L"factory"	, BOOT_GUID     , (CHAR8 *) "androidboot.mode=factory"},
 	{TARGET_FACTORY2 , L"factory2"	, BOOT_GUID     , (CHAR8 *) "androidboot.mode=factory2"},
+#endif	/* CONFIG_ENABLE_FACTORY_MODES */
 	{TARGET_DNX	 , L"dnx"	, NULL_GUID     , NULL},
 };
 
