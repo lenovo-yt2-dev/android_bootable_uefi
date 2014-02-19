@@ -130,6 +130,19 @@ static EFI_STATUS print_memory_map(void)
 	return err;
 }
 
+#ifdef RUNTIME_SETTINGS
+static void (*saved_hook_before_jump)(void);
+
+static void __attribute__((noreturn)) hook_before_jump_forever_loop(void)
+{
+	if (saved_hook_before_jump)
+		saved_hook_before_jump();
+
+	while (1)
+		;
+}
+#endif
+
 static inline BOOLEAN isspace(CHAR16 ch)
 {
 	return ((unsigned char)ch <= ' ');
@@ -231,6 +244,12 @@ parse_args(CHAR16 *options, UINT32 size, CHAR16 *type, CHAR16 **name, CHAR8 **cm
 					goto usage;
 				break;
 			}
+			case 'n': {
+				saved_hook_before_jump = loader_ops.hook_before_jump;
+				loader_ops.hook_before_jump = hook_before_jump_forever_loop;
+				warning(L"-n option set : OSloader will not jump to kernel\n");
+				break;
+			}
 			case 'A':
 				list_acpi_tables();
 				goto fail;
@@ -283,6 +302,7 @@ usage:
 	Print(L"\t-f <filename>:  image to load\n");
 	Print(L"\t-p <partname>:  partition to load\n");
 	Print(L"\t-t <target>:    target to boot\n");
+	Print(L"\t-n:             do as usual but wait indefinitely instead of jumping to the loaded image (for test purpose only)\n");
 	Print(L"\t-c <command>:   debug commands (dump_infos, print_pidv, print_rsci,\n");
 	Print(L"\t                dump_acpi_tables or load_dsdt)\n");
 #endif	/* RUNTIME_SETTINGS */

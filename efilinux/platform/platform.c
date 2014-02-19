@@ -175,6 +175,10 @@ static void stub_hook_before_exit(void)
 	warning(L"stubbed!\n");
 }
 
+static void __attribute__((unused)) stub_hook_before_jump(void)
+{
+}
+
 static void stub_hook_bootlogic_begin(void)
 {
 	warning(L"stubbed!\n");
@@ -239,6 +243,7 @@ struct osloader_ops loader_ops = {
 	.get_rtc_alarm_charging = stub_get_rtc_alarm_charging,
 	.get_wdt_counter = stub_get_wdt_counter,
 	.hook_before_exit = stub_hook_before_exit,
+	.hook_before_jump = stub_hook_before_jump,
 	.hook_bootlogic_begin = stub_hook_bootlogic_begin,
 	.hook_bootlogic_end = stub_hook_bootlogic_end,
 	.display_splash = stub_display_splash,

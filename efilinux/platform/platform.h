@@ -56,6 +56,7 @@ struct osloader_ops {
 	int (*get_rtc_alarm_charging)(void);
 	int (*get_wdt_counter)(void);
 	void (*hook_before_exit)(void);
+	void (*hook_before_jump)(void);
 	void (*hook_bootlogic_begin)(void);
 	void (*hook_bootlogic_end)(void);
 	EFI_STATUS (*display_splash)(void);

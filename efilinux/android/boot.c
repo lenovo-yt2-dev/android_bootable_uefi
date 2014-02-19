@@ -549,6 +549,8 @@ static EFI_STATUS handover_kernel(CHAR8 *bootimage, EFI_HANDLE parent_image)
 	if (EFI_ERROR(ret))
 		goto out;
 
+	loader_ops.hook_before_jump();
+
 	asm volatile ("lidt %0" :: "m" (idt));
 	asm volatile ("lgdt %0" :: "m" (gdt));
 
