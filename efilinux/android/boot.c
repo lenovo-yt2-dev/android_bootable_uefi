@@ -457,7 +457,7 @@ out:
 	return ret;
 }
 
-static EFI_STATUS handover_kernel(CHAR8 *bootimage, EFI_HANDLE parent_image)
+static EFI_STATUS handover_kernel(CHAR8 *bootimage, EFI_HANDLE parent_image, BOOLEAN watchdog_en)
 {
         EFI_PHYSICAL_ADDRESS kernel_start;
         EFI_PHYSICAL_ADDRESS boot_addr;
@@ -529,9 +529,11 @@ static EFI_STATUS handover_kernel(CHAR8 *bootimage, EFI_HANDLE parent_image)
 
 	fs_close();
 
-	ret = watchdog->ops.start(watchdog);
-	if (EFI_ERROR(ret))
-		debug(L"watchdog not started: %r\n", ret);
+	if (watchdog_en) {
+		ret = watchdog->ops.start(watchdog);
+		if (EFI_ERROR(ret))
+			warning(L"watchdog not started: %r\n", ret);
+	}
 
 	loader_ops.hook_before_exit();
 
@@ -785,8 +787,9 @@ EFI_STATUS android_image_start_buffer(
         }
 
         debug(L"Loading the kernel\n");
-        ret = handover_kernel(bootimage, parent_image);
-        error(L"handover_kernel : %r\n", ret);
+        ret = handover_kernel(bootimage, parent_image,
+                strstr(cmdline, "disable_kernel_watchdog=1") ? FALSE : TRUE);
+        error(L"handover_kernel %r\n", ret);
 
         efree(buf->hdr.ramdisk_image, buf->hdr.ramdisk_size);
 out_cmdline:
