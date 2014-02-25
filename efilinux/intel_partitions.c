@@ -35,11 +35,13 @@
 #include "android/boot.h"
 #include "utils.h"
 #include "uefi_utils.h"
+#include <bootloader.h>
 
 #define BOOT_GUID	{0x80868086, 0x8086, 0x8086, {0x80, 0x86, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00}}
 #define RECOVERY_GUID	{0x80868086, 0x8086, 0x8086, {0x80, 0x86, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01}}
 #define FASTBOOT_GUID	{0x80868086, 0x8086, 0x8086, {0x80, 0x86, 0x00, 0x00, 0x00, 0x00, 0x01, 0x02}}
 #define TEST_GUID	{0x80868086, 0x8086, 0x8086, {0x80, 0x86, 0x00, 0x00, 0x00, 0x00, 0x01, 0x04}}
+#define MISC_GUID	{0x80868086, 0x8086, 0x8086, {0x80, 0x86, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03}}
 #define NULL_GUID	{0}
 
 struct target_entry {
@@ -186,4 +188,45 @@ EFI_STATUS check_gpt(void) {
 	/* TODO */
 	debug(L"NOT IMPLEMENTED\n");
 	return EFI_SUCCESS;
+}
+
+static EFI_STATUS read_bcb(struct bootloader_message *bcb)
+{
+	EFI_STATUS ret;
+	EFI_BLOCK_IO *BlockIo;
+	EFI_DISK_IO *DiskIo;
+	UINT32 MediaId;
+	EFI_GUID bcb_guid = MISC_GUID;
+
+	ret = open_partition(&bcb_guid, &MediaId, &BlockIo, &DiskIo);
+	if (EFI_ERROR(ret)) {
+		warning(L"Misc partition not found: %r\n", ret);
+		return EFI_NOT_FOUND;
+	}
+
+	ret = uefi_call_wrapper(DiskIo->ReadDisk, 5, DiskIo, MediaId, 0,
+				sizeof(*bcb), bcb);
+	if (EFI_ERROR(ret)) {
+		warning(L"Could not read Misc partition: %r\n", ret);
+		return ret;
+	}
+
+	return EFI_SUCCESS;
+}
+
+enum targets load_bcb(void)
+{
+	EFI_STATUS ret;
+	struct bootloader_message bcb;
+
+	ret = read_bcb(&bcb);
+	if (EFI_ERROR(ret))
+		return TARGET_UNKNOWN;
+
+	if (!strcmpa((CHAR8 *)bcb.command, (CHAR8 *)"boot-recovery")) {
+		debug(L"BCB request to boot in recovery\n");
+		return TARGET_RECOVERY;
+	}
+
+	return TARGET_UNKNOWN;
 }

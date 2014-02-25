@@ -48,6 +48,11 @@ char *target_strings[TARGET_UNKNOWN + 1] = {
 	STRINGIZE(TARGET_UNKNOWN),
 };
 
+static enum targets boot_bcb(int dummy)
+{
+	return loader_ops.load_bcb();
+}
+
 int batt_boot_os(void)
 {
 	/* TODO */
@@ -129,6 +134,7 @@ enum targets target_from_off(enum wake_sources ws)
 
 	enum targets (*boot_case[])(enum wake_sources wake_source) = {
 		boot_fastboot_combo,
+		boot_bcb,
 		boot_power_key,
 		boot_rtc,
 		boot_battery_insertion,
@@ -240,9 +246,10 @@ enum targets target_from_reset(enum reset_sources rs)
 {
 	enum targets target = TARGET_UNKNOWN;
 	enum targets (*boot_case[])(enum reset_sources reset_source) = {
+		boot_watchdog,
+		boot_bcb,
 		boot_fw_update,
 		boot_reset,
-		boot_watchdog,
 	};
 
 	int i = 0;

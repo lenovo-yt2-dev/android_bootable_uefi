@@ -15,6 +15,7 @@ EFILINUX_C_INCLUDES = \
 	$(LOCAL_PATH)/platform \
 	$(LOCAL_PATH)/bzimage \
 	$(LOCAL_PATH)/fs
+EFILINUX_C_INCLUDES += $(call include-path-for, recovery)
 
 watchdog_src_files := \
 	watchdog/tco_reset.c \

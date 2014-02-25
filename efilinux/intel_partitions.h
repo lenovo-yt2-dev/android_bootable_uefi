@@ -37,5 +37,6 @@ EFI_STATUS name_to_target(CHAR16 *name, enum targets *target);
 EFI_STATUS target_to_name(enum targets target, CHAR16 **name);
 EFI_STATUS check_gpt(void);
 EFI_STATUS intel_load_target(enum targets target, CHAR8 *cmdline);
+enum targets load_bcb(void);
 
 #endif /* _INTEL_PARTITIONS_H_ */

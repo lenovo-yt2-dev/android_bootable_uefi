@@ -225,6 +225,12 @@ static UINT64 stub_get_current_time_us(void)
 	return 0;
 }
 
+static enum targets stub_load_bcb(void)
+{
+	warning(L"stubbed!\n");
+	return TARGET_UNKNOWN;
+}
+
 struct osloader_ops loader_ops = {
 	.check_partition_table = stub_check_partition_table,
 	.read_flow_type = stub_read_flow_type,
@@ -254,4 +260,5 @@ struct osloader_ops loader_ops = {
 	.hash_verify = stub_hash_verify,
 	.get_extra_cmdline = stub_get_extra_cmdline,
 	.get_current_time_us = stub_get_current_time_us,
+	.load_bcb = stub_load_bcb,
 };

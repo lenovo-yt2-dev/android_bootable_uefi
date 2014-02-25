@@ -63,6 +63,7 @@ struct osloader_ops {
 	EFI_STATUS (*hash_verify)(VOID*, UINTN, VOID*, UINTN);
 	CHAR8* (*get_extra_cmdline)(void);
 	UINT64 (*get_current_time_us)(void);
+	enum targets (*load_bcb)(void);
 };
 
 extern struct osloader_ops loader_ops;
