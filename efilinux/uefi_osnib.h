@@ -37,8 +37,8 @@ EFI_STATUS uefi_set_wdt_counter(int);
 int uefi_get_rtc_alarm_charging(void);
 int uefi_get_wdt_counter(void);
 CHAR8 *uefi_get_extra_cmdline(void);
-EFI_STATUS uefi_set_warmdump(int WarmDump);
-int uefi_get_warmdump(void);
+EFI_STATUS uefi_set_wd_cold_reset(int WDColdReset);
+int uefi_get_wd_cold_reset(void);
 
 void uefi_populate_osnib_variables(void);
 

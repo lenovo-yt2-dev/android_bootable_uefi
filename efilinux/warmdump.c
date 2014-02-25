@@ -70,9 +70,9 @@ static BOOLEAN need_backup()
 	rs = rsci_get_reset_source();
 	debug(L"Reset source = 0x%x\n", rs);
 
-	if (uefi_get_simple_var("WarmDump", &osloader_guid) == 1) {
+	if (uefi_get_simple_var("WDColdReset", &osloader_guid) == 1) {
 		// Workaround for cold reset issue: if set, we need to restore data
-		warning(L"WA: WarmDump variable is set, restore data\n");
+		warning(L"WA: WDColdReset variable is set, restore data\n");
 		return FALSE;
 	}
 
@@ -325,9 +325,6 @@ EFI_STATUS efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *systab)
 		info(L"Backup data\n");
 		lm_backup(esp_fs);
 		pstore_backup(esp_fs);
-
-		info(L"Request cold reset (EFI_TIMEOUT)\n");
-		return EFI_TIMEOUT;
 	} else {
 		info(L"Restore data\n");
 		lm_restore(esp_fs);

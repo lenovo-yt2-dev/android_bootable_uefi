@@ -72,15 +72,17 @@ EFILINUX_CFLAGS +=  -DEFILINUX_BUILD_STRING='"$(BUILD_NUMBER) $(PRODUCT_NAME)"'
 OSLOADER_FILE_PATH := EFI/BOOT/boot$(EFI_ARCH).efi
 EFILINUX_CFLAGS +=  -DOSLOADER_FILE_PATH='L"$(OSLOADER_FILE_PATH)"'
 
-ifeq ($(BOARD_USE_WARMDUMP),true)
-	LOCAL_CFLAGS +=  -DCONFIG_HAS_WARMDUMP
-endif
 WARMDUMP_FILE_PATH := EFI/Intel/warmdump.efi
 EFILINUX_CFLAGS +=  -DWARMDUMP_FILE_PATH='L"$(WARMDUMP_FILE_PATH)"'
 
 EFILINUX_DEBUG_CFFLAGS := -DRUNTIME_SETTINGS -DCONFIG_LOG_LEVEL=4 \
 	-DCONFIG_LOG_FLUSH_TO_VARIABLE -DCONFIG_LOG_BUF_SIZE=51200 \
 	-DCONFIG_LOG_TIMESTAMP -DCONFIG_ENABLE_FACTORY_MODES
+
+ifeq ($(BOARD_USE_WARMDUMP),true)
+	EFILINUX_DEBUG_CFFLAGS += -DCONFIG_HAS_WARMDUMP
+endif
+
 EFILINUX_PROFILING_CFLAGS := -finstrument-functions -finstrument-functions-exclude-file-list=stack_chk.c,profiling.c,efilinux.h,malloc.c,stdlib.h,boot.c,log.c,platform/silvermont.c,platform/airmont.c,loaders/ -finstrument-functions-exclude-function-list=handover_kernel,checkpoint,exit_boot_services,setup_efi_memory_map,Print,SPrint,VSPrint,memory_map,stub_get_current_time_us,rdtsc,rdmsr
 EFILINUX_PROFILING_SRC_FILES := profiling.c
 

@@ -69,14 +69,14 @@ CHAR8 *uefi_get_extra_cmdline(void)
 	return LibGetVariable(L"ExtraKernelCommandLine", &osloader_guid);
 }
 
-EFI_STATUS uefi_set_warmdump(int WarmDump)
+EFI_STATUS uefi_set_wd_cold_reset(int WDColdReset)
 {
-	return set_osnib_var(WarmDump, TRUE);
+	return set_osnib_var(WDColdReset, TRUE);
 }
 
-int uefi_get_warmdump(void)
+int uefi_get_wd_cold_reset(void)
 {
-	return get_osnib_var(WarmDump);
+	return get_osnib_var(WDColdReset);
 }
 
 void uefi_populate_osnib_variables(void)

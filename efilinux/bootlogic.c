@@ -195,16 +195,6 @@ static inline EFI_STATUS call_warmdump(void)
 			       path, NULL, NULL);
 }
 
-static void warmdump_complete(enum targets last_target)
-{
-	loader_ops.save_target_mode(last_target);
-	if (EFI_ERROR(uefi_set_warmdump(1)))
-		error(L"Failed to set warmdump variable\n");
-	// uefi_reset_system(EfiResetCold); // BUG: always do warm reset
-	outb(0xCF9, 0x0E); // Cold reset using PCI reset register
-	error(L"Reset requested, this code should not be reached\n");
-}
-
 enum targets boot_watchdog(enum reset_sources rs)
 {
 	if (rs != RESET_KERNEL_WATCHDOG
@@ -215,16 +205,26 @@ enum targets boot_watchdog(enum reset_sources rs)
 	    && rs != RESET_PLATFORM_WATCHDOG)
 		return TARGET_UNKNOWN;
 
-	enum targets last_target = loader_ops.get_last_target_mode();
-
 	if (has_warmdump) {
 		EFI_STATUS ret = call_warmdump();
-		if (ret == EFI_TIMEOUT) {
-			debug(L"Warmdump requests a cold reset\n");
-			warmdump_complete(last_target);
-		} else if (EFI_ERROR(ret))
+		if (EFI_ERROR(ret))
 			error(L"Warmdump error (%r)\n", ret);
-		uefi_set_warmdump(0);
+	}
+
+	enum targets last_target = loader_ops.get_last_target_mode();
+
+	if (uefi_get_wd_cold_reset() == 1) {
+		if (EFI_ERROR(uefi_set_wd_cold_reset(0)))
+			error(L"Failed to set WDColdReset variable to 0\n");
+	} else {
+		// else branch for 0 and -1 when WDColdReset var is not yet initialized.
+		loader_ops.save_target_mode(last_target);
+		if (EFI_ERROR(uefi_set_wd_cold_reset(1)))
+			error(L"Failed to set WDColdReset variable to 1\n");
+		debug(L"cold reset after watchdog\n");
+		// uefi_reset_system(EfiResetCold); // BUG: always do warm reset
+		outb(0xCF9, 0x0E); // Cold reset using PCI reset register
+		error(L"Reset requested, this code should not be reached\n");
 	}
 
 	int wdt_counter = loader_ops.get_wdt_counter();
@@ -288,7 +288,7 @@ enum targets target_from_inputs(enum flow_types flow_type)
 		return TARGET_BOOT;
 	}
 
-	if (has_warmdump && uefi_get_warmdump() == 1) {
+	if (uefi_get_wd_cold_reset() == 1) {
 		rs = RESET_KERNEL_WATCHDOG;
 		loader_ops.set_reset_source(RESET_KERNEL_WATCHDOG);
 		debug(L"Reset source changed to = 0x%x\n", rs);
