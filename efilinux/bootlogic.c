@@ -282,16 +282,16 @@ enum targets target_from_inputs(enum flow_types flow_type)
 		return TARGET_BOOT;
 	}
 
-	if (rs == RESET_NOT_APPLICABLE)
-		rs = RESET_OS_INITIATED;
-
 	if (has_warmdump && uefi_get_warmdump() == 1) {
 		rs = RESET_KERNEL_WATCHDOG;
 		loader_ops.set_reset_source(RESET_KERNEL_WATCHDOG);
 		debug(L"Reset source changed to = 0x%x\n", rs);
 	}
 
-	return target_from_reset(rs);
+	if (rs != RESET_NOT_APPLICABLE)
+		return target_from_reset(rs);
+
+	return TARGET_UNKNOWN;
 }
 
 CHAR8 *get_cmdline(CHAR8 *cmdline)
