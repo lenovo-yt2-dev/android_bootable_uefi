@@ -49,8 +49,12 @@ EFI_STATUS init_platform_functions(void)
 	case CPU_AIRMONT:
 		init_airmont();
 		break;
+	case CPU_UNKNOWN:
+		error(L"Platform not supported!\n");
+		return EFI_UNSUPPORTED;
 	default:
-		warning(L"Unknown CPUID=%x, fallback on default X86\n", id);
+		warning(L"Unknown CPUID=0x%x, fallback on default X86\n", id);
+		x86_ops(&loader_ops);
 	}
 	return EFI_SUCCESS;
 }
