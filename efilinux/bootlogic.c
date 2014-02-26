@@ -325,6 +325,35 @@ EFI_STATUS check_target(enum targets target)
 	return EFI_SUCCESS;
 }
 
+static EFI_STATUS launch_or_fallback(enum targets target, CHAR8 *cmdline)
+{
+	EFI_STATUS ret;
+	CHAR8 saved_cmdline[(cmdline ? strlena(cmdline) : 0) + 1];
+
+	if (cmdline) {
+		memcpy(saved_cmdline, cmdline, strlena(cmdline) + 1);
+		free(cmdline);
+	} else
+		saved_cmdline[0] = '\0';
+
+	do {
+		ret = loader_ops.populate_indicators();
+		if (EFI_ERROR(ret))
+			return ret;
+
+		ret = loader_ops.save_target_mode(target);
+		if (EFI_ERROR(ret))
+			warning(L"Failed to save the target_mode: %r\n", ret);
+
+		debug(L"Booting target %a\n", target_strings[target]);
+		ret = loader_ops.load_target(target, saved_cmdline);
+
+		target = fallback_target(target);
+	} while (target != TARGET_UNKNOWN);
+
+	return EFI_INVALID_PARAMETER;
+}
+
 EFI_STATUS start_boot_logic(CHAR8 *cmdline)
 {
 	EFI_STATUS ret;
@@ -354,29 +383,14 @@ EFI_STATUS start_boot_logic(CHAR8 *cmdline)
 
 	loader_ops.display_splash();
 
-	while (check_target(target))
-		target = fallback_target(target);
-
-	ret = loader_ops.populate_indicators();
-	if (EFI_ERROR(ret))
-		goto error;
-
-	ret = loader_ops.save_target_mode(target);
-	if (EFI_ERROR(ret))
-		warning(L"Failed to save the target_mode: %r\n", ret);
-
-	debug(L"Booting target %a\n", target_strings[target]);
-
 #ifdef RUNTIME_SETTINGS
 	updated_cmdline = get_cmdline(cmdline);
 #endif
 
 	loader_ops.hook_bootlogic_end();
 
-	ret = loader_ops.load_target(target, updated_cmdline);
-	/* This code shouldn't be reached! */
-	if (EFI_ERROR(ret))
-		goto error;
+	ret = launch_or_fallback(target, updated_cmdline);
+
 error:
 	return ret;
 }

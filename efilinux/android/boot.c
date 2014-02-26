@@ -531,7 +531,7 @@ static EFI_STATUS handover_kernel(CHAR8 *bootimage, EFI_HANDLE parent_image)
 
 	ret = watchdog->ops.start(watchdog);
 	if (EFI_ERROR(ret))
-		debug(L"watchdog not started: %x\n", ret);
+		debug(L"watchdog not started: %r\n", ret);
 
 	loader_ops.hook_before_exit();
 
@@ -587,7 +587,7 @@ EFI_STATUS android_image_start_partition(
         ret = uefi_call_wrapper(DiskIo->ReadDisk, 5, DiskIo, MediaId, 0,
                         sizeof(aosp_header), &aosp_header);
         if (EFI_ERROR(ret)) {
-                error(L"ReadDisk (header)", ret);
+                error(L"ReadDisk (header) : %r\n", ret);
                 return ret;
         }
         if (strncmpa((CHAR8 *)BOOT_MAGIC, aosp_header.magic, BOOT_MAGIC_SIZE)) {
@@ -604,7 +604,7 @@ EFI_STATUS android_image_start_partition(
         ret = uefi_call_wrapper(DiskIo->ReadDisk, 5, DiskIo, MediaId, 0,
                         img_size, bootimage);
         if (EFI_ERROR(ret)) {
-                error(L"ReadDisk", ret);
+                error(L"ReadDisk : %r\n", ret);
                 goto out;
         }
 
@@ -636,7 +636,7 @@ EFI_STATUS android_image_start_file(
         debug(L"Locating boot image from file %s\n", loader);
         path = FileDevicePath(device, loader);
         if (!path) {
-                error(L"Error getting device path.");
+                error(L"Error getting device path\n");
                 uefi_call_wrapper(BS->Stall, 1, 3 * 1000 * 1000);
                 return EFI_INVALID_PARAMETER;
         }
@@ -645,12 +645,12 @@ EFI_STATUS android_image_start_file(
         ret = uefi_call_wrapper(BS->HandleProtocol, 3, device,
                         &SimpleFileSystemProtocol, (void **)&drive);
         if (EFI_ERROR(ret)) {
-                error(L"HandleProtocol", ret);
+                error(L"HandleProtocol : %r\n", ret);
                 return ret;
         }
         ret = uefi_call_wrapper(drive->OpenVolume, 2, drive, &root);
         if (EFI_ERROR(ret)) {
-                error(L"OpenVolume", ret);
+                error(L"OpenVolume : %r\n", ret);
                 return ret;
         }
 
@@ -659,7 +659,7 @@ EFI_STATUS android_image_start_file(
         ret = uefi_call_wrapper(root->Open, 5, root, &imagefile, loader,
                         EFI_FILE_MODE_READ, 0);
         if (EFI_ERROR(ret)) {
-                error(L"Open", ret);
+                error(L"Open : %r\n", ret);
                 return ret;
         }
         fileinfo = AllocatePool(buffersize);
@@ -679,7 +679,7 @@ EFI_STATUS android_image_start_file(
                         &EfiFileInfoId, &buffersize, fileinfo);
         }
         if (EFI_ERROR(ret)) {
-                error(L"GetInfo", ret);
+                error(L"GetInfo : %r\n", ret);
                 goto free_info;
         }
         buffersize = fileinfo->FileSize;
@@ -708,7 +708,7 @@ EFI_STATUS android_image_start_file(
                         &buffersize, bootimage);
         }
         if (EFI_ERROR(ret)) {
-                error(L"Read", ret);
+                error(L"Read : %r\n", ret);
                 goto out;
         }
 
@@ -763,7 +763,7 @@ EFI_STATUS android_image_start_buffer(
                  debug(L"Verifying the boot image\n");
                  ret = verify_boot_image(bootimage);
                  if (EFI_ERROR(ret)) {
-                         error(L"boot image digital signature verification failed", ret);
+                         error(L"boot image digital signature verification failed : %r\n", ret);
                          goto out_bootimage;
                  }
          }
@@ -773,20 +773,20 @@ EFI_STATUS android_image_start_buffer(
         debug(L"Creating command line\n");
         ret = setup_command_line(bootimage, cmdline);
         if (EFI_ERROR(ret)) {
-                error(L"setup_command_line", ret);
+                error(L"setup_command_line : %r\n", ret);
                 goto out_bootimage;
         }
 
         debug(L"Loading the ramdisk\n");
         ret = setup_ramdisk(bootimage);
         if (EFI_ERROR(ret)) {
-                error(L"setup_ramdisk", ret);
+                error(L"setup_ramdisk : %r\n", ret);
                 goto out_cmdline;
         }
 
         debug(L"Loading the kernel\n");
         ret = handover_kernel(bootimage, parent_image);
-        error(L"handover_kernel", ret);
+        error(L"handover_kernel : %r\n", ret);
 
         efree(buf->hdr.ramdisk_image, buf->hdr.ramdisk_size);
 out_cmdline:
