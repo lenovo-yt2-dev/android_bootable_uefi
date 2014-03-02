@@ -71,8 +71,11 @@ static enum targets get_target_from_var(const CHAR16 *varname)
 	enum targets target;
 
 	name = LibGetVariable((CHAR16 *)varname, (EFI_GUID *)&osloader_guid);
-	if (!name)
+	if (!name) {
+		warning(L"Failed to read %s EFI variable\n", varname);
 		return TARGET_UNKNOWN;
+	}
+
 	return EFI_ERROR(name_to_target(name, &target)) ? TARGET_UNKNOWN : target;
 }
 
