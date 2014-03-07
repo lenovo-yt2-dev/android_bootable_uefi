@@ -80,10 +80,8 @@ struct ext_id_1 {
 	UINT16 platform_family;
 	UINT16 product_line;
 	UINT16 hardware;
-	UINT32 spid_checksum;
 	CHAR8 fru[10];
-	UINT16 fru_checksum;
-	UINT16 reserved;
+	UINT8 reserved[8];
 } __attribute__ ((packed));
 
 struct ext_id_2 {

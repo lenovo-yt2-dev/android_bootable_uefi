@@ -60,7 +60,7 @@ static struct EM_1_TABLE *EM_1_table = NULL;
 
 #define set_acpi_field(table, field, value)			\
 	(typeof(table##_table->field))				\
-	_set_acpi_field(#table,	#field,				\
+	_set_acpi_field((CHAR8 *)#table, (CHAR8 *)#field,		\
 			(VOID **)&table##_table,		\
 			offsetof(struct table##_TABLE, field),	\
 			sizeof(table##_table->field), value)
@@ -327,28 +327,31 @@ void print_pidv(void)
 		return;
 	}
 
-	info(L"part_number      	=%a\n", pidv->part_number);
+	info(L"table revision	= %d\n", pidv->header.revision);
+	info(L"part_number      	= %a\n", pidv->part_number);
 	info(L"ext_id_1 x_id1:\n");
-	info(L"customer		=0x%x\n",pidv->x_id1.customer);
-	info(L"vendor			=0x%x\n",pidv->x_id1.vendor);
-	info(L"device_manufacturer	=0x%x\n",pidv->x_id1.device_manufacturer);
-	info(L"platform_family		=0x%x\n",pidv->x_id1.platform_family);
-	info(L"product_line		=0x%x\n",pidv->x_id1.product_line);
-	info(L"hardware		=0x%x\n",pidv->x_id1.hardware);
-	info(L"spid_checksum		=0x%x\n",pidv->x_id1.spid_checksum);
-	info(L"fru			=0x%x");
+	info(L"customer		= 0x%x\n",pidv->x_id1.customer);
+	info(L"vendor		= 0x%x\n",pidv->x_id1.vendor);
+	info(L"device_manufacturer	= 0x%x\n",pidv->x_id1.device_manufacturer);
+	info(L"platform_family	= 0x%x\n",pidv->x_id1.platform_family);
+	info(L"product_line		= 0x%x\n",pidv->x_id1.product_line);
+	info(L"hardware		= 0x%x\n",pidv->x_id1.hardware);
+
+	int length = 5;
+	CHAR16 buf[sizeof(pidv->x_id1.fru) * length];
+	CHAR16 *ptr = buf;
 	int i;
-	for (i = 0; i < sizeof(pidv->x_id1.fru); i++)
-		info(L"%02x", pidv->x_id1.fru[i]);
-	info(L"\n");
-	info(L"fru_checksum		=0x%x\n",pidv->x_id1.fru_checksum);
-	info(L"reseprved		=0x%x\n",pidv->x_id1.reserved);
+	for (i = 0; i < sizeof(pidv->x_id1.fru); i++, ptr += length)
+		SPrint(ptr, 14, L"0x%02x ", pidv->x_id1.fru[i]);
+	ptr[-1] = L'\0';
+
+	info(L"fru			= %s\n", buf);
 	info(L"ext_id_2 x_id2:\n");
-	info(L"data1			=0x%x\n", pidv->x_id2.data1);
-	info(L"data2			=0x%x\n", pidv->x_id2.data2);
-	info(L"data3			=0x%x\n", pidv->x_id2.data3);
-	info(L"data4			=0x%x\n", pidv->x_id2.data4);
-	info(L"system_uuid		=0x%x\n", pidv->system_uuid);
+	info(L"data1			= 0x%x\n", pidv->x_id2.data1);
+	info(L"data2			= 0x%x\n", pidv->x_id2.data2);
+	info(L"data3			= 0x%x\n", pidv->x_id2.data3);
+	info(L"data4			= 0x%x\n", pidv->x_id2.data4);
+	info(L"system_uuid		= 0x%x\n", pidv->system_uuid);
 }
 
 void print_rsci(void)
