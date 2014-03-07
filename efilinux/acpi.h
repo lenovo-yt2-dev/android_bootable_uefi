@@ -99,15 +99,43 @@ struct PIDV_TABLE {
 	UINT32 system_uuid;		/* Identify hardware platform */
 };
 
-#define EM_1_USE_IA_APPS_CAP 0
-#define EM_1_USE_IA_APPS_RUN 1
-struct EM_1_TABLE {
-	struct ACPI_DESC_HEADER header;/* System Description Table Header */
-	UINT16 ia_apps_run;	       /* Threshold voltage to boot the platform */
-	UINT8 ia_apps_cap;	       /* Threshold capacity to boot the platform */
-	UINT8 cap_or_volt;	       /* 0: use ia_apps_cap, 1: use ia_apps_run */
-	UINT8 boot_on_invalid_batt;    /* Indicates if we should boot with invalid battery */
+enum {
+	OEM1_USE_IA_APPS_CAP,
+	OEM1_USE_IA_APPS_RUN
 };
+struct OEM1_TABLE {
+	struct ACPI_DESC_HEADER header;	/* System Description Table Header */
+	UINT8 fixedoptions0;		/* Fixed Platform Options 0 */
+	UINT8 fixedoptions1;		/* Fixed Platform Options 1*/
+	UINT8 dbiingpio;		/* DBIIN GPIO number */
+	UINT8 dbioutgpio;		/* DBIOUT GPIO number */
+	UINT8 batchptyp;       		/* Identification / Authentication chip
+					 * inside the battery */
+	UINT16 ia_apps_run;		/* Minimum battery voltage required to
+					 * boot the platform if FG has been
+					 * reset */
+	UINT8 batiddbibase;		/* Resistance in KOhms for BSI used to
+					 * indicate a digital battery */
+	UINT8 batidanlgbase;		/* Resistance in KOhms for BSI beyond
+					 * which the battery is an analog
+					 * battery */
+	UINT8 ia_apps_cap; 		/* Minimum capacity at which to boot to Main
+					 * OS */
+	UINT16 vbattfreqlmt;		/* Battery Voltage up to which the CPU
+					 * frequency should be limited */
+	UINT8 capfreqidx;   		/* Index into the Frequency table at which
+					 * the CPU Frequency should be capped. */
+	UINT8 rsvd1;			/* Reserved */
+	UINT8 battidx; 			/* Battery Index: Charging profile to use in
+					 * case of fixed battery */
+	UINT8 ia_apps_to_use;		/* Whether to use the IA_APPS_RUN (value
+					 * = 1) or IA_APPS_CAP (value = 0) to
+					 * while booting */
+	UINT8 turbochrg;		/* Maximum Turbo charge supported (in
+					 * multiples of 100mA). Zero means no Turbo
+					 * charge */
+	UINT8 rsvd2[11];		/* Reserved */
+} __attribute__ ((packed));
 
 EFI_STATUS list_acpi_tables(void);
 EFI_STATUS get_acpi_table(CHAR8 *signature, VOID **table);
@@ -120,10 +148,10 @@ EFI_STATUS rsci_set_reset_source(enum reset_sources);
 enum reset_types rsci_get_reset_type(void);
 enum shutdown_sources rsci_get_shutdown_source(void);
 
-UINT16 em1_get_ia_apps_run(void);
-UINT8 em1_get_ia_apps_cap(void);
-UINT8 em1_get_cap_or_volt(void);
-UINT8 em1_get_boot_on_invalid_batt(void);
+UINT16 oem1_get_ia_apps_run(void);
+UINT8 oem1_get_ia_apps_cap(void);
+UINT8 oem1_get_capfreqidx(void);
+UINT8 oem1_get_ia_apps_to_use(void);
 
 void print_pidv(void);
 void print_rsci(void);

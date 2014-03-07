@@ -131,14 +131,14 @@ static enum batt_levels uefi_get_battery_level(void)
 	if (EFI_ERROR(ret))
 		goto error;
 
-	if (em1_get_cap_or_volt() == EM_1_USE_IA_APPS_CAP) {
+	if (oem1_get_ia_apps_to_use() == OEM1_USE_IA_APPS_CAP) {
 		value = status.BatteryCapacityLevel;
-		threshold = em1_get_ia_apps_cap();
+		threshold = oem1_get_ia_apps_cap();
 		debug(L"Battery: %d%% Threshold: %d%%\n", value, threshold);
 	}
 	else {
 		value = status.BatteryVoltageLevel;
-		threshold = em1_get_ia_apps_run();
+		threshold = oem1_get_ia_apps_run();
 		debug(L"Battery: %dmV Threshold: %dmV\n", value, threshold);
 	}
 
@@ -178,10 +178,10 @@ static void uefi_print_battery_infos(void)
 	info(L"BatteryVoltageLevel = %dmV\n", status.BatteryVoltageLevel);
 	info(L"BatteryCapacityLevel = %d%%\n", status.BatteryCapacityLevel);
 
-	info(L"IA_APPS_RUN = %dmV\n", em1_get_ia_apps_run());
-	info(L"IA_APPS_CAP = %d%%\n", em1_get_ia_apps_cap());
-	info(L"CAP_OR_VOLT = 0x%x\n", em1_get_cap_or_volt());
-	info(L"BOOT_ON_INVALID_BATT = 0x%x\n", em1_get_boot_on_invalid_batt());
+	info(L"IA_APPS_RUN = %dmV\n", oem1_get_ia_apps_run());
+	info(L"IA_APPS_CAP = %d%%\n", oem1_get_ia_apps_cap());
+	info(L"CAPFREQIDX = %d\n", oem1_get_capfreqidx());
+	info(L"IA_APPS_TO_USE = 0x%x\n", oem1_get_ia_apps_to_use());
 
 	info(L"charger present = %d\n", uefi_is_charger_present());
 error:

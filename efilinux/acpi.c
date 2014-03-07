@@ -35,7 +35,7 @@
 #include "uefi_utils.h"
 
 static struct RSCI_TABLE *RSCI_table = NULL;
-static struct EM_1_TABLE *EM_1_table = NULL;
+static struct OEM1_TABLE *OEM1_table = NULL;
 
 #define RSDT_SIG "RSDT"
 #define RSDP_SIG "RSD PTR "
@@ -289,24 +289,24 @@ enum shutdown_sources rsci_get_shutdown_source(void)
         return get_acpi_field(RSCI, shutdown_source);
 }
 
-UINT16 em1_get_ia_apps_run(void)
+UINT16 oem1_get_ia_apps_run(void)
 {
-	return get_acpi_field(EM_1, ia_apps_run);
+	return get_acpi_field(OEM1, ia_apps_run);
 }
 
-UINT8 em1_get_ia_apps_cap(void)
+UINT8 oem1_get_ia_apps_cap(void)
 {
-	return get_acpi_field(EM_1, ia_apps_cap);
+	return get_acpi_field(OEM1, ia_apps_cap);
 }
 
-UINT8 em1_get_cap_or_volt(void)
+UINT8 oem1_get_capfreqidx(void)
 {
-	return get_acpi_field(EM_1, cap_or_volt);
+	return get_acpi_field(OEM1, capfreqidx);
 }
 
-UINT8 em1_get_boot_on_invalid_batt(void)
+UINT8 oem1_get_ia_apps_to_use(void)
 {
-	return get_acpi_field(EM_1, boot_on_invalid_batt);
+	return get_acpi_field(OEM1, ia_apps_to_use);
 }
 
 void print_pidv(void)
