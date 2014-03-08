@@ -46,29 +46,29 @@ void log(UINTN level, const CHAR16 *prefix, const void *func, const INTN line,
 
 void log_save_to_variable(void);
 
-#define profile(...) { \
+#define profile(...) do { \
 		log(LEVEL_PROFILE, L"PROFILE [%a:%d] ", \
 		    __func__, __LINE__, __VA_ARGS__); \
-	}
+	} while (0)
 
-#define debug(...) { \
+#define debug(...) do { \
 		log(LEVEL_DEBUG, L"DEBUG [%a:%d] ", \
 		    __func__, __LINE__, __VA_ARGS__); \
-	}
+	} while (0)
 
-#define info(...) { \
+#define info(...) do { \
 		log(LEVEL_INFO, L"INFO [%a:%d] ", \
 		    __func__, __LINE__, __VA_ARGS__); \
-	}
+	} while (0)
 
-#define warning(...) { \
+#define warning(...) do { \
 		log(LEVEL_WARNING, L"WARNING [%a:%d] ", \
 		    __func__, __LINE__, __VA_ARGS__); \
-	}
+	} while (0)
 
-#define error(...) { \
+#define error(...) do { \
 		log(LEVEL_ERROR, L"ERROR [%a:%d] ", \
 		    __func__, __LINE__, __VA_ARGS__); \
-	}
+	} while (0)
 
 #endif	/* __LOG_H__ */
