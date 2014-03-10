@@ -107,7 +107,6 @@ enum targets {
 	TARGET_UNKNOWN,
 	TARGET_ERROR	= -1,
 };
-extern char *target_strings[];
 
 enum flow_types {
 	FLOW_NORMAL,
