@@ -76,6 +76,27 @@ struct battery_status {
 	BATT_CAPACITY BatteryCapacityLevel;
 };
 
+static BOOLEAN uefi_is_charger_present(void)
+{
+	struct _DEVICE_INFO_PROTOCOL *dev_info;
+	BOOLEAN present;
+	USB_CHARGER_TYPE type;
+	EFI_STATUS ret;
+
+	ret = LibLocateProtocol(&DeviceInfoProtocolGuid, (VOID **)&dev_info);
+	if (EFI_ERROR(ret) || !dev_info)
+		goto error;
+
+	ret = dev_info->GetUsbChargerStatus(&present, &type);
+	if (EFI_ERROR(ret))
+		goto error;
+
+	return present;
+error:
+	error(L"Failed to get charger status: %r\n", ret);
+	return FALSE;
+}
+
 static EFI_STATUS uefi_get_battery_status(struct battery_status *status)
 {
 	struct _DEVICE_INFO_PROTOCOL *dev_info;
@@ -161,6 +182,8 @@ static void uefi_print_battery_infos(void)
 	info(L"IA_APPS_CAP = %d%%\n", em1_get_ia_apps_cap());
 	info(L"CAP_OR_VOLT = 0x%x\n", em1_get_cap_or_volt());
 	info(L"BOOT_ON_INVALID_BATT = 0x%x\n", em1_get_boot_on_invalid_batt());
+
+	info(L"charger present = %d\n", uefi_is_charger_present());
 error:
 	if (EFI_ERROR(ret))
 		error(L"Failed to get battery status: %r\n", ret);
@@ -169,5 +192,6 @@ error:
 struct energy_mgmt_ops uefi_em_ops = {
 	.get_battery_level = uefi_get_battery_level,
 	.is_battery_ok = uefi_is_battery_ok,
+	.is_charger_present = uefi_is_charger_present,
 	.print_battery_infos = uefi_print_battery_infos
 };

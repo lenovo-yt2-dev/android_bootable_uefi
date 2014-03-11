@@ -34,6 +34,7 @@
 #include "uefi_osnib.h"
 #include "uefi_keys.h"
 #include "uefi_boot.h"
+#include "uefi_utils.h"
 #include "em.h"
 #include "uefi_em.h"
 #include "fake_em.h"
@@ -97,7 +98,7 @@ void x86_ops(struct osloader_ops *ops)
 {
 	ops->check_partition_table = check_gpt;
 	ops->read_flow_type = acpi_read_flow_type;
-	ops->do_cold_off = acpi_cold_off;
+	ops->do_cold_off = uefi_shutdown;
 	ops->populate_indicators = rsci_populate_indicators;
 	ops->load_target = intel_load_target;
 	ops->get_wake_source = rsci_get_wake_source;

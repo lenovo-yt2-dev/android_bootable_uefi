@@ -112,7 +112,6 @@ struct EM_1_TABLE {
 EFI_STATUS list_acpi_tables(void);
 EFI_STATUS get_acpi_table(CHAR8 *signature, VOID **table);
 enum flow_types acpi_read_flow_type(void);
-void acpi_cold_off(void);
 
 EFI_STATUS rsci_populate_indicators(void);
 enum wake_sources rsci_get_wake_source(void);

@@ -43,6 +43,11 @@ static BOOLEAN fake_is_battery_ok(void)
 	return TRUE;
 }
 
+static BOOLEAN fake_is_charger_present(void)
+{
+	return TRUE;
+}
+
 static void fake_print_battery_infos(void)
 {
 	info(L"Fake Battery, no info\n");
@@ -51,5 +56,6 @@ static void fake_print_battery_infos(void)
 struct energy_mgmt_ops fake_em_ops = {
 	.get_battery_level = fake_get_battery_level,
 	.is_battery_ok = fake_is_battery_ok,
+	.is_charger_present = fake_is_charger_present,
 	.print_battery_infos = fake_print_battery_infos
 };

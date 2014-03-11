@@ -76,8 +76,10 @@ enum targets boot_fastboot_combo(enum wake_sources ws)
 	case BATT_ERROR:
 		error(L"Failed to get battery level. Booting.\n");
 	case BATT_BOOT_OS:
-	case BATT_BOOT_CHARGING:
 		return TARGET_FASTBOOT;
+	case BATT_BOOT_CHARGING:
+		return loader_ops.em_ops->is_charger_present() ?
+			TARGET_FASTBOOT : TARGET_COLD_OFF;
 	case BATT_LOW:
 		return TARGET_COLD_OFF;
 	}
@@ -96,7 +98,8 @@ enum targets boot_power_key(enum wake_sources ws)
 	case BATT_BOOT_OS:
 		return TARGET_BOOT;
 	case BATT_BOOT_CHARGING:
-		return TARGET_CHARGING;
+		return loader_ops.em_ops->is_charger_present() ?
+			TARGET_CHARGING : TARGET_COLD_OFF;
 	case BATT_LOW:
 		return TARGET_COLD_OFF;
 	}
@@ -120,9 +123,12 @@ enum targets boot_battery_insertion(enum wake_sources ws)
 
 enum targets boot_charger_insertion(enum wake_sources ws)
 {
-	return (ws == WAKE_USB_CHARGER_INSERTED ||
-		ws == WAKE_ACDC_CHARGER_INSERTED)
-		? TARGET_CHARGING : TARGET_UNKNOWN;
+	if (ws == WAKE_USB_CHARGER_INSERTED ||
+	    ws == WAKE_ACDC_CHARGER_INSERTED)
+		return loader_ops.em_ops->is_charger_present() ?
+			TARGET_CHARGING : TARGET_COLD_OFF;
+	else
+		return TARGET_UNKNOWN;
 }
 
 enum targets target_from_off(enum wake_sources ws)

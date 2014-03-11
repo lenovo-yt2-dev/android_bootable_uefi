@@ -257,13 +257,6 @@ enum flow_types acpi_read_flow_type(void)
 	return FLOW_NORMAL;
 }
 
-void acpi_cold_off(void)
-{
-        /* TODO */
-	debug(L"TO BE IMPLEMENTED\n");
-	return;
-}
-
 EFI_STATUS rsci_populate_indicators(void)
 {
         /* TODO */

@@ -469,6 +469,11 @@ void uefi_reset_system(EFI_RESET_TYPE reset_type)
 			  EFI_SUCCESS, 0, NULL);
 }
 
+void uefi_shutdown(void)
+{
+	uefi_reset_system(EfiResetShutdown);
+}
+
 EFI_STATUS uefi_delete_file(EFI_FILE_IO_INTERFACE *io, CHAR16 *filename)
 {
 	EFI_STATUS ret;
