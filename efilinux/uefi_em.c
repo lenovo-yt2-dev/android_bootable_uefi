@@ -87,7 +87,7 @@ static BOOLEAN uefi_is_charger_present(void)
 	if (EFI_ERROR(ret) || !dev_info)
 		goto error;
 
-	ret = dev_info->GetUsbChargerStatus(&present, &type);
+	ret = uefi_call_wrapper(dev_info->GetUsbChargerStatus, 2, &present, &type);
 	if (EFI_ERROR(ret))
 		goto error;
 
@@ -106,12 +106,13 @@ static EFI_STATUS uefi_get_battery_status(struct battery_status *status)
 	if (EFI_ERROR(ret) || !dev_info)
 		goto error;
 
-	ret = dev_info->GetBatteryStatus(
+	ret = uefi_call_wrapper(dev_info->GetBatteryStatus, 5,
 		&status->BatteryPresent,
 		&status->BatteryValid,
 		&status->CapacityReadable,
 		&status->BatteryVoltageLevel,
 		&status->BatteryCapacityLevel);
+
 	if (EFI_ERROR(ret))
 		goto error;
 	return ret;
