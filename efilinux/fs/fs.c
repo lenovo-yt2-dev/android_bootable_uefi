@@ -117,6 +117,11 @@ file_open(EFI_LOADED_IMAGE *image, CHAR16 *name, struct file **file)
 		CHAR16 *dev;
 
 		path = DevicePathFromHandle(fs_devices[i].handle);
+		if (!path) {
+			error(L"No path for device number %d\n", i);
+			goto notfound;
+		}
+
 		dev = DevicePathToStr(path);
 
 		if (!StriCmp(dev, name)) {
@@ -189,6 +194,11 @@ void list_blk_devices(void)
 		dev_handle = blk_devices[i];
 
 		path = DevicePathFromHandle(dev_handle);
+		if (!path) {
+			error(L"No path for blk device %d\n", i);
+			return;
+		}
+
 		dev = DevicePathToStr(path);
 
 		info(L"\t%d. \"%s\"\n", i, dev);

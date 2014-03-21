@@ -314,7 +314,7 @@ static EFI_STATUS setup_command_line(UINT8 *bootimage,
         ret = allocate_pages(AllocateMaxAddress, EfiLoaderData,
                              EFI_SIZE_TO_PAGES(cmdlen + 1),
                              &cmdline_addr);
-        if (EFI_ERROR(ret))
+        if (!cmdline_addr || EFI_ERROR(ret))
                 goto out;
 
         memcpy((CHAR8 *)(UINTN)cmdline_addr, full_cmdline, cmdlen + 1);
@@ -702,7 +702,7 @@ EFI_STATUS android_image_start_file(
                  * whatever... */
                 FreePool(bootimage);
                 bootimage = AllocatePool(buffersize);
-                if (!fileinfo) {
+                if (!bootimage) {
                         ret = EFI_OUT_OF_RESOURCES;
                         goto out;
                 }
@@ -797,8 +797,9 @@ EFI_STATUS android_image_start_buffer(
 
         efree(buf->hdr.ramdisk_image, buf->hdr.ramdisk_size);
 out_cmdline:
-        free_pages(buf->hdr.cmd_line_ptr,
-                        strlena((CHAR8 *)(UINTN)buf->hdr.cmd_line_ptr) + 1);
+        if (buf->hdr.cmd_line_ptr)
+            free_pages(buf->hdr.cmd_line_ptr,
+                strlena((CHAR8 *)(UINTN)buf->hdr.cmd_line_ptr) + 1);
 out_bootimage:
         FreePool(bootimage);
         return ret;

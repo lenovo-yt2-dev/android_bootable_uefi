@@ -313,6 +313,10 @@ EFI_STATUS get_esp_handle(EFI_HANDLE **esp)
 		debug(L"Found %d devices\n", no_handles);
 		for (i = 0; i < no_handles; i++) {
 			device = DevicePathFromHandle(handles[i]);
+			if (!device) {
+				error(L"No device!\n");
+				goto free_handles;
+			}
 			description = DevicePathToStr(device);
 			debug(L"Device : %s\n", description);
 			free_pool(description);
