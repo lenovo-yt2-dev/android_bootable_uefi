@@ -116,9 +116,12 @@ enum targets boot_rtc(enum wake_sources ws)
 
 enum targets boot_battery_insertion(enum wake_sources ws)
 {
-	/* TODO */
-	debug(L"TO BE IMPLEMENTED\n");
-	return TARGET_UNKNOWN;
+	if (ws == WAKE_BATTERY_INSERTED) {
+		debug(L"Battery insertion detected. Shutdown\n");
+		return TARGET_COLD_OFF;
+	}
+	else
+		return TARGET_UNKNOWN;
 }
 
 enum targets boot_charger_insertion(enum wake_sources ws)
@@ -391,8 +394,10 @@ EFI_STATUS start_boot_logic(CHAR8 *cmdline)
 	}
 	debug(L"target = 0x%x\n", target);
 
-	if (target == TARGET_COLD_OFF)
+	if (target == TARGET_COLD_OFF) {
+		debug(L"TARGET_COLD_OFF shutdown\n");
 		loader_ops.do_cold_off();
+	}
 
 	loader_ops.display_splash();
 
