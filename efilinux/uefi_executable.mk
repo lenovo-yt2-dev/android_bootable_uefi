@@ -12,6 +12,8 @@ ifneq (,$(filter $(TARGET_ARCH),x86-64)$(filter $(BOARD_USE_64BIT_KERNEL),true))
 	LOCAL_TARGET_LIBGCC := $(shell dirname $(TARGET_LIBGCC))/..
 endif
 
+LOCAL_MODULE_SUFFIX := .efi
+
 LOCAL_CFLAGS += -fPIC -fPIE -fshort-wchar -ffreestanding -Wall \
 	-fstack-protector -Wl,-z,noexecstack -O2 \
 	-D_FORTIFY_SOURCE=2 $(LOCAL_TARGET_ARCH) $(LOCAL_TARGET_CFLAGS)
@@ -37,23 +39,22 @@ EFI_SIGNING_TOOL := $(HOST_OUT_EXECUTABLES)/isu
 
 include $(BUILD_SYSTEM)/binary.mk
 
-$(LOCAL_BUILT_MODULE) : PRIVATE_EFI_FILE := $(PRODUCT_OUT)/$(PRIVATE_MODULE).unsigned.efi
 $(LOCAL_INTERMEDIATE_TARGETS): PRIVATE_TARGET_GLOBAL_CFLAGS :=
-$(LOCAL_BUILT_MODULE) : EFI_APP_OBJS := $(patsubst %.c, %.o , $(LOCAL_SRC_FILES))
-$(LOCAL_BUILT_MODULE) : EFI_APP_OBJS := $(patsubst %.S, %.o , $(EFI_APP_OBJS))
-$(LOCAL_BUILT_MODULE) : EFI_APP_OBJS := $(addprefix $(intermediates)/, $(EFI_APP_OBJS))
-$(LOCAL_BUILT_MODULE) : SPLASH_OBJ := $(addprefix $(intermediates)/, splash_bmp.o)
 
-$(LOCAL_BUILT_MODULE): EFI_UNSIGNED_IN := $(PRIVATE_EFI_FILE)
-$(LOCAL_BUILT_MODULE): EFI_SIGNING_OUT := $(PRODUCT_OUT)/$(PRIVATE_MODULE)_manifest_
-$(LOCAL_BUILT_MODULE): EFI_MANIFEST_OUT := $(PRODUCT_OUT)/$(PRIVATE_MODULE)_manifest__OS_manifest.bin
-$(LOCAL_BUILT_MODULE): EFI_SIGNED_OUT := $(PRODUCT_OUT)/$(PRIVATE_MODULE).efi
+EFI_APP_OBJS := $(patsubst %.c, %.o , $(LOCAL_SRC_FILES))
+EFI_APP_OBJS := $(patsubst %.S, %.o , $(EFI_APP_OBJS))
+EFI_APP_OBJS := $(addprefix $(intermediates)/, $(EFI_APP_OBJS))
 
-$(LOCAL_BUILT_MODULE): $(GNUEFI_PATH)/libgnuefi.a $(LDS) $(all_objects) | $(HOST_OUT_EXECUTABLES)/prebuilt-bin-to-hex $(EFI_SIGNING_TOOL)
-	@mkdir -p $(dir $@)
-	prebuilt-bin-to-hex splash_bmp < $(SPLASH_BMP) | $(TARGET_CC) -x c - -c $(TARGET_GLOBAL_CFLAGS) $(LOCAL_TARGET_ARCH) -o $(SPLASH_OBJ)
-	@echo "linking $@"
-	$(TARGET_TOOLS_PREFIX)ld$(HOST_EXECUTABLE_SUFFIX).bfd \
+SPLASH_OBJ := $(addprefix $(intermediates)/, splash_bmp.o)
+$(SPLASH_OBJ): $(SPLASH_BMP) | $(HOST_OUT_EXECUTABLES)/prebuilt-bin-to-hex
+	$(hide) mkdir -p $(@D)
+	$(hide) prebuilt-bin-to-hex splash_bmp < $< | $(TARGET_CC) -x c - -c $(TARGET_GLOBAL_CFLAGS) $(LOCAL_TARGET_ARCH) -o $@
+
+EFI_LINKED := $(basename $(LOCAL_BUILT_MODULE))
+$(EFI_LINKED): EFI_OBJS := $(SPLASH_OBJ) $(EFI_APP_OBJS) $(EFI_CRT0)
+$(EFI_LINKED): $(SPLASH_OBJ) $(EFI_APP_OBJS) $(GNUEFI_PATH)/libgnuefi.a $(LDS) $(all_objects)
+	@echo "linking $(notdir $@)"
+	$(hide) $(TARGET_TOOLS_PREFIX)ld$(HOST_EXECUTABLE_SUFFIX).bfd \
 		-Bsymbolic \
 		-shared \
 		-z relro -z now \
@@ -64,17 +65,21 @@ $(LOCAL_BUILT_MODULE): $(GNUEFI_PATH)/libgnuefi.a $(LDS) $(all_objects) | $(HOST
 		-L$(LOCAL_TARGET_LIBGCC) \
 		-L$(GNUEFI_PATH) \
 		-T $(LDS) \
-		$(EFI_APP_OBJS) \
-		$(SPLASH_OBJ) \
-		$(EFI_CRT0) -lgnuefi -lgcc -o $@
-	@echo "checking symbols in $@"
+		$(EFI_OBJS) -lgnuefi -lgcc -o $@
+	@echo "checking symbols in $(notdir $@)"
 	@$(hide) unknown=`nm -u $@` ; if [ -n "$$unknown" ] ; then echo "Unknown symbol(s): $$unknown" && exit -1 ; fi
-	@echo "creating $(PRIVATE_MODULE).efi - $(LOCAL_MODULE_VERSION)"
-	$(TARGET_OBJCOPY) -j .text -j .sdata -j .data -j .dynamic -j .dynsym -j .rel \
-		-j .rela -j .reloc --target=$(EFI_TARGET) -S $@ $(PRIVATE_EFI_FILE)
-	@echo "Signing $(EFI_SIGNED_OUT) with $(EFI_SIGNING_TOOL)"
-	$(EFI_SIGNING_TOOL) -h 0 -i $(EFI_UNSIGNED_IN) -o $(EFI_SIGNING_OUT) \
-		-l $(TARGET_BOOT_LOADER_PRIV_KEY) -k $(TARGET_BOOT_LOADER_PUB_KEY) -t 11 -p 2 -v 1
-	@cat $(EFI_UNSIGNED_IN) $(EFI_MANIFEST_OUT) > $(EFI_SIGNED_OUT)
-	@echo "Signed $(EFI_SIGNED_OUT)"
+
+EFI_UNSIGNED := $(basename $(LOCAL_BUILT_MODULE)).unsigned.efi
+$(EFI_UNSIGNED): $(EFI_LINKED)
+	@echo "objcopy $(notdir $@)"
+	$(hide) $(TARGET_OBJCOPY) -j .text -j .sdata -j .data -j .dynamic -j .dynsym -j .rel \
+		-j .rela -j .reloc --target=$(EFI_TARGET) -S $< $@
+
+$(LOCAL_BUILT_MODULE): EFI_MANIFEST_OUT := $(EFI_LINKED)_manifest__OS_manifest.bin
+$(LOCAL_BUILT_MODULE): $(EFI_UNSIGNED) $(EFI_SIGNING_TOOL)
+	@mkdir -p $(@D)
+	@echo "Signing $(notdir $@) with $(EFI_SIGNING_TOOL)"
+	$(hide) $(EFI_SIGNING_TOOL) -h 0 -i $< -o $@ \
+		-l $(TARGET_BOOT_LOADER_PRIV_KEY) -k $(TARGET_BOOT_LOADER_PUB_KEY) -t 11 -p 2 -v 1 > /dev/null
+	$(hide) cat $< $@_OS_manifest.bin > $@
 
