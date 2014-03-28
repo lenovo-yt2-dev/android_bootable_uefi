@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, Intel Corporation
+ * Copyright (c) 2014, Intel Corporation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,21 +27,33 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef __UEFI_OSNIB_H__
-#define __UEFI_OSNIB_H__
+#ifndef __ESRT_H__
+#define __ESRT_H__
 
-#include "bootlogic.h"
+#include <efi.h>
+#include <efilib.h>
 
-EFI_STATUS uefi_set_rtc_alarm_charging(int);
-EFI_STATUS uefi_set_wdt_counter(int);
-int uefi_get_rtc_alarm_charging(void);
-int uefi_get_wdt_counter(void);
-CHAR8 *uefi_get_extra_cmdline(void);
-EFI_STATUS uefi_set_wd_cold_reset(int WDColdReset);
-int uefi_get_wd_cold_reset(void);
+const EFI_GUID SYS_FW_GUID;
 
-EFI_STATUS uefi_set_capsule_update(enum capsule_update_status CapsuleUpdateStatus);
+struct FW_RES_ENTRY {
+	EFI_GUID         FwClass;  /* GUID of FW component */
+	UINT32           FwType;
+	UINT32           FwVersion;
+	UINT32           FwLstCompatVersion;
+	UINT32           CapsuleFlags;
+	UINT32           LastAttemptVersion;
+	UINT32           LastAttemptStatus;
+};
 
-void uefi_populate_osnib_variables(void);
+struct EFI_SYSTEM_RESOURCE_TABLE {
+	UINT32          FwResourceCount;
+	UINT32          FwResourceMax;
+	UINT64          FwResourceVersion;
+	struct FW_RES_ENTRY FwResEntry[];
+};
 
-#endif /* __UEFI_OSNIB_H__ */
+EFI_STATUS get_esrt_table(struct EFI_SYSTEM_RESOURCE_TABLE **esrt_table);
+EFI_STATUS get_fw_entry(EFI_GUID* fw_entry_guid, struct FW_RES_ENTRY **esrt);
+void print_esrt_table(void);
+
+#endif /* __ESRT_H__ */

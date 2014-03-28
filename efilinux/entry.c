@@ -35,6 +35,7 @@
 #include "stdlib.h"
 #include "android/boot.h"
 #include "acpi.h"
+#include "esrt.h"
 #include "intel_partitions.h"
 #include "bootlogic.h"
 #include "platform/platform.h"
@@ -78,6 +79,7 @@ struct efilinux_commands {
 	{L"print_rsci", print_rsci},
 	{L"dump_acpi_tables", dump_acpi_tables},
 	{L"load_dsdt", load_dsdt},
+	{L"print_esrt", print_esrt_table},
 };
 
 
@@ -306,7 +308,7 @@ usage:
 	Print(L"\t-t <target>:    target to boot\n");
 	Print(L"\t-n:             do as usual but wait indefinitely instead of jumping to the loaded image (for test purpose only)\n");
 	Print(L"\t-c <command>:   debug commands (dump_infos, print_pidv, print_rsci,\n");
-	Print(L"\t                dump_acpi_tables or load_dsdt)\n");
+	Print(L"\t                dump_acpi_tables, print_esrt or load_dsdt)\n");
 #endif	/* RUNTIME_SETTINGS */
 
 fail:

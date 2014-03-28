@@ -31,6 +31,7 @@
 #include <efilib.h>
 #include "efilinux.h"
 #include "acpi.h"
+#include "esrt.h"
 #include "bootlogic.h"
 #include "platform/platform.h"
 #include "uefi_utils.h"
@@ -151,7 +152,26 @@ enum targets target_from_off(enum wake_sources ws)
 
 enum targets boot_fw_update(enum reset_sources rs)
 {
-	return rs == RESET_FW_UPDATE ? TARGET_BOOT : TARGET_UNKNOWN;
+	struct FW_RES_ENTRY *fw_entry;
+	EFI_STATUS ret;
+
+	if (rs != RESET_FW_UPDATE)
+		return TARGET_UNKNOWN;
+
+	ret = get_fw_entry((EFI_GUID *)&SYS_FW_GUID, &fw_entry);
+
+	if (!EFI_ERROR(ret)) {
+		if (fw_entry->FwVersion == fw_entry->LastAttemptVersion) {
+			debug(L"capsule udpate success\n");
+			uefi_set_capsule_update(CAPSULE_UPDATE_SUCCESS);
+		} else {
+			debug(L"capsule udpate fail\n");
+			uefi_set_capsule_update(CAPSULE_UPDATE_FAIL);
+		}
+	} else
+		error(L"Fail to get fw_entry: %r\n", ret);
+
+	return TARGET_BOOT;
 }
 
 enum targets boot_reset(enum reset_sources rs)

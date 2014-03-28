@@ -79,6 +79,11 @@ int uefi_get_wd_cold_reset(void)
 	return get_osnib_var(WDColdReset);
 }
 
+EFI_STATUS uefi_set_capsule_update(enum capsule_update_status CapsuleUpdateStatus)
+{
+	return set_osnib_var(CapsuleUpdateStatus, FALSE);
+}
+
 void uefi_populate_osnib_variables(void)
 {
 	struct int_var {

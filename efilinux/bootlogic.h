@@ -126,4 +126,13 @@ enum combo_keys {
 	COMBO_ERROR = -1,
 };
 
+/*
+ * Be carefull using this enumeration, values 0 and 1 are
+ * reserved for SUCCESS and FAIL.
+ */
+enum capsule_update_status {
+	CAPSULE_UPDATE_SUCCESS,
+	CAPSULE_UPDATE_FAIL
+};
+
 #endif /* _BOOTLOGIC_H_ */

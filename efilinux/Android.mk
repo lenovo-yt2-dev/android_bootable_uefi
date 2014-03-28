@@ -37,6 +37,7 @@ ifeq ($(TARGET_OS_SIGNING_METHOD),uefi)
 endif
 
 EFILINUX_SRC_FILES := \
+	esrt.c \
 	stack_chk.c \
 	malloc.c \
 	config.c \
