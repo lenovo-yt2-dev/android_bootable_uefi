@@ -30,7 +30,11 @@
 #include "platform.h"
 #include "x86.h"
 
+extern UINT64 silvermont_get_current_time_us();
+
 void init_airmont(void)
 {
 	x86_ops(&loader_ops);
+
+	loader_ops.get_current_time_us = silvermont_get_current_time_us;
 }

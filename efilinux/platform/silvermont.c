@@ -50,7 +50,7 @@ static UINT64 get_tsc_freq(void)
 	return (bclk_khz * ((platform_info >> 8) & 0xff)) / 1000;
 }
 
-static UINT64 silvermont_get_current_time_us()
+UINT64 silvermont_get_current_time_us()
 {
 	static UINT64 tsc_freq, start;
 	UINT64 cur = rdtsc();
