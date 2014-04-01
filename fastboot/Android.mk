@@ -3,6 +3,8 @@ LOCAL_PATH := $(call my-dir)
 FASTBOOT_SRC_FILES := \
 	main.c \
 	flash.c \
+	fastboot.c \
+	fastboot_usb.c \
 
 
 FASTBOOT_VERSION_STRING := $(shell cd $(LOCAL_PATH) ; git describe --abbrev=12 --dirty --always)
@@ -14,7 +16,7 @@ FASTBOOT_CFLAGS +=  -DCONFIG_LOG_TAG='L"FASTBOOT"'
 
 FASTBOOT_DEBUG_CFFLAGS := -DCONFIG_LOG_LEVEL=LEVEL_DEBUG -DCONFIG_LOG_TIMESTAMP
 
-FASTBOOT_LIBRARIES := libuefi_log libuefi_utils libuefi_profiling_stub libuefi_stack_chk libuefi_gpt
+FASTBOOT_LIBRARIES := libuefi_log libuefi_utils libuefi_profiling_stub libuefi_stack_chk libuefi_gpt libuefi_posix
 
 ################################################################################
 

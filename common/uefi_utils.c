@@ -655,8 +655,6 @@ CHAR16 *stra_to_str(CHAR8 *src)
          * if we see any funny stuff */
 
 	len = strlena(src);
-	if (!len)
-		return NULL;
 
 	dst = AllocatePool((len+1) * sizeof(CHAR16));
 	if (!dst)
@@ -896,7 +894,7 @@ static INTN to_digit(CHAR16 c, UINTN base)
 	return value < base ? (INTN)value : -1;
 }
 
-UINTN strtoul(const CHAR16 *nptr, CHAR16 **endptr, UINTN base)
+UINTN strtoul16(const CHAR16 *nptr, CHAR16 **endptr, UINTN base)
 {
 	UINTN value = 0;
 

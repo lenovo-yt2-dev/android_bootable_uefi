@@ -609,7 +609,7 @@ efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *_table)
 	case 'a':
 	{
 		CHAR16 *endptr;
-		VOID * addr = (VOID *)strtoul(name, &endptr, 0);
+		VOID * addr = (VOID *)strtoul16(name, &endptr, 0);
 		if ((name[0] == '\0' || *endptr != '\0')) {
 			error(L"Failed to convert %s into address\n", name);
 			goto free_args;

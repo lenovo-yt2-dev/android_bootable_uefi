@@ -60,3 +60,12 @@ LOCAL_CFLAGS := -finstrument-functions
 LOCAL_WHOLE_STATIC_LIBRARIES := libuefi_log libuefi_utils
 $(call common_defs)
 include $(BUILD_STATIC_LIBRARY)
+
+include $(CLEAR_VARS)
+LOCAL_SRC_FILES := posix/stdio.c posix/string.c posix/stdlib.c
+LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)/posix
+LOCAL_MODULE := libuefi_posix
+LOCAL_CFLAGS := -finstrument-functions
+LOCAL_WHOLE_STATIC_LIBRARIES := libuefi_utils
+$(call common_defs)
+include $(BUILD_STATIC_LIBRARY)

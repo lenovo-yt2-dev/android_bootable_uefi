@@ -34,6 +34,7 @@
 #include <uefi_utils.h>
 #include <gpt.h>
 #include "flash.h"
+#include "fastboot.h"
 
 #ifndef FASTBOOT_BUILD_STRING
 #define FASTBOOT_BUILD_STRING L"undef"
@@ -136,7 +137,7 @@ EFI_STATUS efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *_table)
 	argc = split_cmdline(options, ARRAY_SIZE(argv), argv);
 	opt = argv[1];
 
-	if (argc < 2 || (opt[0] == '-' && opt[1]  == 'h')) {
+	if (opt[0] == '-' && opt[1]  == 'h') {
 		Print(L"usage: fastboot [OPTIONS]\n\n");
 		Print(L"\t-h:             display this help menu\n");
 		Print(L"\t-c <command>:   execute command:\n");
@@ -148,6 +149,7 @@ EFI_STATUS efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *_table)
 	if (argv[1][0] == '-' && argv[1][1] == 'c') {
 		if (argc < 3) {
 			error(L"Parameter required\n");
+			ret = EFI_INVALID_PARAMETER;
 			goto out;
 		}
 
@@ -160,9 +162,13 @@ EFI_STATUS efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *_table)
 			}
 		}
 		error(L"Unkown command %s\n", argv[2]);
+		ret = EFI_INVALID_PARAMETER;
 		goto out;
 	}
-	error(L"Unkown argument %s\n", argv[1]);
+	if (argc != 1)
+		error(L"Unkown argument %s\n", argv[1]);
+
+	ret = fastboot_start();
 out:
-	return EFI_INVALID_PARAMETER;
+	return ret;
 }
