@@ -788,7 +788,7 @@ EFI_STATUS android_image_start_buffer(
         }
 
         if ((buf->hdr.cmd_line_ptr) &&
-            strstr((CHAR8 *)buf->hdr.cmd_line_ptr, "disable_kernel_watchdog=1"))
+            strstr((char *)(UINTN)buf->hdr.cmd_line_ptr, "disable_kernel_watchdog=1"))
                 watchdog_en = FALSE;
 
         debug(L"Loading the kernel\n");

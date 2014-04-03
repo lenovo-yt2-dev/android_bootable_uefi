@@ -137,6 +137,72 @@ struct OEM1_TABLE {
 	UINT8 rsvd2[11];		/* Reserved */
 } __attribute__ ((packed));
 
+/* ACPI Generic Address Structure */
+struct gas {
+	UINT8 addr_space_id;	/* Address space where data structure or register exists */
+	UINT8 reg_bit_width;	/* Size in bits of given register */
+	UINT8 reg_bit_offset;	/* Bit offset of the given register */
+	UINT8 access_size;	/* Specifies access size */
+	UINT64 address;		/* 64-bit address of the data structure of register */
+};
+
+struct FACP_TABLE {
+	struct ACPI_DESC_HEADER header;	/* System Description Table Header */
+	UINT32 firmware_ctrl;		/* Address of the FACS */
+	UINT32 dsdt;			/* Address of the DSDT */
+	UINT8 model;			/* ACPI 1.0 INT_MODEL */
+	UINT8 preferred_pm_profile;	/* Preferred power management profile */
+	UINT16 sci_int;			/* System vector the SCI interrupt is wire to */
+	UINT32 smi_cmd;			/* System port address of the SMI Command Port */
+	UINT8 acpi_enable;		/* Value to write to smi_cmd to disable SMI ownership of the ACPI hardware registers */
+	UINT8 acpi_disable;		/* Value to write to smi_cmd to re-enable SMI ownership of the ACPI hardware registers */
+	UINT8 s4bios_req;		/* Value to write to smi_cmd to enter S4BIOS state */
+	UINT8 pstate_cnt;		/* If not 0, value to write to smi_cmd to assume processor performance state control responsibility */
+	UINT32 pm1a_evt_blk;		/* Port address of PM1a event register block */
+	UINT32 pm1b_evt_blk;		/* Port address of PM1b event register block */
+	UINT32 pm1a_cnt_blk;		/* Port address of PM1b control register block */
+	UINT32 pm1b_cnt_blk;		/* Port address of PM1b control register block */
+	UINT32 pm2_cnt_blk;		/* Port address of PM2 control register block */
+	UINT32 pm_tmr_blk;		/* Port address of PM timer control register block */
+	UINT32 gpe0_blk;		/* Port address of General Purpose Event 0 register block */
+	UINT32 gpe1_blk;		/* Port address of General Purpose Event 1 register block */
+	UINT8 pm1_evt_len;		/* Length in bytes at pm1a_evt_blk */
+	UINT8 pm1_cnt_len;		/* Length in bytes at pm1a_cnt_blk */
+	UINT8 pm2_cnt_len;		/* Length in bytes at pm2_cnt_blk */
+	UINT8 pm_tmr_len;		/* Length in bytes at pm_tmr_blk */
+	UINT8 gpe0_len;			/* Length in bytes at gpe0_blk */
+	UINT8 gpe1_len;			/* Length in bytes at gpe1_blk */
+	UINT8 gpe1_base;		/* Offset where gpe1 based events start */
+	UINT8 cst_cnt;			/* If not 0, value to write to smi_cmd to indicate OS support for the _CST and C States Changed notification */
+	UINT16 p_lvl2_lat;		/* Worst case hw latency to enter and exit a C2 state */
+	UINT16 p_lvl3_lat;		/* Worst case hw latency to enter and exit a C3 state */
+	UINT16 flush_size;		/* Number of flush strides to read to flush diry lines from CPU cache */
+	UINT16 flush_stride;		/* Cache line width in bytes */
+	UINT8 duty_offset;		/* Index of processor duty cycle in P_CNT register */
+	UINT8 duty_width;		/* Width of processor duty cycle in P_CNT register */
+	UINT8 day_alarm;		/* RTC CMOS RAM index to day-of-month alarm value */
+	UINT8 mon_alarm;		/* RTC CMOS RAM index to month-of-year alarm value */
+	UINT8 century;			/* RTC CMOS RAM index to century data value */
+	UINT16 iapc_boot_arch;		/* IA-PC Boot Architecture Flags */
+	UINT8 reserved;			/* Must be 0 */
+	UINT32 flags;			/* Fixed feature flags */
+	struct gas reset_reg; /* Address of reset register */
+	UINT8 reset_value;			    /* Value to write to reset_reg to reset the system */
+	UINT8 reserved2[3];			    /* Must be 0 */
+	UINT64 Xfacs;				    /* 64-bit address of FACS */
+	UINT64 Xdsdt;				    /* 64-bit address of DSDT */
+	struct gas xpm1a_evt_blk;		    /* Extended address of PM1a event register block */
+	struct gas xpm1b_evt_blk;		    /* Extended address of PM1b event register block */
+	struct gas xpm1a_cnt_blk;		    /* Extended address of PM1b control register block */
+	struct gas xpm1b_cnt_blk;		    /* Extended address of PM1b control register block */
+	struct gas xpm2_cnt_blk;		    /* Extended address of PM2 control register block */
+	struct gas xpm_tmr_blk;			    /* Extended address of PM timer control register block */
+	struct gas xgpe0_blk;			    /* Extended address of General Purpose Event 0 register block */
+	struct gas xgpe1_blk;			    /* Extended address of General Purpose Event 1 register block */
+	struct gas sleep_control;		    /* 64-bit address of the sleep register */
+	struct gas sleep_status;		    /* 64-bit address of the sleep status register */
+};
+
 EFI_STATUS list_acpi_tables(void);
 EFI_STATUS get_acpi_table(CHAR8 *signature, VOID **table);
 enum flow_types acpi_read_flow_type(void);

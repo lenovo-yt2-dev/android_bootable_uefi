@@ -124,7 +124,7 @@ EFI_STATUS get_rsdt_table(struct RSDT_TABLE **rsdt)
 		goto out;
 	}
 
-	*rsdt = (struct RSDT_TABLE *)rsdp->rsdt_address;
+	*rsdt = (struct RSDT_TABLE *)(UINTN)rsdp->rsdt_address;
 	if (strncmpa((CHAR8 *)(*rsdt)->header.signature, (CHAR8 *)RSDT_SIG, sizeof(RSDT_SIG) - 1)) {
 		CHAR8 *s = (*rsdt)->header.signature;
 		error(L"RSDT table has wrong signature (%c%c%c%c)\n", s[0], s[1], s[2], s[3]);
@@ -159,7 +159,7 @@ void dump_acpi_tables(void)
 
 	int i;
 	for (i = 0 ; i < nb_acpi_tables; i++) {
-		CHAR8 *s = ((struct ACPI_DESC_HEADER *)rsdt->entry[i])->signature;
+		CHAR8 *s = ((struct ACPI_DESC_HEADER *)(UINTN)rsdt->entry[i])->signature;
 		CHAR8 signature[5];
 		CHAR16 *tmp;
 		CHAR16 filename[11 * sizeof(CHAR16)];
@@ -183,13 +183,13 @@ void dump_acpi_tables(void)
 		}
 
 		if (!strncmpa(signature, (CHAR8 *)"FACP", 4)) {
-			s = s + 0x28;
-			s = (CHAR8 *) (*((UINT32 *)s));
-			written_size = ((struct ACPI_DESC_HEADER *)s)->length;;
+			struct FACP_TABLE *facp = (VOID *)s;
+			struct ACPI_DESC_HEADER *dsdt = (VOID *)(UINTN)facp->dsdt;
+			written_size = dsdt->length;;
 			size = written_size;
 
 			CHAR16 *dsdt_filename = L"ACPI\\DSDT";
-			ret = uefi_write_file(io, dsdt_filename, s, &written_size);
+			ret = uefi_write_file(io, dsdt_filename, dsdt, &written_size);
 			if (size != written_size)
 				error(L"Written %d/%d bytes\n", written_size, size);
 			if (EFI_ERROR(ret)) {
@@ -216,7 +216,7 @@ EFI_STATUS list_acpi_tables(void)
 
 	int i;
 	for (i = 0 ; i < nb_acpi_tables; i++) {
-		CHAR8 *s = ((struct ACPI_DESC_HEADER *)rsdt->entry[i])->signature;
+		CHAR8 *s = ((struct ACPI_DESC_HEADER *)(UINTN)rsdt->entry[i])->signature;
 		info(L"RSDT[%d] = %c%c%c%c\n", i, s[0], s[1], s[2], s[3]);
 	}
 
@@ -237,8 +237,7 @@ EFI_STATUS get_acpi_table(CHAR8 *signature, VOID **table)
 	nb_acpi_tables = (rsdt->header.length - sizeof(rsdt->header)) / sizeof(rsdt->entry[1]);
 	ret = EFI_NOT_FOUND;
 	for (i = 0 ; i < nb_acpi_tables; i++) {
-		struct ACPI_DESC_HEADER *header;
-		header = (struct ACPI_DESC_HEADER *)rsdt->entry[i];
+		struct ACPI_DESC_HEADER *header = (VOID *)(UINTN)rsdt->entry[i];
 		if (!strncmpa(header->signature, signature, strlena(signature))) {
 			debug(L"Found %c%c%c%c table\n", signature[0], signature[1], signature[2], signature[3]);
 			*table = header;
@@ -387,7 +386,7 @@ void load_dsdt(void)
 
 	int i;
 	for (i = 0 ; i < nb_acpi_tables; i++) {
-		CHAR8 *s = ((struct ACPI_DESC_HEADER *)rsdt->entry[i])->signature;
+		CHAR8 *s = ((struct ACPI_DESC_HEADER *)(UINTN)rsdt->entry[i])->signature;
 		CHAR8 signature[5];
 		UINTN size = ((struct ACPI_DESC_HEADER *)s)->length;
 		info(L"RSDT[%d] = %c%c%c%c\n", i, s[0], s[1], s[2], s[3]);
@@ -395,10 +394,8 @@ void load_dsdt(void)
 		signature[4] = 0;
 
 		if (!strncmpa(signature, (CHAR8 *)"FACP", 4)) {
-			CHAR8 *facp = s;
-			CHAR8 *dsdt;
-			facp += 0x28;
-			dsdt = (CHAR8 *) (*((UINT32 *)facp));
+			struct FACP_TABLE *facp = (VOID *)s;
+			struct ACPI_DESC_HEADER *dsdt = (VOID *)(UINTN)facp->dsdt;
 			free(dsdt);
 			ret = uefi_read_file(io, L"DSDT", (void **)&dsdt, &size);
 			if (EFI_ERROR(ret) || !dsdt) {
@@ -406,8 +403,8 @@ void load_dsdt(void)
 				goto out;
 			}
 			debug(L"Read %d bytes\n", size);
-			*((UINT32 *)facp) = (UINT32)dsdt;
-			info(L"DSDT = %c%c%c%c\n", dsdt[0], dsdt[1], dsdt[2], dsdt[3]);
+			facp->dsdt = (UINT32)(UINTN)dsdt;
+			info(L"DSDT = %c%c%c%c\n", dsdt->signature[0], dsdt->signature[1], dsdt->signature[2], dsdt->signature[3]);
 		}
 	}
 out:

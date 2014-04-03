@@ -50,7 +50,7 @@ static void stub_watchdog_set_timeout(struct watchdog *wd, UINT32 timeout)
 	debug(L"boot watchdog disabled on this platform\n");
 }
 
-static struct watchdog stub_watchdog = {
+static struct watchdog __attribute__((used)) stub_watchdog = {
 	.reg = 0,
 	.ops = {
 		.start = stub_watchdog_start,

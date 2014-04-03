@@ -82,8 +82,7 @@ struct efilinux_commands {
 	{L"print_esrt", print_esrt_table},
 };
 
-
-
+#ifdef RUNTIME_SETTINGS
 static EFI_STATUS print_memory_map(void)
 {
 	EFI_MEMORY_DESCRIPTOR *buf;
@@ -134,7 +133,6 @@ static EFI_STATUS print_memory_map(void)
 	return err;
 }
 
-#ifdef RUNTIME_SETTINGS
 static void (*saved_hook_before_jump)(void);
 
 static void __attribute__((noreturn)) hook_before_jump_forever_loop(void)
