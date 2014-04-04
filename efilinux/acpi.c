@@ -303,6 +303,11 @@ UINT8 oem1_get_capfreqidx(void)
 	return get_acpi_field(OEM1, capfreqidx);
 }
 
+UINT16 oem1_get_ia_vbattfreqlmt(void)
+{
+	return get_acpi_field(OEM1, vbattfreqlmt);
+}
+
 UINT8 oem1_get_ia_apps_to_use(void)
 {
 	return get_acpi_field(OEM1, ia_apps_to_use);

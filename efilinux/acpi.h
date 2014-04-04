@@ -217,6 +217,7 @@ enum shutdown_sources rsci_get_shutdown_source(void);
 UINT16 oem1_get_ia_apps_run(void);
 UINT8 oem1_get_ia_apps_cap(void);
 UINT8 oem1_get_capfreqidx(void);
+UINT16 oem1_get_ia_vbattfreqlmt(void);
 UINT8 oem1_get_ia_apps_to_use(void);
 
 void print_pidv(void);

@@ -164,6 +164,25 @@ static BOOLEAN uefi_is_battery_ok(void)
 	return status.BatteryPresent;
 }
 
+static BOOLEAN uefi_is_battery_below_vbattfreqlmt(void)
+{
+	struct battery_status status;
+	EFI_STATUS ret;
+	UINT16 vbattfreqlmt, value;
+
+	ret = uefi_get_battery_status(&status);
+	if (EFI_ERROR(ret)) {
+		error(L"Failed to get battery status: %r\n", ret);
+		return FALSE;
+	}
+
+	value = status.BatteryVoltageLevel;
+	vbattfreqlmt = oem1_get_ia_vbattfreqlmt();
+	debug(L"Battery: %dmV Vbattfreqlmt: %dmV\n", value, vbattfreqlmt);
+
+	return value < vbattfreqlmt;
+}
+
 static void uefi_print_battery_infos(void)
 {
 	struct battery_status status;
@@ -182,6 +201,7 @@ static void uefi_print_battery_infos(void)
 	info(L"IA_APPS_RUN = %dmV\n", oem1_get_ia_apps_run());
 	info(L"IA_APPS_CAP = %d%%\n", oem1_get_ia_apps_cap());
 	info(L"CAPFREQIDX = %d\n", oem1_get_capfreqidx());
+	info(L"VBATTFREQLMT = %dmV\n", oem1_get_ia_vbattfreqlmt());
 	info(L"IA_APPS_TO_USE = 0x%x\n", oem1_get_ia_apps_to_use());
 
 	info(L"charger present = %d\n", uefi_is_charger_present());
@@ -194,5 +214,6 @@ struct energy_mgmt_ops uefi_em_ops = {
 	.get_battery_level = uefi_get_battery_level,
 	.is_battery_ok = uefi_is_battery_ok,
 	.is_charger_present = uefi_is_charger_present,
+	.is_battery_below_vbattfreqlmt = uefi_is_battery_below_vbattfreqlmt,
 	.print_battery_infos = uefi_print_battery_infos
 };

@@ -317,7 +317,7 @@ enum targets target_from_inputs(enum flow_types flow_type)
 	return TARGET_UNKNOWN;
 }
 
-CHAR8 *get_cmdline(CHAR8 *cmdline)
+CHAR8 *get_extra_cmdline(CHAR8 *cmdline)
 {
 	CHAR8 *extra_cmdline;
 	CHAR8 *updated_cmdline;
@@ -331,6 +331,20 @@ CHAR8 *get_cmdline(CHAR8 *cmdline)
 		free(extra_cmdline);
 	if (cmdline)
 		free(cmdline);
+
+	return updated_cmdline;
+}
+
+CHAR8 *check_vbattfreqlmt(CHAR8 *cmdline)
+{
+	CHAR8 *updated_cmdline = cmdline;
+
+	if (loader_ops.em_ops->is_battery_below_vbattfreqlmt()) {
+		debug(L"Battery voltage below vbattfreqlmt add battlow in cmdline\n");
+		updated_cmdline = append_strings("battlow ", cmdline);
+		if (cmdline)
+			free(cmdline);
+	}
 
 	return updated_cmdline;
 }
@@ -408,8 +422,10 @@ EFI_STATUS start_boot_logic(CHAR8 *cmdline)
 
 	loader_ops.display_splash();
 
+	updated_cmdline = check_vbattfreqlmt(cmdline);
+
 #ifdef RUNTIME_SETTINGS
-	updated_cmdline = get_cmdline(cmdline);
+	updated_cmdline = get_extra_cmdline(updated_cmdline);
 #endif
 
 	loader_ops.hook_bootlogic_end();

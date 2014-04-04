@@ -39,6 +39,7 @@ struct energy_mgmt_ops {
 	BOOLEAN (*is_battery_ok)(void);
 	BOOLEAN (*is_charger_present)(void);
 	void (*print_battery_infos)(void);
+	BOOLEAN (*is_battery_below_vbattfreqlmt)(void);
 };
 
 EFI_STATUS em_set_policy(const CHAR16 *name);
