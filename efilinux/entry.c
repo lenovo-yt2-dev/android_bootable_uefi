@@ -335,6 +335,11 @@ get_path(EFI_LOADED_IMAGE *image, CHAR16 *path, UINTN len)
 
 	/* Find the path of the efilinux executable*/
 	p = DevicePathToStr(image->FilePath);
+	if (!p) {
+		error(L"Failed to get string from device path\n");
+		return FALSE;
+	}
+
 	q = p + StrLen(p);
 
 	i = StrLen(p);
