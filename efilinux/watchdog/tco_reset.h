@@ -35,7 +35,7 @@
 #include "watchdog.h"
 
 #ifndef TCO_DEFAULT_TIMEOUT
-#define TCO_DEFAULT_TIMEOUT 30
+#define TCO_DEFAULT_TIMEOUT 60
 #endif
 
 extern struct watchdog tco_watchdog;
