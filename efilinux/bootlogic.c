@@ -37,6 +37,7 @@
 #include "uefi_utils.h"
 #include "utils.h"
 #include "uefi_osnib.h"
+#include "splash.h"
 
 static enum targets boot_bcb(int dummy)
 {
@@ -59,42 +60,12 @@ void forced_shutdown(void)
 
 enum targets boot_fastboot_combo(enum wake_sources ws)
 {
-	if (!loader_ops.combo_key(COMBO_FASTBOOT_MODE))
-		return TARGET_UNKNOWN;
-
-	switch(loader_ops.em_ops->get_battery_level()) {
-	case BATT_ERROR:
-		error(L"Failed to get battery level. Booting.\n");
-	case BATT_BOOT_OS:
-		return TARGET_FASTBOOT;
-	case BATT_BOOT_CHARGING:
-		return loader_ops.em_ops->is_charger_present() ?
-			TARGET_FASTBOOT : TARGET_COLD_OFF;
-	case BATT_LOW:
-		return TARGET_COLD_OFF;
-	}
-
-	return TARGET_UNKNOWN;
+	return loader_ops.combo_key(COMBO_FASTBOOT_MODE) ? TARGET_FASTBOOT : TARGET_UNKNOWN;
 }
 
 enum targets boot_power_key(enum wake_sources ws)
 {
-	if (ws != WAKE_POWER_BUTTON_PRESSED)
-		return TARGET_UNKNOWN;
-
-	switch(loader_ops.em_ops->get_battery_level()) {
-	case BATT_ERROR:
-		error(L"Failed to get battery level. Booting\n");
-	case BATT_BOOT_OS:
-		return TARGET_BOOT;
-	case BATT_BOOT_CHARGING:
-		return loader_ops.em_ops->is_charger_present() ?
-			TARGET_CHARGING : TARGET_COLD_OFF;
-	case BATT_LOW:
-		return TARGET_COLD_OFF;
-	}
-
-	return TARGET_UNKNOWN;
+	return ws == WAKE_POWER_BUTTON_PRESSED ? TARGET_BOOT : TARGET_UNKNOWN;
 }
 
 enum targets boot_rtc(enum wake_sources ws)
@@ -180,6 +151,25 @@ enum targets boot_reset(enum reset_sources rs)
 		return loader_ops.get_target_mode();
 	else
 		return TARGET_UNKNOWN;
+}
+
+enum targets em_fallback_target(enum targets target)
+{
+	enum targets fallback = target;
+
+	if (loader_ops.em_ops->get_battery_level() == BATT_BOOT_CHARGING)
+		switch (target) {
+		case TARGET_BOOT:
+		case TARGET_FACTORY:
+		case TARGET_FACTORY2:
+			fallback = TARGET_CHARGING;
+			debug(L"EM fallback from 0x%x to 0x%x\n", target, fallback);
+			break;
+		default:
+			fallback = target;
+		}
+
+	return fallback;
 }
 
 enum targets fallback_target(enum targets target)
@@ -375,6 +365,8 @@ static EFI_STATUS launch_or_fallback(enum targets target, CHAR8 *cmdline)
 		saved_cmdline[0] = '\0';
 
 	do {
+		target = em_fallback_target(target);
+
 		ret = loader_ops.populate_indicators();
 		if (EFI_ERROR(ret))
 			return ret;
@@ -420,7 +412,7 @@ EFI_STATUS start_boot_logic(CHAR8 *cmdline)
 		loader_ops.do_cold_off();
 	}
 
-	loader_ops.display_splash();
+	loader_ops.display_splash(splash_intel, splash_intel_size);
 
 	updated_cmdline = check_vbattfreqlmt(cmdline);
 

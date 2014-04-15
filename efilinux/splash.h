@@ -30,11 +30,11 @@
 #ifndef __SPLASH_BMP_H__
 #define __SPLASH_BMP_H__
 
-/* splash_bmp is a bmp file content built at compile time using
- * bin-to-hex utility.  The original image file must be BMP format
+/* splash_* are bmp files content built at compile time using
+ * bin-to-hex utility.  The original images files must be BMP format
  * without compression and in 24bits format R8 G8 B8.
  */
-extern char splash_bmp[];
-extern UINTN splash_bmp_size;
+extern CHAR8 splash_intel[];
+extern UINTN splash_intel_size;
 
 #endif /* __SPLASH_BMP_H__ */

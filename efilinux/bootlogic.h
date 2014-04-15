@@ -115,7 +115,6 @@ enum flow_types {
 };
 
 enum batt_levels {
-	BATT_LOW,
 	BATT_BOOT_CHARGING,
 	BATT_BOOT_OS,
 	BATT_ERROR = -1,

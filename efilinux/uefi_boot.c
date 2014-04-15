@@ -32,10 +32,9 @@
 #include "efilinux.h"
 #include "bootlogic.h"
 #include "uefi_utils.h"
-#include "splash.h"
 #include "intel_partitions.h"
 
-EFI_STATUS uefi_display_splash(void)
+EFI_STATUS uefi_display_splash(CHAR8 *bmp, UINTN size)
 {
 	EFI_STATUS ret;
 	EFI_GRAPHICS_OUTPUT_BLT_PIXEL *Blt;
@@ -44,7 +43,7 @@ EFI_STATUS uefi_display_splash(void)
 	UINTN width;
 
 	Blt = NULL;
-	ret = ConvertBmpToGopBlt(splash_bmp, splash_bmp_size, (void **)&Blt, &blt_size, &height, &width);
+	ret = ConvertBmpToGopBlt(bmp, size, (void **)&Blt, &blt_size, &height, &width);
  	if (EFI_ERROR(ret)) {
 		error(L"Failed to convert bmp to blt: %r\n", ret);
 		goto error;

@@ -57,5 +57,7 @@ EFI_STATUS uefi_call_image(IN EFI_HANDLE parent_image, IN EFI_HANDLE device,
 EFI_STATUS uefi_set_simple_var(char *name, EFI_GUID *guid, int size, void *data,
 			       BOOLEAN persistent);
 INT8 uefi_get_simple_var(char *name, EFI_GUID *guid);
+EFI_STATUS uefi_usleep(UINTN useconds);
+EFI_STATUS uefi_msleep(UINTN mseconds);
 
 #endif /* __UEFI_UTILS_H__ */

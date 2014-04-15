@@ -682,3 +682,13 @@ out:
 		free(buffer);
 	return ret;
 }
+
+EFI_STATUS uefi_usleep(UINTN useconds)
+{
+	return uefi_call_wrapper(BS->Stall, 1, useconds);
+}
+
+EFI_STATUS uefi_msleep(UINTN mseconds)
+{
+	return uefi_msleep(mseconds * 1000);
+}

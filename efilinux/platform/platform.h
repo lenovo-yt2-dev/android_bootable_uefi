@@ -59,7 +59,7 @@ struct osloader_ops {
 	void (*hook_before_jump)(void);
 	void (*hook_bootlogic_begin)(void);
 	void (*hook_bootlogic_end)(void);
-	EFI_STATUS (*display_splash)(void);
+	EFI_STATUS (*display_splash)(CHAR8 *bmp, UINTN size);
 	EFI_STATUS (*hash_verify)(VOID*, UINTN, VOID*, UINTN);
 	CHAR8* (*get_extra_cmdline)(void);
 	UINT64 (*get_current_time_us)(void);

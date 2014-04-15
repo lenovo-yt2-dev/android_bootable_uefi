@@ -30,7 +30,7 @@
 #ifndef __UEFI_BOOT_H__
 #define __UEFI_BOOT_H__
 
-EFI_STATUS uefi_display_splash(void);
+EFI_STATUS uefi_display_splash(CHAR8 *bmp, UINTN size);
 enum targets get_entry_oneshot(void);
 enum targets get_entry_last(void);
 EFI_STATUS set_entry_last(enum targets target);

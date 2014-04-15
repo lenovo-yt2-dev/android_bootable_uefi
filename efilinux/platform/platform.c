@@ -199,7 +199,7 @@ EFI_STATUS stub_update_boot(void)
 	return EFI_SUCCESS;
 }
 
-EFI_STATUS stub_display_splash(void)
+EFI_STATUS stub_display_splash(CHAR8 *bmp, UINTN size)
 {
 	warning(L"stubbed!\n");
 	return EFI_SUCCESS;
