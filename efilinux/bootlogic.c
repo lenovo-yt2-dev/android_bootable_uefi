@@ -240,8 +240,7 @@ enum targets boot_watchdog(enum reset_sources rs)
 		if (EFI_ERROR(uefi_set_wd_cold_reset(1)))
 			error(L"Failed to set WDColdReset variable to 1\n");
 		debug(L"cold reset after watchdog\n");
-		// uefi_reset_system(EfiResetCold); // BUG: always do warm reset
-		outb(0xCF9, 0x0E); // Cold reset using PCI reset register
+		uefi_reset_system(EfiResetCold);
 		error(L"Reset requested, this code should not be reached\n");
 	}
 
