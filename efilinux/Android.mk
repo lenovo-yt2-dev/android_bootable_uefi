@@ -1,17 +1,5 @@
 LOCAL_PATH := $(call my-dir)
 
-
-define generate_splash
-$(strip \
-	$(eval SPLASH_INTEL_BMP := $(LOCAL_PATH)/splash_intel.bmp) \
-	$(eval SPLASH_INTEL_OBJ := $(addprefix $(intermediates)/, splash_intel.o)) \
-	$(eval EFILINUX_EXT_OBJS := $(SPLASH_INTEL_OBJ)) \
-	$(eval SPLASH_OBJ := $(SPLASH_INTEL_OBJ)) \
-	$(eval SPLASH_BMP := $(SPLASH_INTEL_BMP)) \
-	$(eval include $(LOCAL_PATH)/splash.mk) \
-)
-endef
-
 ifeq ($(BOARD_HAVE_LIMITED_POWERON_FEATURES),true)
 	OSLOADER_EM_POLICY := fake
 	EFILINUX_CFLAGS += -DDISABLE_SECURE_BOOT
@@ -74,7 +62,8 @@ EFILINUX_SRC_FILES := \
 	uefi_em.c \
 	$(security_src_files) \
 	$(watchdog_src_files) \
-	fs/fs.c
+	fs/fs.c \
+	splash_intel.bmp
 
 EFILINUX_VERSION_STRING := $(shell cd $(LOCAL_PATH) ; git describe --abbrev=12 --dirty --always)
 EFILINUX_VERSION_DATE := $(shell cd $(LOCAL_PATH) ; git log --pretty=%cD HEAD^.. HEAD)
@@ -109,10 +98,8 @@ LOCAL_MODULE_PATH := $(PRODUCT_OUT)
 LOCAL_CFLAGS += $(EFILINUX_CFLAGS) -DCONFIG_LOG_LEVEL=1
 LOCAL_SRC_FILES := $(EFILINUX_SRC_FILES)
 LOCAL_C_INCLUDES := $(EFILINUX_C_INCLUDES)
-include $(LOCAL_PATH)/uefi_executable_prepare.mk
-$(call generate_splash)
-LOCAL_EXT_OBJS := $(EFILINUX_EXT_OBJS)
-include $(LOCAL_PATH)/uefi_executable.mk
+
+include $(BUILD_UEFI_EXECUTABLE)
 
 ################################################################################
 
@@ -124,10 +111,8 @@ LOCAL_MODULE_PATH := $(PRODUCT_OUT)
 LOCAL_CFLAGS += $(EFILINUX_CFLAGS) $(EFILINUX_DEBUG_CFFLAGS) $(EFILINUX_PROFILING_CFLAGS)
 LOCAL_SRC_FILES := $(EFILINUX_SRC_FILES) $(EFILINUX_PROFILING_SRC_FILES)
 LOCAL_C_INCLUDES := $(EFILINUX_C_INCLUDES)
-include $(LOCAL_PATH)/uefi_executable_prepare.mk
-$(call generate_splash)
-LOCAL_EXT_OBJS := $(EFILINUX_EXT_OBJS)
-include $(LOCAL_PATH)/uefi_executable.mk
+
+include $(BUILD_UEFI_EXECUTABLE)
 
 ################################################################################
 
@@ -139,10 +124,8 @@ LOCAL_MODULE_PATH := $(PRODUCT_OUT)
 LOCAL_CFLAGS += $(EFILINUX_CFLAGS) $(EFILINUX_DEBUG_CFFLAGS) $(EFILINUX_PROFILING_CFLAGS)
 LOCAL_SRC_FILES := $(EFILINUX_SRC_FILES) $(EFILINUX_PROFILING_SRC_FILES)
 LOCAL_C_INCLUDES := $(EFILINUX_C_INCLUDES)
-include $(LOCAL_PATH)/uefi_executable_prepare.mk
-$(call generate_splash)
-LOCAL_EXT_OBJS := $(EFILINUX_EXT_OBJS)
-include $(LOCAL_PATH)/uefi_executable.mk
+
+include $(BUILD_UEFI_EXECUTABLE)
 
 ################################################################################
 
@@ -180,5 +163,4 @@ LOCAL_CFLAGS += -DWARMDUMP_VERSION_DATE='L"$(WARMDUMP_VERSION_DATE)"'
 LOCAL_CFLAGS += -DWARMDUMP_BUILD_STRING='L"$(BUILD_NUMBER) $(PRODUCT_NAME)"'
 LOCAL_CFLAGS += -DCONFIG_LOG_TAG='L"WARMDUMP"' -DCONFIG_LOG_LEVEL=4
 
-include $(LOCAL_PATH)/uefi_executable_prepare.mk
-include $(LOCAL_PATH)/uefi_executable.mk
+include $(BUILD_UEFI_EXECUTABLE)
