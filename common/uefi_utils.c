@@ -924,3 +924,52 @@ out:
 		*endptr = (CHAR16 *)nptr;
 	return value;
 }
+
+void dump_buffer(CHAR8 *b, UINTN size)
+{
+	UINTN i;
+	CHAR8 ascii[0x10];
+	for (i = 0; i < size; i++) {
+		if (i % 0x10 == 0)
+			Print(L"%08x:", i);
+		if (i % 2 == 0)
+			Print(L" ");
+		Print(L"%02x", b[i]);
+		if (i % 0x10 == 0x0F) {
+			UINTN j;
+			CHAR8 c;
+			for (j = 0; j < 0xF; j++) {
+				c = b[j+i-0xF];
+				if (c < ' ' || c > '~')
+					ascii[j] = '.';
+				else
+					ascii[j] = c;
+			}
+			ascii[0xF] = '\0';
+			Print(L"  |%a|\n", ascii);
+		}
+	}
+	Print(L"\n");
+}
+
+UINTN split_cmdline(CHAR16 *cmdline, UINTN max_token, CHAR16 *args[]) {
+	UINTN ntok = 0;
+	CHAR16 *s;
+	BOOLEAN inw;
+
+	inw = (*cmdline == ' ');
+	for (s = cmdline; *s && (inw || ntok < max_token); s++) {
+		if (inw) {
+			if (*s == ' ') {
+				inw = FALSE;
+				*s = '\0';
+			}
+		} else {
+			if (*s != ' ') {
+				args[ntok++] = s;
+				inw = TRUE;
+			}
+		}
+	}
+	return ntok;
+}

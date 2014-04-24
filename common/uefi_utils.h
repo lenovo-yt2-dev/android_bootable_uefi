@@ -34,6 +34,7 @@
 
 #define UINTN_MAX ((UINTN)-1);
 #define offsetof(TYPE, MEMBER) ((UINTN) &((TYPE *)0)->MEMBER)
+#define ARRAY_SIZE(x) (sizeof(x) / sizeof(*x))
 
 struct EFI_LOAD_OPTION {
 	UINT32 Attributes;
@@ -78,6 +79,9 @@ EFI_STATUS open_partition(
 void path_to_dos(CHAR16 *path);
 CHAR8 *append_strings(CHAR8 *s1, CHAR8 *s2);
 UINTN strtoul(const CHAR16 *nptr, CHAR16 **endptr, UINTN base);
+UINTN split_cmdline(CHAR16 *cmdline, UINTN max_token, CHAR16 *args[]);
+
+void dump_buffer(CHAR8 *b, UINTN size);
 
 /* Basic port I/O */
 static inline void outb(UINT16 port, UINT8 value)

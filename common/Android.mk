@@ -52,3 +52,11 @@ LOCAL_MODULE := libuefi_stack_chk
 $(call common_defs)
 include $(BUILD_STATIC_LIBRARY)
 
+include $(CLEAR_VARS)
+LOCAL_SRC_FILES := gpt/gpt.c
+LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)/gpt
+LOCAL_MODULE := libuefi_gpt
+LOCAL_CFLAGS := -finstrument-functions
+LOCAL_WHOLE_STATIC_LIBRARIES := libuefi_log libuefi_utils
+$(call common_defs)
+include $(BUILD_STATIC_LIBRARY)
