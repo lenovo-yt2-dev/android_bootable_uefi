@@ -28,17 +28,18 @@
  */
 
 #include <efi.h>
+#include <log.h>
+#include <uefi_utils.h>
 #include "platform.h"
 #include "intel_partitions.h"
 #include "acpi.h"
 #include "uefi_osnib.h"
 #include "uefi_keys.h"
 #include "uefi_boot.h"
-#include "uefi_utils.h"
 #include "em.h"
 #include "uefi_em.h"
 #include "fake_em.h"
-#include "log.h"
+#include "config.h"
 
 #if USE_INTEL_OS_VERIFICATION
 #include "os_verification.h"
@@ -52,7 +53,7 @@
 
 static void x86_hook_before_exit()
 {
-	log_save_to_variable();
+	log_save_to_variable(EFILINUX_LOGS_VARNAME, &osloader_guid);
 }
 
 static void x86_hook_bootlogic_begin()
@@ -62,44 +63,6 @@ static void x86_hook_bootlogic_begin()
 static void x86_hook_bootlogic_end()
 {
 	uefi_populate_osnib_variables();
-}
-
-#define STR_TO_UINTN(a, b, c, d) ((a) + ((b) << 8) + ((c) << 16) + ((d) << 24))
-#define CPUID_MASK	0xffff0
-
-static inline void cpuid(uint32_t op, uint32_t reg[4])
-{
-#ifdef CONFIG_X86
-	asm volatile("pushl %%ebx      \n\t" /* save %ebx */
-		     "cpuid            \n\t"
-		     "movl %%ebx, %1   \n\t" /* save what cpuid just put in %ebx */
-		     "popl %%ebx       \n\t" /* restore the old %ebx */
-		     : "=a"(reg[0]), "=r"(reg[1]), "=c"(reg[2]), "=d"(reg[3])
-		     : "a"(op)
-		     : "cc");
-#elif CONFIG_X86_64
-	asm volatile("xchg{q}\t{%%}rbx, %q1\n\t"
-		     "cpuid\n\t"
-		     "xchg{q}\t{%%}rbx, %q1\n\t"
-		     : "=a" (reg[0]), "=&r" (reg[1]), "=c" (reg[2]), "=d" (reg[3])
-		     : "a" (op));
-#endif
-}
-
-enum cpu_id x86_identify_cpu()
-{
-	uint32_t reg[4];
-
-	cpuid(0, reg);
-	if (reg[1] != STR_TO_UINTN('G', 'e', 'n', 'u') ||
-	    reg[3] != STR_TO_UINTN('i', 'n', 'e', 'I') ||
-	    reg[2] != STR_TO_UINTN('n', 't', 'e', 'l')) {
-		debug(L"Not executing on an Intel platform\n");
-		return CPU_UNKNOWN;
-	}
-
-	cpuid(1, reg);
-	return reg[0] & CPUID_MASK;
 }
 
 void x86_ops(struct osloader_ops *ops)

@@ -332,3 +332,86 @@ void blk_exit(void)
 {
 	free(blk_devices);
 }
+
+EFI_STATUS uefi_file_get_size(EFI_HANDLE image, CHAR16 *filename, UINT64 *size)
+{
+	EFI_STATUS ret;
+	EFI_LOADED_IMAGE *info;
+	struct file *file;
+	UINT64 fsize;
+
+	if(!filename)
+		return EFI_INVALID_PARAMETER;
+
+	ret = handle_protocol(image, &LoadedImageProtocol, (void **)&info);
+	if (EFI_ERROR(ret)) {
+		error(L"HandleProtocol %s (%r)\n", filename, ret);
+		return ret;
+	}
+	ret = file_open(info, filename, &file);
+	if (EFI_ERROR(ret)) {
+		error(L"FileOpen %s (%r)\n", filename, ret);
+		return ret;
+	}
+	ret = file_size(file, &fsize);
+	if (EFI_ERROR(ret)) {
+		error(L"FileSize %s (%r)\n", filename, ret);
+		return ret;
+	}
+	ret = file_close(file);
+	if (EFI_ERROR(ret)) {
+		error(L"FileClose %s (%r)\n", filename, ret);
+		return ret;
+	}
+
+	*size = fsize;
+
+	return ret;
+}
+
+EFI_STATUS uefi_call_image(
+	IN EFI_HANDLE parent_image,
+	IN EFI_HANDLE device,
+	IN CHAR16 *filename,
+	OUT UINTN *exit_data_size,
+	OUT CHAR16 **exit_data)
+{
+	EFI_STATUS ret;
+	EFI_DEVICE_PATH *path;
+	UINT64 size;
+	EFI_HANDLE image;
+
+	if (!filename)
+		return EFI_INVALID_PARAMETER;
+
+	debug(L"Call image file %s\n", filename);
+	path = FileDevicePath(device, filename);
+	if (!path) {
+		error(L"Error getting device path : %s\n", filename);
+		return EFI_INVALID_PARAMETER;
+	}
+
+	ret = uefi_file_get_size(parent_image, filename, &size);
+	if (EFI_ERROR(ret)) {
+		error(L"GetSize %s (%r)\n", filename, ret);
+		goto out;
+	}
+
+	ret = uefi_call_wrapper(BS->LoadImage, 6, FALSE, parent_image, path,
+				NULL, size, &image);
+	if (EFI_ERROR(ret)) {
+		error(L"LoadImage %s (%r)\n", filename, ret);
+		goto out;
+	}
+
+	ret = uefi_call_wrapper(BS->StartImage, 3, image,
+				exit_data_size, exit_data);
+	if (EFI_ERROR(ret))
+		info(L"StartImage returned error %s (%r)\n", filename, ret);
+
+out:
+	if (path)
+		FreePool(path);
+
+	return ret;
+}

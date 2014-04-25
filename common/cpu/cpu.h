@@ -25,50 +25,46 @@
  * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
- *
  */
 
-#ifndef __LOG_H__
-#define __LOG_H__
+#ifndef _CPU_H_
+#define _CPU_H_
 
-#define LEVEL_PROFILE		5
-#define LEVEL_DEBUG		4
-#define LEVEL_INFO		3
-#define LEVEL_WARNING		2
-#define LEVEL_ERROR		1
+#include <efi.h>
 
-#include "config.h"
+enum cpu_id {
+	CPU_SILVERMONT = 0x30670,
+	CPU_AIRMONT    = 0x406C0,
+	CPU_UNKNOWN    = 0x0
+};
 
-#define LOGLEVEL(level)	(log_level >= LEVEL_##level)
+enum cpu_id x86_identify_cpu();
 
-void log(UINTN level, const CHAR16 *prefix, const void *func, const INTN line,
-	 const CHAR16* fmt, ...);
+#if !defined(CONFIG_X86) && !defined(CONFIG_X86_64)
+#error "Only architecure x86 and x86_64 are supported"
+#endif
 
-void log_save_to_variable(void);
+static inline uint64_t rdtsc(void)
+{
+	uint64_t x;
 
-#define profile(...) do { \
-		log(LEVEL_PROFILE, L"PROFILE [%a:%d] ", \
-		    __func__, __LINE__, __VA_ARGS__); \
-	} while (0)
+#ifdef CONFIG_X86
+	asm volatile ("rdtsc" : "=A" (x));
+#elif CONFIG_X86_64
+	uint32_t high, low;
 
-#define debug(...) do { \
-		log(LEVEL_DEBUG, L"DEBUG [%a:%d] ", \
-		    __func__, __LINE__, __VA_ARGS__); \
-	} while (0)
+	asm volatile ("rdtsc" : "=a" (low), "=d" (high));
+	x = ((uint64_t)low) | ((uint64_t)high) << 32;
+#endif
 
-#define info(...) do { \
-		log(LEVEL_INFO, L"INFO [%a:%d] ", \
-		    __func__, __LINE__, __VA_ARGS__); \
-	} while (0)
+	return x;
+}
 
-#define warning(...) do { \
-		log(LEVEL_WARNING, L"WARNING [%a:%d] ", \
-		    __func__, __LINE__, __VA_ARGS__); \
-	} while (0)
+static inline uint64_t rdmsr(unsigned int msr)
+{
+	uint64_t x;
+	asm volatile ("rdmsr" : "=A" (x) : "c" (msr));
+	return x;
+}
 
-#define error(...) do { \
-		log(LEVEL_ERROR, L"ERROR [%a:%d] ", \
-		    __func__, __LINE__, __VA_ARGS__); \
-	} while (0)
-
-#endif	/* __LOG_H__ */
+#endif	/* _CPU_H_ */

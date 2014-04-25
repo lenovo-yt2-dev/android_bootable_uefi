@@ -30,6 +30,11 @@
 #ifndef __UEFI_UTILS_H__
 #define __UEFI_UTILS_H__
 
+#include <efi.h>
+
+#define UINTN_MAX ((UINTN)-1);
+#define offsetof(TYPE, MEMBER) ((UINTN) &((TYPE *)0)->MEMBER)
+
 struct EFI_LOAD_OPTION {
 	UINT32 Attributes;
 	UINT16 FilePathListLength;
@@ -38,7 +43,7 @@ struct EFI_LOAD_OPTION {
 EFI_STATUS ConvertBmpToGopBlt (VOID *BmpImage, UINTN BmpImageSize,
 			       VOID **GopBlt, UINTN *GopBltSize,
 			       UINTN *PixelHeight, UINTN *PixelWidth);
-EFI_STATUS gop_display_blt(EFI_GRAPHICS_OUTPUT_BLT_PIXEL *Blt, UINTN blt_size, UINTN height, UINTN width);
+EFI_STATUS gop_display_blt(EFI_GRAPHICS_OUTPUT_BLT_PIXEL *Blt, UINTN height, UINTN width);
 EFI_STATUS get_esp_handle(EFI_HANDLE **esp);
 EFI_STATUS get_esp_fs(EFI_FILE_IO_INTERFACE **esp_fs);
 EFI_STATUS uefi_read_file(EFI_FILE_IO_INTERFACE *io, CHAR16 *filename, void **data, UINTN *size);
@@ -51,13 +56,41 @@ BOOLEAN uefi_exist_file(EFI_FILE *parent, CHAR16 *filename);
 BOOLEAN uefi_exist_file_root(EFI_FILE_IO_INTERFACE *io, CHAR16 *filename);
 EFI_STATUS uefi_create_directory(EFI_FILE *parent, CHAR16 *dirname);
 EFI_STATUS uefi_create_directory_root(EFI_FILE_IO_INTERFACE *io, CHAR16 *dirname);
-EFI_STATUS uefi_file_get_size(EFI_HANDLE image, CHAR16 *filename, UINT64 *size);
-EFI_STATUS uefi_call_image(IN EFI_HANDLE parent_image, IN EFI_HANDLE device,
-			   IN CHAR16 *filename, OUT UINTN *exit_data_size, OUT CHAR16 **exit_data);
 EFI_STATUS uefi_set_simple_var(char *name, EFI_GUID *guid, int size, void *data,
 			       BOOLEAN persistent);
 INT8 uefi_get_simple_var(char *name, EFI_GUID *guid);
 EFI_STATUS uefi_usleep(UINTN useconds);
 EFI_STATUS uefi_msleep(UINTN mseconds);
+
+EFI_STATUS str_to_stra(CHAR8 *dst, CHAR16 *src, UINTN len);
+CHAR16 *stra_to_str(CHAR8 *src);
+VOID StrNCpy(OUT CHAR16 *dest, IN const CHAR16 *src, UINT32 n);
+UINT8 getdigit(IN CHAR16 *str);
+EFI_STATUS string_to_guid(IN CHAR16 *in_guid_str, OUT EFI_GUID *guid);
+UINT32 swap_bytes32(UINT32 n);
+UINT16 swap_bytes16(UINT16 n);
+void copy_and_swap_guid(EFI_GUID *dst, const EFI_GUID *src);
+EFI_STATUS open_partition(
+                IN const EFI_GUID *guid,
+                OUT UINT32 *MediaIdPtr,
+                OUT EFI_BLOCK_IO **BlockIoPtr,
+                OUT EFI_DISK_IO **DiskIoPtr);
+void path_to_dos(CHAR16 *path);
+CHAR8 *append_strings(CHAR8 *s1, CHAR8 *s2);
+UINTN strtoul(const CHAR16 *nptr, CHAR16 **endptr, UINTN base);
+
+/* Basic port I/O */
+static inline void outb(UINT16 port, UINT8 value)
+{
+	asm volatile("outb %0,%1" : : "a" (value), "dN" (port));
+}
+
+static inline UINT8 inb(UINT16 port)
+{
+	UINT8 value;
+	asm volatile("inb %1,%0" : "=a" (value) : "dN" (port));
+	return value;
+}
+
 
 #endif /* __UEFI_UTILS_H__ */

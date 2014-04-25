@@ -28,20 +28,8 @@
  *
  */
 
-#include "log.h"
+#include <log.h>
 #include "config.h"
-
-#ifdef CONFIG_LOG_LEVEL
-UINTN log_level = CONFIG_LOG_LEVEL;
-#else
-UINTN log_level = LEVEL_DEBUG;
-#endif	/* CONFIG_LOG_LEVEL */
-
-#ifdef CONFIG_LOG_FLUSH_TO_VARIABLE
-BOOLEAN log_flush_to_variable = TRUE;
-#else
-BOOLEAN log_flush_to_variable = FALSE;
-#endif	/* CONFIG_LOG_FLUSH_TO_VARIABLE */
 
 #ifdef CONFIG_HAS_WARMDUMP
 BOOLEAN has_warmdump = TRUE;

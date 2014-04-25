@@ -31,7 +31,7 @@
 #include <efi.h>
 #include <efilib.h>
 #include <stdlib.h>
-#include <utils.h>
+#include <uefi_utils.h>
 #include "secure_boot.h"
 
 #if USE_SHIM

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, Intel Corporation
+ * Copyright (c) 2014, Intel Corporation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,14 +27,25 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "platform.h"
-#include "x86.h"
+#include <efi.h>
+#include <efilib.h>
 
-extern UINT64 silvermont_get_current_time_us();
+unsigned long __stack_chk_guard = 0xdeadbeef;
+extern EFI_HANDLE main_image_handle;
 
-void init_airmont(void)
+/* Code requested to x86 build */
+__attribute__ ((visibility ("hidden")))
+void __stack_chk_fail_local()
 {
-	x86_ops(&loader_ops);
+	static const CHAR16 ERROR_MSG[] = L"Stack smashing detected.\n";
 
-	loader_ops.get_current_time_us = silvermont_get_current_time_us;
+	uefi_call_wrapper(BS->Exit, 4, main_image_handle, EFI_SECURITY_VIOLATION, sizeof(ERROR_MSG),
+			  (CHAR16*)ERROR_MSG);
+}
+
+/* Code requested to x86_64 build (missing symbol) */
+__attribute__ ((visibility ("hidden")))
+void __stack_chk_fail()
+{
+	__stack_chk_fail_local();
 }

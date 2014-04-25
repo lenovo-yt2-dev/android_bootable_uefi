@@ -43,9 +43,9 @@
 
 #define EFILINUX_CONFIG	L"efilinux.cfg"
 
-#include "utils.h"
+#include <uefi_utils.h>
+#include <log.h>
 #include "watchdog/watchdog.h"
-#include "log.h"
 
 extern EFI_SYSTEM_TABLE *sys_table;
 extern EFI_BOOT_SERVICES *boot;

@@ -29,15 +29,16 @@
 
 #include <efi.h>
 #include <efilib.h>
+#include <uefi_utils.h>
 #include "efilinux.h"
 #include "acpi.h"
 #include "esrt.h"
 #include "bootlogic.h"
 #include "platform/platform.h"
-#include "uefi_utils.h"
-#include "utils.h"
 #include "uefi_osnib.h"
 #include "splash.h"
+#include "config.h"
+#include "fs.h"
 
 static enum targets boot_bcb(int dummy)
 {
@@ -318,9 +319,9 @@ CHAR8 *get_extra_cmdline(CHAR8 *cmdline)
 	updated_cmdline = append_strings(extra_cmdline, cmdline);
 
 	if (extra_cmdline)
-		free(extra_cmdline);
+		FreePool(extra_cmdline);
 	if (cmdline)
-		free(cmdline);
+		FreePool(cmdline);
 
 	return updated_cmdline;
 }
@@ -331,9 +332,9 @@ CHAR8 *check_vbattfreqlmt(CHAR8 *cmdline)
 
 	if (loader_ops.em_ops->is_battery_below_vbattfreqlmt()) {
 		debug(L"Battery voltage below vbattfreqlmt add battlow in cmdline\n");
-		updated_cmdline = append_strings("battlow ", cmdline);
+		updated_cmdline = append_strings((CHAR8 *)"battlow ", cmdline);
 		if (cmdline)
-			free(cmdline);
+			FreePool(cmdline);
 	}
 
 	return updated_cmdline;
@@ -359,8 +360,8 @@ static EFI_STATUS launch_or_fallback(enum targets target, CHAR8 *cmdline)
 	CHAR8 saved_cmdline[(cmdline ? strlena(cmdline) : 0) + 1];
 
 	if (cmdline) {
-		memcpy(saved_cmdline, cmdline, strlena(cmdline) + 1);
-		free(cmdline);
+		CopyMem(saved_cmdline, cmdline, strlena(cmdline) + 1);
+		FreePool(cmdline);
 	} else
 		saved_cmdline[0] = '\0';
 

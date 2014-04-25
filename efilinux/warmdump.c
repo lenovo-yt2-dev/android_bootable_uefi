@@ -290,6 +290,18 @@ void pstore_restore(EFI_FILE_IO_INTERFACE *esp_fs)
 	uefi_delete_file(esp_fs, PSTORE_FILE);
 }
 
+static VOID log_init(VOID)
+{
+	EFI_STATUS err;
+	err = log_set_logtag(CONFIG_LOG_TAG);
+	if (EFI_ERROR(err)) {
+		warning(L"Could not set log tag: %r\n", err);
+	}
+
+	log_set_loglevel(CONFIG_LOG_LEVEL);
+	log_set_logtimestamp(TRUE);
+}
+
 EFI_STATUS efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *systab)
 {
 	EFI_STATUS ret = EFI_SUCCESS;
@@ -300,6 +312,8 @@ EFI_STATUS efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *systab)
 	sys_table = systab;
 	boot = sys_table->BootServices;
 	main_image_handle = image;
+
+	log_init();
 
 	ret = handle_protocol(image, &LoadedImageProtocol, (void **)&info);
 	if (ret != EFI_SUCCESS)

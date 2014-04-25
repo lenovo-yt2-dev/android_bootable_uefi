@@ -29,12 +29,11 @@
 
 #include <efi.h>
 #include <efilib.h>
+#include <uefi_utils.h>
 #include "efilinux.h"
 #include "stdlib.h"
 #include "bootlogic.h"
 #include "android/boot.h"
-#include "utils.h"
-#include "uefi_utils.h"
 #include <bootloader.h>
 
 #define BOOT_GUID	{0x80868086, 0x8086, 0x8086, {0x80, 0x86, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00}}

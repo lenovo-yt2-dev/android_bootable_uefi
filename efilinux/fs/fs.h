@@ -111,4 +111,7 @@ extern EFI_STATUS blk_init(void);
 extern void fs_exit(void);
 extern void blk_exit(void);
 
+EFI_STATUS uefi_file_get_size(EFI_HANDLE image, CHAR16 *filename, UINT64 *size);
+EFI_STATUS uefi_call_image(IN EFI_HANDLE parent_image, IN EFI_HANDLE device,
+			   IN CHAR16 *filename, OUT UINTN *exit_data_size, OUT CHAR16 **exit_data);
 #endif /* __FS_H__ */

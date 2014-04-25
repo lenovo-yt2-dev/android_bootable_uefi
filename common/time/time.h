@@ -27,25 +27,9 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <efi.h>
-#include <efilib.h>
-#include "efilinux.h"
+#ifndef _TIME_H_
+#define _TIME_H_
 
-unsigned long __stack_chk_guard = 0xdeadbeef;
+UINT64 get_current_time_us(void);
 
-/* Code requested to x86 build */
-__attribute__ ((visibility ("hidden")))
-void __stack_chk_fail_local()
-{
-	static const CHAR16 ERROR_MSG[] = L"Stack smashing detected.\n";
-
-	exit(main_image_handle, EFI_SECURITY_VIOLATION, sizeof(ERROR_MSG),
-	     (CHAR16*)ERROR_MSG);
-}
-
-/* Code requested to x86_64 build (missing symbol) */
-__attribute__ ((visibility ("hidden")))
-void __stack_chk_fail()
-{
-	__stack_chk_fail_local();
-}
+#endif	/* _TIME_H_ */

@@ -29,9 +29,10 @@
 
 #include <efi.h>
 #include <efilib.h>
+#include <uefi_utils.h>
 #include "efilinux.h"
+#include "config.h"
 #include "bootlogic.h"
-#include "uefi_utils.h"
 #include "intel_partitions.h"
 
 EFI_STATUS uefi_display_splash(CHAR8 *bmp, UINTN size)
@@ -49,7 +50,7 @@ EFI_STATUS uefi_display_splash(CHAR8 *bmp, UINTN size)
 		goto error;
 	}
 
-	ret = gop_display_blt(Blt, blt_size, height, width);
+	ret = gop_display_blt(Blt, height, width);
  	if (EFI_ERROR(ret)) {
 		error(L"Failed to display blt: %r\n", ret);
 		goto error;

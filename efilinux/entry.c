@@ -29,9 +29,10 @@
 
 #include <efi.h>
 #include <efilib.h>
+#include <fs.h>
+#include <uefi_utils.h>
+#include <protocol.h>
 #include "efilinux.h"
-#include "fs.h"
-#include "protocol.h"
 #include "stdlib.h"
 #include "android/boot.h"
 #include "acpi.h"
@@ -40,8 +41,6 @@
 #include "bootlogic.h"
 #include "platform/platform.h"
 #include "commands.h"
-#include "uefi_utils.h"
-#include "utils.h"
 #include "em.h"
 #include "config.h"
 
@@ -473,6 +472,20 @@ static EFI_STATUS store_osloader_version(char *version)
 	return ret;
 }
 
+static VOID log_init(VOID)
+{
+	EFI_STATUS err;
+	err = log_set_logtag(LOG_TAG);
+	if (EFI_ERROR(err)) {
+		warning(L"Could not set log tag: %r\n", err);
+	}
+
+	log_set_line_len(LOG_LINE_LEN);
+	log_set_flush_to_var(LOG_FLUSH_TO_VARIABLE);
+	log_set_loglevel(LOG_LEVEL);
+	log_set_logtimestamp(LOG_TIMESTAMP);
+}
+
 /**
  * efi_main - The entry point for the OS loader image.
  * @image: firmware-allocated handle that identifies the image
@@ -498,6 +511,8 @@ efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *_table)
 
 	if (CheckCrc(sys_table->Hdr.HeaderSize, &sys_table->Hdr) != TRUE)
 		return EFI_LOAD_ERROR;
+
+	log_init();
 
 	info(banner, EFILINUX_VERSION_MAJOR, EFILINUX_VERSION_MINOR,
 		EFILINUX_BUILD_STRING, EFILINUX_VERSION_STRING,

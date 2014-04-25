@@ -30,7 +30,7 @@
 #include <efi.h>
 #include <efilib.h>
 #include "esrt.h"
-#include "utils.h"
+#include <uefi_utils.h>
 #include "efilinux.h"
 #include "uefi_utils.h"
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, Intel Corporation
+ * Copyright (c) 2014, Intel Corporation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -25,49 +25,14 @@
  * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
- *
  */
 
-#ifndef _UTILS_H_
-#define _UTILS_H_
-
-#include <efi.h>
-#include <efilib.h>
-#include "stdlib.h"
-
-#include "efilinux.h"
-
-#define UINTN_MAX ((UINTN)-1);
-#define offsetof(TYPE, MEMBER) ((UINTN) &((TYPE *)0)->MEMBER)
-
-EFI_STATUS str_to_stra(CHAR8 *dst, CHAR16 *src, UINTN len);
-CHAR16 *stra_to_str(CHAR8 *src);
-VOID StrNCpy(OUT CHAR16 *dest, IN const CHAR16 *src, UINT32 n);
-UINT8 getdigit(IN CHAR16 *str);
-EFI_STATUS string_to_guid(IN CHAR16 *in_guid_str, OUT EFI_GUID *guid);
-UINT32 swap_bytes32(UINT32 n);
-UINT16 swap_bytes16(UINT16 n);
-void copy_and_swap_guid(EFI_GUID *dst, const EFI_GUID *src);
-EFI_STATUS open_partition(
-                IN const EFI_GUID *guid,
-                OUT UINT32 *MediaIdPtr,
-                OUT EFI_BLOCK_IO **BlockIoPtr,
-                OUT EFI_DISK_IO **DiskIoPtr);
-void path_to_dos(CHAR16 *path);
-CHAR8 *append_strings(CHAR8 *s1, CHAR8 *s2);
-UINTN strtoul(const CHAR16 *nptr, CHAR16 **endptr, UINTN base);
-
-/* Basic port I/O */
-static inline void outb(UINT16 port, UINT8 value)
+void  __cyg_profile_func_enter(void *func __attribute__((__unused__)), void *caller __attribute__((__unused__)))
 {
-	asm volatile("outb %0,%1" : : "a" (value), "dN" (port));
+	;
 }
 
-static inline UINT8 inb(UINT16 port)
+void __cyg_profile_func_exit(void *func __attribute__((__unused__)), void *caller __attribute__((__unused__)))
 {
-	UINT8 value;
-	asm volatile("inb %1,%0" : "=a" (value) : "dN" (port));
-	return value;
+	;
 }
-
-#endif

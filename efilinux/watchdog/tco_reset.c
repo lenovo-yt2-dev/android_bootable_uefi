@@ -31,7 +31,8 @@
 #include <efi.h>
 #include <efilib.h>
 #include <stdlib.h>
-#include <utils.h>
+#include <uefi_utils.h>
+#include <log.h>
 #include "tco_reset.h"
 
 

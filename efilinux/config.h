@@ -32,6 +32,7 @@
 #define __CONFIG_H__
 
 #include <efi.h>
+#include <log.h>
 
 #ifdef CONFIG_LOG_TAG
 #define LOG_TAG CONFIG_LOG_TAG
@@ -57,7 +58,27 @@
 #define EFILINUX_VAR_PREFIX "Efilinux"
 #endif	/* CONFIG_EFILINUX_VAR_PREFIX */
 
-extern UINTN log_level;
+#ifdef CONFIG_LOG_FLUSH_TO_VARIABLE
+#define LOG_FLUSH_TO_VARIABLE TRUE
+#else
+#define LOG_FLUSH_TO_VARIABLE FALSE
+#endif	/* CONFIG_LOG_FLUSH_TO_VARIABLE */
+
+#ifdef CONFIG_LOG_LEVEL
+#define LOG_LEVEL CONFIG_LOG_LEVEL
+#else
+#define LOG_LEVEL LEVEL_WARNING
+#endif	/* CONFIG_LOG_LEVEL */
+
+#ifdef CONFIG_LOG_TIMESTAMP
+#define LOG_TIMESTAMP TRUE
+#else
+#define LOG_TIMESTAMP FALSE
+#endif	/* CONFIG_LOG_TIMESTAMP */
+
+#define EFILINUX_LOGS_VARNAME EFILINUX_VAR_PREFIX L"Logs"
+
+extern enum loglevel log_level;
 extern BOOLEAN log_flush_to_variable;
 extern BOOLEAN has_warmdump;
 extern EFI_GUID osloader_guid;

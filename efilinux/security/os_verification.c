@@ -31,7 +31,8 @@
 #include <efi.h>
 #include <efilib.h>
 #include <stdlib.h>
-#include <utils.h>
+#include <uefi_utils.h>
+#include <log.h>
 #include "os_verification.h"
 
 EFI_GUID gOsVerificationProtocolGuid = INTEL_OS_VERIFICATION_PROTOCOL_GUID;

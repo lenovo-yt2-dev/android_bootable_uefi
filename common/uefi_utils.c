@@ -29,9 +29,9 @@
 
 #include <efi.h>
 #include <efilib.h>
-#include <fs.h>
-#include "efilinux.h"
+#include <log.h>
 #include "protocol.h"
+#include "uefi_utils.h"
 
 extern EFI_GUID GraphicsOutputProtocol;
 
@@ -318,8 +318,10 @@ EFI_STATUS get_esp_handle(EFI_HANDLE **esp)
 				goto free_handles;
 			}
 			description = DevicePathToStr(device);
-			debug(L"Device : %s\n", description);
-			free_pool(description);
+			if (description) {
+				debug(L"Device : %s\n", description);
+				FreePool(description);
+			}
 		}
 	}
 
@@ -337,7 +339,7 @@ EFI_STATUS get_esp_handle(EFI_HANDLE **esp)
 
 free_handles:
 	if (handles)
-		free(handles);
+		FreePool(handles);
 out:
 	return ret;
 }
@@ -346,7 +348,7 @@ EFI_STATUS get_esp_fs(EFI_FILE_IO_INTERFACE **esp_fs)
 {
 	EFI_STATUS ret = EFI_SUCCESS;
 	EFI_GUID SimpleFileSystemProtocol = SIMPLE_FILE_SYSTEM_PROTOCOL;
-	EFI_HANDLE *esp_handle;
+	EFI_HANDLE *esp_handle = NULL;
 	EFI_FILE_IO_INTERFACE *esp;
 
 	ret = get_esp_handle(&esp_handle);
@@ -384,7 +386,7 @@ EFI_STATUS uefi_read_file(EFI_FILE_IO_INTERFACE *io, CHAR16 *filename, void **da
 
 	info_size = SIZE_OF_EFI_FILE_INFO + 200;
 
-	info = malloc(info_size);
+	info = AllocatePool(info_size);
 	if (!info)
 		goto close;
 
@@ -393,21 +395,21 @@ EFI_STATUS uefi_read_file(EFI_FILE_IO_INTERFACE *io, CHAR16 *filename, void **da
 		goto free_info;
 
 	*size = info->FileSize;
-	*data = malloc(*size);
+	*data = AllocatePool(*size);
 
 retry:
 	ret = uefi_call_wrapper(file->Read, 3, file, size, *data);
 	if (ret == EFI_BUFFER_TOO_SMALL) {
-		free(*data);
-		*data = malloc(*size);
+		FreePool(*data);
+		*data = AllocatePool(*size);
 		goto retry;
 	}
 
 	if (EFI_ERROR(ret))
-		free(*data);
+		FreePool(*data);
 
 free_info:
-	free(info);
+	FreePool(info);
 close:
 	uefi_call_wrapper(file->Close, 1, file);
 out:
@@ -416,7 +418,7 @@ out:
 	return ret;
 }
 
-EFI_STATUS gop_display_blt(EFI_GRAPHICS_OUTPUT_BLT_PIXEL *Blt, UINTN blt_size, UINTN height, UINTN width)
+EFI_STATUS gop_display_blt(EFI_GRAPHICS_OUTPUT_BLT_PIXEL *Blt, UINTN height, UINTN width)
 {
 	EFI_GRAPHICS_OUTPUT_BLT_PIXEL pix = {0x00, 0x00, 0x00, 0x00};
 	EFI_GRAPHICS_OUTPUT_PROTOCOL *gop;
@@ -562,83 +564,6 @@ EFI_STATUS uefi_create_directory_root(EFI_FILE_IO_INTERFACE *io, CHAR16 *dirname
 	return uefi_create_directory(root, dirname);
 }
 
-EFI_STATUS uefi_file_get_size(EFI_HANDLE image, CHAR16 *filename, UINT64 *size)
-{
-	EFI_STATUS ret;
-	EFI_LOADED_IMAGE *info;
-	struct file *file;
-	UINT64 fsize;
-
-	ret = handle_protocol(image, &LoadedImageProtocol, (void **)&info);
-	if (EFI_ERROR(ret)) {
-		error(L"HandleProtocol %s (%r)\n", filename, ret);
-		return ret;
-	}
-	ret = file_open(info, filename, &file);
-	if (EFI_ERROR(ret)) {
-		error(L"FileOpen %s (%r)\n", filename, ret);
-		return ret;
-	}
-	ret = file_size(file, &fsize);
-	if (EFI_ERROR(ret)) {
-		error(L"FileSize %s (%r)\n", filename, ret);
-		return ret;
-	}
-	ret = file_close(file);
-	if (EFI_ERROR(ret)) {
-		error(L"FileClose %s (%r)\n", filename, ret);
-		return ret;
-	}
-
-	*size = fsize;
-
-	return ret;
-}
-
-EFI_STATUS uefi_call_image(
-	IN EFI_HANDLE parent_image,
-	IN EFI_HANDLE device,
-	IN CHAR16 *filename,
-	OUT UINTN *exit_data_size,
-	OUT CHAR16 **exit_data)
-{
-	EFI_STATUS ret;
-	EFI_DEVICE_PATH *path;
-	UINT64 size;
-	EFI_HANDLE image;
-
-	debug(L"Call image file %s\n", filename);
-	path = FileDevicePath(device, filename);
-	if (!path) {
-		error(L"Error getting device path : %s\n", filename);
-		return EFI_INVALID_PARAMETER;
-	}
-
-	ret = uefi_file_get_size(parent_image, filename, &size);
-	if (EFI_ERROR(ret)) {
-		error(L"GetSize %s (%r)\n", filename, ret);
-		goto out;
-	}
-
-	ret = uefi_call_wrapper(BS->LoadImage, 6, FALSE, parent_image, path,
-				NULL, size, &image);
-	if (EFI_ERROR(ret)) {
-		error(L"LoadImage %s (%r)\n", filename, ret);
-		goto out;
-	}
-
-	ret = uefi_call_wrapper(BS->StartImage, 3, image,
-				exit_data_size, exit_data);
-	if (EFI_ERROR(ret))
-		info(L"StartImage returned error %s (%r)\n", filename, ret);
-
-out:
-	if (path)
-		FreePool(path);
-
-	return ret;
-}
-
 EFI_STATUS uefi_set_simple_var(char *name, EFI_GUID *guid, int size, void *data,
 			       BOOLEAN persistent)
 {
@@ -650,7 +575,7 @@ EFI_STATUS uefi_set_simple_var(char *name, EFI_GUID *guid, int size, void *data,
 	else
 		ret = LibSetVariable(name16, guid, size, data);
 
-	free(name16);
+	FreePool(name16);
 	return ret;
 }
 
@@ -677,9 +602,9 @@ INT8 uefi_get_simple_var(char *name, EFI_GUID *guid)
 
 	ret = *(INT8 *)buffer;
 out:
-	free(name16);
+	FreePool(name16);
 	if (buffer)
-		free(buffer);
+		FreePool(buffer);
 	return ret;
 }
 
@@ -691,4 +616,311 @@ EFI_STATUS uefi_usleep(UINTN useconds)
 EFI_STATUS uefi_msleep(UINTN mseconds)
 {
 	return uefi_msleep(mseconds * 1000);
+}
+
+EFI_STATUS str_to_stra(CHAR8 *dst, CHAR16 *src, UINTN len)
+{
+        UINTN i;
+
+	if (!src || !dst)
+		return EFI_INVALID_PARAMETER;
+
+        /* This is NOT how to do UTF16 to UTF8 conversion. For now we're just
+         * going to hope that nobody's putting non-ASCII characters in
+         * the source string! We'll at least abort with an error
+         * if we see any funny stuff */
+        for (i = 0; i < len; i++) {
+                if (src[i] > 0x7F)
+                        return EFI_INVALID_PARAMETER;
+
+                dst[i] = (CHAR8)src[i];
+                if (!src[i])
+                        break;
+        }
+        return EFI_SUCCESS;
+}
+
+CHAR16 *stra_to_str(CHAR8 *src)
+{
+        UINTN i;
+	UINTN len;
+	CHAR16 *dst;
+
+	if (!src)
+		return NULL;
+
+        /* This is NOT how to do UTF16 to UTF8 conversion. For now we're just
+         * going to hope that nobody's putting non-ASCII characters in
+         * the source string! We'll at least abort with an error
+         * if we see any funny stuff */
+
+	len = strlena(src);
+	if (!len)
+		return NULL;
+
+	dst = AllocatePool((len+1) * sizeof(CHAR16));
+	if (!dst)
+		return NULL;
+
+        for (i = 0; i <= len; i++) {
+                if (src[i] > 0x7F)
+			goto free;
+
+                dst[i] = (CHAR16)src[i];
+                if (!src[i])
+                        break;
+        }
+
+        return dst;
+free:
+	FreePool(dst);
+        return NULL;
+}
+
+VOID StrNCpy(OUT CHAR16 *dest, IN const CHAR16 *src, UINT32 n)
+{
+        UINT32 i;
+
+	if (!dest || !src) {
+		warning(L"StrNCpy failed (parameter NULL)\n");
+		return;
+	}
+
+	for (i = 0; i < n && src[i] != 0; i++)
+                dest[i] = src[i];
+        for ( ; i < n; i++)
+                dest[i] = 0;
+}
+
+
+UINT8 getdigit(IN CHAR16 *str)
+{
+        CHAR16 bytestr[3];
+	if (!str)
+		return 0;
+        bytestr[2] = 0;
+        StrNCpy(bytestr, str, 2);
+        return (UINT8)xtoi(bytestr);
+}
+
+
+EFI_STATUS string_to_guid(IN CHAR16 *in_guid_str, OUT EFI_GUID *guid)
+{
+        CHAR16 gstr[37];
+        int i;
+
+	if (!in_guid_str || !guid)
+		return EFI_INVALID_PARAMETER;
+
+        StrNCpy(gstr, in_guid_str, 36);
+        gstr[36] = 0;
+        gstr[8] = 0;
+        gstr[13] = 0;
+        gstr[18] = 0;
+        guid->Data1 = (UINT32)xtoi(gstr);
+        guid->Data2 = (UINT16)xtoi(&gstr[9]);
+        guid->Data3 = (UINT16)xtoi(&gstr[14]);
+
+        guid->Data4[0] = getdigit(&gstr[19]);
+        guid->Data4[1] = getdigit(&gstr[21]);
+        for (i = 0; i < 6; i++)
+                guid->Data4[i + 2] = getdigit(&gstr[24 + (i * 2)]);
+
+        return EFI_SUCCESS;
+}
+
+UINT32 swap_bytes32(UINT32 n)
+{
+        return ((n & 0x000000FF) << 24) |
+               ((n & 0x0000FF00) << 8 ) |
+               ((n & 0x00FF0000) >> 8 ) |
+               ((n & 0xFF000000) >> 24);
+}
+
+
+UINT16 swap_bytes16(UINT16 n)
+{
+        return ((n & 0x00FF) << 8) | ((n & 0xFF00) >> 8);
+}
+
+
+void copy_and_swap_guid(EFI_GUID *dst, const EFI_GUID *src)
+{
+	if (!dst | !src) {
+		warning(L"copy_and_swap_guid failed (parameter NULL)\n");
+		return;
+	}
+
+	CopyMem(&dst->Data4, src->Data4, sizeof(src->Data4));
+        dst->Data1 = swap_bytes32(src->Data1);
+        dst->Data2 = swap_bytes16(src->Data2);
+        dst->Data3 = swap_bytes16(src->Data3);
+}
+
+EFI_STATUS open_partition(
+                IN const EFI_GUID *guid,
+                OUT UINT32 *MediaIdPtr,
+                OUT EFI_BLOCK_IO **BlockIoPtr,
+                OUT EFI_DISK_IO **DiskIoPtr)
+{
+        EFI_STATUS ret;
+        EFI_BLOCK_IO *BlockIo;
+        EFI_DISK_IO *DiskIo;
+        UINT32 MediaId;
+        UINTN NoHandles = 0;
+        EFI_HANDLE *HandleBuffer = NULL;
+
+	if (!guid || !MediaIdPtr || !BlockIoPtr || !DiskIoPtr)
+		return EFI_INVALID_PARAMETER;
+
+        /* Get a handle on the partition containing the boot image */
+        ret = LibLocateHandleByDiskSignature(
+                        MBR_TYPE_EFI_PARTITION_TABLE_HEADER,
+                        SIGNATURE_TYPE_GUID,
+                        (void *)guid,
+                        &NoHandles,
+                        &HandleBuffer);
+        if (EFI_ERROR(ret) || NoHandles == 0) {
+                /* Workaround for old installers which incorrectly wrote
+                 * GUIDs strings as little-endian */
+                EFI_GUID g;
+                copy_and_swap_guid(&g, guid);
+                ret = LibLocateHandleByDiskSignature(
+                                MBR_TYPE_EFI_PARTITION_TABLE_HEADER,
+                                SIGNATURE_TYPE_GUID,
+                                (void *)&g,
+                                &NoHandles,
+                                &HandleBuffer);
+                if (EFI_ERROR(ret)) {
+                        error(L"LibLocateHandle", ret);
+                        return ret;
+                }
+        }
+        if (NoHandles != 1) {
+                error(L"%d handles found for GUID, expecting 1: %g\n",
+                      NoHandles, guid);
+                ret = EFI_VOLUME_CORRUPTED;
+                goto out;
+        }
+
+	/* In Fast boot mode, only ESP device is connected to protocols.
+	 * We need to specificallty connect the device in order to use it's DiskIoProtocol
+	 */
+	uefi_call_wrapper(BS->ConnectController, 4, HandleBuffer[0], NULL, NULL, TRUE);
+
+        /* Instantiate BlockIO and DiskIO protocols so we can read various data */
+        ret = uefi_call_wrapper(BS->HandleProtocol, 3, HandleBuffer[0],
+                        &BlockIoProtocol,
+                        (void **)&BlockIo);
+        if (EFI_ERROR(ret)) {
+                error(L"HandleProtocol (BlockIoProtocol)\n", ret);
+                goto out;;
+        }
+        ret = uefi_call_wrapper(BS->HandleProtocol, 3, HandleBuffer[0],
+                        &DiskIoProtocol, (void **)&DiskIo);
+        if (EFI_ERROR(ret)) {
+                error(L"HandleProtocol (DiskIoProtocol)\n", ret);
+                goto out;
+        }
+        MediaId = BlockIo->Media->MediaId;
+
+        *MediaIdPtr = MediaId;
+        *BlockIoPtr = BlockIo;
+        *DiskIoPtr = DiskIo;
+out:
+        FreePool(HandleBuffer);
+        return ret;
+}
+
+void path_to_dos(CHAR16 *path)
+{
+	while (*path) {
+		if (*path == '/')
+			*path = '\\';
+		path++;
+	}
+}
+
+/* Return a newly allocated string containing the concatenation of the
+ * two parameters with a space between them
+ *
+ * return NULL if the two strings are empty or the allocation failed,
+ */
+CHAR8 *append_strings(CHAR8 *s1, CHAR8 *s2)
+{
+	INTN len_s1;
+	INTN len_s2;
+	BOOLEAN space;
+	CHAR8 *new;
+
+	len_s1 = s1 ? strlena(s1) : 0;
+	len_s2 = s2 ? strlena(s2) : 0;
+	space = s1 && s2;
+
+	if (!s1 && !s2)
+		return NULL;
+
+	new = AllocatePool(len_s1 + len_s2 + 1 + space);
+	if (!new) {
+		error(L"Failed to allocate new command line\n");
+		return NULL;
+	}
+
+	UINTN i = 0;
+	if (s1) {
+		CopyMem(new, s1, len_s1);
+		i += len_s1;
+	}
+	if (space)
+		new[i++] = ' ';
+	if (s2) {
+		CopyMem(new + i, s2, len_s2);
+		i += len_s2;
+	}
+
+	new[i] = '\0';
+	return new;
+}
+
+static INTN to_digit(CHAR16 c, UINTN base)
+{
+	UINTN value = -1;
+
+	if (c >= '0' && c <= '9')
+		value = c - '0';
+	else if (c >= 'a' && c <= 'z')
+		value = 0xA + c - 'a';
+	else if (c >= 'A' && c <= 'Z')
+		value = 0xA + c - 'A';
+
+	return value < base ? (INTN)value : -1;
+}
+
+UINTN strtoul(const CHAR16 *nptr, CHAR16 **endptr, UINTN base)
+{
+	UINTN value = 0;
+
+	if (!nptr)
+		goto out;
+
+	if ((base == 0 || base == 16) &&
+	    (StrLen(nptr) > 2 && nptr[0] == '0' && nptr[1] == 'x')) {
+		nptr += 2;
+		base = 16;
+	}
+
+	if (base == 0)
+		base = 10;
+
+	for (; *nptr != '\0' ; nptr++) {
+		INTN t = to_digit(*nptr, base);
+		if (t == -1)
+			goto out;
+		value = (value * base) + t;
+	}
+
+out:
+	if (endptr)
+		*endptr = (CHAR16 *)nptr;
+	return value;
 }

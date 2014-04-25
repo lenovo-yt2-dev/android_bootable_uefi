@@ -29,10 +29,9 @@
 
 #include <efi.h>
 #include <efilib.h>
+#include <uefi_utils.h>
 #include "acpi.h"
-#include "utils.h"
 #include "efilinux.h"
-#include "uefi_utils.h"
 
 static struct RSCI_TABLE *RSCI_table = NULL;
 static struct OEM1_TABLE *OEM1_table = NULL;
@@ -81,7 +80,7 @@ static UINT64 _get_acpi_field(CHAR8 *name, CHAR8 *fieldname, VOID **var, UINTN o
 	}
 
 	UINT64 ret = 0;
-	memcpy((CHAR8 *)&ret, (CHAR8 *)*var + offset, size);
+	CopyMem((CHAR8 *)&ret, (CHAR8 *)*var + offset, size);
 	return ret;
 }
 
@@ -100,7 +99,7 @@ static EFI_STATUS _set_acpi_field(CHAR8 *name, CHAR8 *fieldname, VOID **var, UIN
 		}
 	}
 
-	memcpy((CHAR8 *)*var + offset, (CHAR8 *)&value, size);
+	CopyMem((CHAR8 *)*var + offset, (CHAR8 *)&value, size);
 	return EFI_SUCCESS;
 }
 
@@ -167,12 +166,12 @@ void dump_acpi_tables(void)
 		UINTN written_size = size;
 		info(L"RSDT[%d] = %c%c%c%c\n", i, s[0], s[1], s[2], s[3]);
 
-		memcpy(signature, s, 4);
+		CopyMem(signature, s, 4);
 		signature[4] = 0;
 
 		tmp = stra_to_str(signature);
 		SPrint(filename, 0, L"ACPI\\%s", tmp);
-		free(tmp);
+		FreePool(tmp);
 
 		ret = uefi_write_file(io, filename, s, &written_size);
 		if (size != written_size)
@@ -395,13 +394,13 @@ void load_dsdt(void)
 		CHAR8 signature[5];
 		UINTN size = ((struct ACPI_DESC_HEADER *)s)->length;
 		info(L"RSDT[%d] = %c%c%c%c\n", i, s[0], s[1], s[2], s[3]);
-		memcpy(signature, s, 4);
+		CopyMem(signature, s, 4);
 		signature[4] = 0;
 
 		if (!strncmpa(signature, (CHAR8 *)"FACP", 4)) {
 			struct FACP_TABLE *facp = (VOID *)s;
 			struct ACPI_DESC_HEADER *dsdt = (VOID *)(UINTN)facp->dsdt;
-			free(dsdt);
+			FreePool(dsdt);
 			ret = uefi_read_file(io, L"DSDT", (void **)&dsdt, &size);
 			if (EFI_ERROR(ret) || !dsdt) {
 				error(L"Failed to read file DSDT:%r\n", ret);

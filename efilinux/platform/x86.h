@@ -30,41 +30,6 @@
 #ifndef __X86_H__
 #define __X86_H__
 
-#if !defined(CONFIG_X86) && !defined(CONFIG_X86_64)
-#error "Only architecure x86 and x86_64 are supported"
-#endif
-
-static inline uint64_t rdtsc(void)
-{
-	uint64_t x;
-
-#ifdef CONFIG_X86
-	asm volatile ("rdtsc" : "=A" (x));
-#elif CONFIG_X86_64
-	uint32_t high, low;
-
-	asm volatile ("rdtsc" : "=a" (low), "=d" (high));
-	x = ((uint64_t)low) | ((uint64_t)high) << 32;
-#endif
-
-	return x;
-}
-
-static inline uint64_t rdmsr(unsigned int msr)
-{
-	uint64_t x;
-	asm volatile ("rdmsr" : "=A" (x) : "c" (msr));
-	return x;
-}
-
 void x86_ops(struct osloader_ops *ops);
-
-enum cpu_id {
-	CPU_SILVERMONT = 0x30670,
-	CPU_AIRMONT    = 0x406C0,
-	CPU_UNKNOWN    = 0x0
-};
-
-enum cpu_id x86_identify_cpu();
 
 #endif /* __X86_H__ */

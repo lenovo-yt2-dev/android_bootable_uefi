@@ -33,7 +33,7 @@
  */
 #include <efi.h>
 #include <efilib.h>
-#include <utils.h>
+#include <uefi_utils.h>
 #include <stdlib.h>
 #include <asm/bootparam.h>
 #include <efilinux.h>

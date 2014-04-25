@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, Intel Corporation
+ * Copyright (c) 2014, Intel Corporation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,37 +28,63 @@
  *
  */
 
+#ifndef __LOG_H__
+#define __LOG_H__
+
 #include <efi.h>
-#include <uefi_utils.h>
-#include <log.h>
-#include "watchdog.h"
-#include "tco_reset.h"
 
-static EFI_STATUS stub_watchdog_start(struct watchdog *wd)
-{
-	debug(L"boot watchdog disabled on this platform\n");
-	return EFI_SUCCESS;
-}
-
-static EFI_STATUS stub_watchdog_stop(struct watchdog *wd)
-{
-	debug(L"boot watchdog disabled on this platform\n");
-	return EFI_SUCCESS;
-}
-
-static void stub_watchdog_set_timeout(struct watchdog *wd, UINT32 timeout)
-{
-	debug(L"boot watchdog disabled on this platform\n");
-}
-
-static struct watchdog __attribute__((used)) stub_watchdog = {
-	.reg = 0,
-	.ops = {
-		.start = stub_watchdog_start,
-		.stop = stub_watchdog_stop,
-		.set_timeout = stub_watchdog_set_timeout,
-	},
+enum loglevel {
+	LEVEL_ERROR,
+	LEVEL_WARNING,
+	LEVEL_INFO,
+	LEVEL_DEBUG,
+	LEVEL_PROFILE,
 };
 
-struct watchdog *watchdog = &tco_watchdog;
+#define LOGLEVEL(level)	(log_level >= LEVEL_##level)
+extern enum loglevel log_level;
 
+void log(enum loglevel level, const CHAR16 *prefix, const void *func, const INTN line,
+	 const CHAR16* fmt, ...);
+
+void log_save_to_variable(CHAR16 *varname, EFI_GUID *guid);
+
+#define profile(...) do { \
+		log(LEVEL_PROFILE, L"PROFILE [%a:%d] ", \
+		    __func__, __LINE__, __VA_ARGS__); \
+	} while (0)
+
+#define debug(...) do { \
+		log(LEVEL_DEBUG, L"DEBUG [%a:%d] ", \
+		    __func__, __LINE__, __VA_ARGS__); \
+	} while (0)
+
+#define info(...) do { \
+		log(LEVEL_INFO, L"INFO [%a:%d] ", \
+		    __func__, __LINE__, __VA_ARGS__); \
+	} while (0)
+
+#define warning(...) do { \
+		log(LEVEL_WARNING, L"WARNING [%a:%d] ", \
+		    __func__, __LINE__, __VA_ARGS__); \
+	} while (0)
+
+#define error(...) do { \
+		log(LEVEL_ERROR, L"ERROR [%a:%d] ", \
+		    __func__, __LINE__, __VA_ARGS__); \
+	} while (0)
+
+/*
+ * Returns EFI_INVALID_PARAMETER if tag is too long
+ */
+EFI_STATUS log_set_logtag(const CHAR16 *tag);
+
+VOID log_set_line_len(UINTN len);
+
+VOID log_set_flush_to_var(BOOLEAN b);
+
+VOID log_set_loglevel(enum loglevel level);
+
+VOID log_set_logtimestamp(BOOLEAN b);
+
+#endif	/* __LOG_H__ */

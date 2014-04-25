@@ -25,57 +25,37 @@
  * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
- *
  */
 
 #include <efi.h>
-#include <efilib.h>
+#include <cpu.h>
+#include "time.h"
+#include "time_silvermont.h"
 
-#include "platform.h"
-#include "log.h"
-#include "uefi_utils.h"
+static UINT64 init_time(void);
 
-static CHAR16 buffer[LOG_BUF_SIZE / sizeof(CHAR16)];
-static CHAR16 *cur = buffer;
+static UINT64 (*get_time_func)(void) = init_time;
 
-void log(UINTN level, const CHAR16 *prefix, const void *func, const INTN line,
-	 const CHAR16* fmt, ...)
+static UINT64 time_stub(void)
 {
-	CHAR16 *start = cur;
-	va_list args;
-
-	va_start(args, fmt);
-
-#ifdef CONFIG_LOG_TIMESTAMP
-	UINT64 time = loader_ops.get_current_time_us();
-	UINT64 sec = time / 1000000;
-	UINT64 usec = time - (sec * 1000000);
-
-	cur += SPrint(cur, sizeof(buffer) - (cur - buffer), L"[%5ld.%06ld] ",
-		      sec, usec);
-#endif
-	cur += SPrint(cur, sizeof(buffer) - (cur - buffer), (CHAR16 *)prefix,
-		      func, line);
-	cur += VSPrint(cur, sizeof(buffer) - (cur - buffer), (CHAR16 *)fmt,
-		       args);
-	if (((cur - buffer) + LOG_LINE_LEN) * sizeof(CHAR16) >= LOG_BUF_SIZE)
-		cur = buffer;
-
-
-	if (log_level >= level)
-		Print(LOG_TAG L" %s", start);
-
-	va_end (args);
+	return 0;
 }
 
-#define EFILINUX_LOGS_VARNAME EFILINUX_VAR_PREFIX "Logs"
-void log_save_to_variable()
+static UINT64 init_time(void)
 {
-	if (log_flush_to_variable) {
-		EFI_STATUS status = uefi_set_simple_var(EFILINUX_LOGS_VARNAME, &osloader_guid,
-							(cur - buffer) * sizeof(CHAR16),
-							buffer, FALSE);
-		if (EFI_ERROR(status))
-			warning(L"Save log into EFI variable failed\n");
+	switch (x86_identify_cpu()) {
+	case CPU_SILVERMONT:
+	case CPU_AIRMONT:
+		get_time_func = silvermont_get_current_time_us;
+		break;
+	default:
+		get_time_func = time_stub;
 	}
+
+	return get_time_func();
+}
+
+UINT64 get_current_time_us(void)
+{
+	return get_time_func();
 }

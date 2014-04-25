@@ -38,24 +38,18 @@ endif
 
 EFILINUX_SRC_FILES := \
 	esrt.c \
-	stack_chk.c \
 	malloc.c \
 	config.c \
-	log.c \
 	entry.c \
 	android/boot.c \
-	utils.c \
 	acpi.c \
 	bootlogic.c \
 	intel_partitions.c \
 	uefi_osnib.c \
 	platform/platform.c \
-	platform/silvermont.c \
-	platform/airmont.c \
 	platform/x86.c \
 	uefi_keys.c \
 	uefi_boot.c \
-	uefi_utils.c \
 	commands.c \
 	em.c \
 	fake_em.c \
@@ -77,17 +71,19 @@ EFILINUX_CFLAGS +=  -DOSLOADER_FILE_PATH='L"$(OSLOADER_FILE_PATH)"'
 WARMDUMP_FILE_PATH := EFI/Intel/warmdump.efi
 EFILINUX_CFLAGS +=  -DWARMDUMP_FILE_PATH='L"$(WARMDUMP_FILE_PATH)"'
 
-EFILINUX_DEBUG_CFFLAGS := -DRUNTIME_SETTINGS -DCONFIG_LOG_LEVEL=4 \
-	-DCONFIG_LOG_FLUSH_TO_VARIABLE -DCONFIG_LOG_BUF_SIZE=51200 \
-	-DCONFIG_LOG_TIMESTAMP -DCONFIG_ENABLE_FACTORY_MODES
+EFILINUX_CFLAGS +=  -DCONFIG_LOG_TAG='L"EFILINUX"'
+EFILINUX_DEBUG_CFFLAGS := -DRUNTIME_SETTINGS -DCONFIG_LOG_LEVEL=LEVEL_DEBUG \
+        -DCONFIG_LOG_FLUSH_TO_VARIABLE -DCONFIG_LOG_BUF_SIZE=51200 \
+        -DCONFIG_LOG_TIMESTAMP -DCONFIG_ENABLE_FACTORY_MODES
 
 ifeq ($(BOARD_USE_WARMDUMP),true)
 	EFILINUX_DEBUG_CFFLAGS += -DCONFIG_HAS_WARMDUMP
 endif
 
-EFILINUX_PROFILING_CFLAGS := -finstrument-functions -finstrument-functions-exclude-file-list=stack_chk.c,profiling.c,efilinux.h,malloc.c,stdlib.h,boot.c,log.c,platform/silvermont.c,platform/airmont.c,loaders/ -finstrument-functions-exclude-function-list=handover_kernel,checkpoint,exit_boot_services,setup_efi_memory_map,Print,SPrint,VSPrint,memory_map,stub_get_current_time_us,rdtsc,rdmsr
+EFILINUX_PROFILING_CFLAGS := -finstrument-functions -finstrument-functions-exclude-file-list=stack_chk.c,profiling.c,efilinux.h,malloc.c,stdlib.h,boot.c,loaders/ -finstrument-functions-exclude-function-list=handover_kernel,checkpoint,exit_boot_services,setup_efi_memory_map,Print,SPrint,VSPrint,memory_map,stub_get_current_time_us,rdtsc,rdmsr
 EFILINUX_PROFILING_SRC_FILES := profiling.c
 
+EFILINUX_LIBRARIES := libuefi_log libuefi_utils libuefi_cpu libuefi_time libuefi_stack_chk
 ################################################################################
 
 include $(CLEAR_VARS)
@@ -95,10 +91,10 @@ include $(CLEAR_VARS)
 LOCAL_MODULE := efilinux-user
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE_PATH := $(PRODUCT_OUT)
-LOCAL_CFLAGS += $(EFILINUX_CFLAGS) -DCONFIG_LOG_LEVEL=1
+LOCAL_CFLAGS := $(EFILINUX_CFLAGS) -DCONFIG_LOG_LEVEL=LEVEL_ERROR
 LOCAL_SRC_FILES := $(EFILINUX_SRC_FILES)
 LOCAL_C_INCLUDES := $(EFILINUX_C_INCLUDES)
-
+LOCAL_STATIC_LIBRARIES := $(EFILINUX_LIBRARIES) libuefi_profiling_stub
 include $(BUILD_UEFI_EXECUTABLE)
 
 ################################################################################
@@ -111,7 +107,7 @@ LOCAL_MODULE_PATH := $(PRODUCT_OUT)
 LOCAL_CFLAGS += $(EFILINUX_CFLAGS) $(EFILINUX_DEBUG_CFFLAGS) $(EFILINUX_PROFILING_CFLAGS)
 LOCAL_SRC_FILES := $(EFILINUX_SRC_FILES) $(EFILINUX_PROFILING_SRC_FILES)
 LOCAL_C_INCLUDES := $(EFILINUX_C_INCLUDES)
-
+LOCAL_STATIC_LIBRARIES := $(EFILINUX_LIBRARIES)
 include $(BUILD_UEFI_EXECUTABLE)
 
 ################################################################################
@@ -121,10 +117,10 @@ include $(CLEAR_VARS)
 LOCAL_MODULE := efilinux-userdebug
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE_PATH := $(PRODUCT_OUT)
-LOCAL_CFLAGS += $(EFILINUX_CFLAGS) $(EFILINUX_DEBUG_CFFLAGS) $(EFILINUX_PROFILING_CFLAGS)
+LOCAL_CFLAGS := $(EFILINUX_CFLAGS) $(EFILINUX_DEBUG_CFFLAGS) $(EFILINUX_PROFILING_CFLAGS)
 LOCAL_SRC_FILES := $(EFILINUX_SRC_FILES) $(EFILINUX_PROFILING_SRC_FILES)
 LOCAL_C_INCLUDES := $(EFILINUX_C_INCLUDES)
-
+LOCAL_STATIC_LIBRARIES := $(EFILINUX_LIBRARIES)
 include $(BUILD_UEFI_EXECUTABLE)
 
 ################################################################################
@@ -146,21 +142,18 @@ LOCAL_C_INCLUDES := \
 	$(LOCAL_PATH)/fs
 
 LOCAL_SRC_FILES := \
-	stack_chk.c \
 	malloc.c \
-	utils.c \
 	acpi.c \
-	uefi_utils.c \
 	fs/fs.c \
-	log.c \
 	config.c \
 	warmdump.c
 
+LOCAL_STATIC_LIBRARIES := libuefi_log libuefi_utils libuefi_profiling_stub libuefi_stack_chk
 WARMDUMP_VERSION_STRING := $(shell cd $(LOCAL_PATH) ; git describe --abbrev=12 --dirty --always)
 WARMDUMP_VERSION_DATE := $(shell cd $(LOCAL_PATH) ; git log --pretty=%cD HEAD^..HEAD)
-LOCAL_CFLAGS += -DWARMDUMP_VERSION_STRING='L"$(WARMDUMP_VERSION_STRING)"'
+LOCAL_CFLAGS := -DWARMDUMP_VERSION_STRING='L"$(WARMDUMP_VERSION_STRING)"'
 LOCAL_CFLAGS += -DWARMDUMP_VERSION_DATE='L"$(WARMDUMP_VERSION_DATE)"'
 LOCAL_CFLAGS += -DWARMDUMP_BUILD_STRING='L"$(BUILD_NUMBER) $(PRODUCT_NAME)"'
-LOCAL_CFLAGS += -DCONFIG_LOG_TAG='L"WARMDUMP"' -DCONFIG_LOG_LEVEL=4
+LOCAL_CFLAGS += -DCONFIG_LOG_TAG='L"WARMDUMP"' -DCONFIG_LOG_LEVEL=LEVEL_DEBUG
 
 include $(BUILD_UEFI_EXECUTABLE)

@@ -30,6 +30,7 @@
 #include <efi.h>
 #include <efilib.h>
 #include <efilinux.h>
+#include <cpu.h>
 #include "em.h"
 #include "fake_em.h"
 
@@ -44,10 +45,8 @@ EFI_STATUS init_platform_functions(void)
 	enum cpu_id id = x86_identify_cpu();
 	switch (id) {
 	case CPU_SILVERMONT:
-		init_silvermont();
-		break;
 	case CPU_AIRMONT:
-		init_airmont();
+		x86_ops(&loader_ops);
 		break;
 	case CPU_UNKNOWN:
 		error(L"Platform not supported!\n");
