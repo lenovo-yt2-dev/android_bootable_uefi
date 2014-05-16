@@ -88,3 +88,56 @@ out:
 	return ret;
 
 }
+
+/* It is faster to erase multiple block at once
+ * 4096 * 512 => 2MB
+ */
+#define N_BLOCK (4096)
+
+EFI_STATUS erase(CHAR16 *label)
+{
+	struct gpt_partition_interface gparti;
+	EFI_STATUS ret;
+	UINT64 i;
+	UINT64 lba;
+	VOID *emptyblock;
+	UINT64 *eblock;
+	UINT64 size;
+
+	ret = gpt_get_partition_by_label(label, &gparti);
+	if (EFI_ERROR(ret)) {
+		error(L"Failed to get partition %s, error %r\n", label, ret);
+		return ret;
+	}
+	emptyblock = AllocatePool(gparti.bio->Media->BlockSize * N_BLOCK);
+	if (!emptyblock)
+		return EFI_OUT_OF_RESOURCES;
+
+	eblock = emptyblock;
+
+	for (i = 0; i < N_BLOCK * gparti.bio->Media->BlockSize / sizeof(*eblock); i++)
+		eblock[i] = 0xFFFFFFFFFFFFFFFFLL;
+
+	/* size in MB for debug */
+	size = gparti.bio->Media->BlockSize * (gparti.part.ending_lba - gparti.part.starting_lba + 1) / (1024 * 1024);
+	debug(L"Partition info\n\tblock size %d\n\tStart %ld\n\tEnd %ld\n\tSize %ld MB\n", gparti.bio->Media->BlockSize, gparti.part.starting_lba, gparti.part.ending_lba, size);
+
+	for (lba = gparti.part.starting_lba; lba <= gparti.part.ending_lba; lba += N_BLOCK) {
+		if (lba + N_BLOCK > gparti.part.ending_lba + 1)
+			size = gparti.part.ending_lba - lba + 1;
+		else
+			size = N_BLOCK;
+
+		ret = uefi_call_wrapper(gparti.bio->WriteBlocks, 5, gparti.bio, gparti.bio->Media->MediaId, lba, gparti.bio->Media->BlockSize * size, emptyblock);
+		if (EFI_ERROR(ret)) {
+			error(L"Failed to get erase block %ld: %r\n", lba, ret);
+			goto free_block;
+		}
+	}
+	debug(L"Partition Successfully Erased\n");
+
+free_block:
+	FreePool(emptyblock);
+
+	return ret;
+}

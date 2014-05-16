@@ -80,12 +80,22 @@ static EFI_STATUS command_flash_file(UINTN argc, CHAR16 **argv)
 	return EFI_INVALID_PARAMETER;
 }
 
+static EFI_STATUS command_erase(UINTN argc, CHAR16 **argv)
+{
+	if (argc == 1)
+		return erase(argv[0]);
+
+	error(L"Usage: erase <partition_name>");
+	return EFI_INVALID_PARAMETER;
+}
+
 struct fastboot_commands {
 	CHAR16 *name;
 	EFI_STATUS (*func)(UINTN argc, CHAR16 **argv);
 } commands[] = {
 	{L"find_label", find_label},
 	{L"flash_file", command_flash_file},
+	{L"erase", command_erase},
 };
 
 /**
