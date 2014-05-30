@@ -80,6 +80,7 @@
 
 extern enum loglevel log_level;
 extern BOOLEAN log_flush_to_variable;
+extern BOOLEAN do_cold_reset_after_wd;
 extern BOOLEAN has_warmdump;
 extern EFI_GUID osloader_guid;
 

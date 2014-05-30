@@ -222,17 +222,19 @@ enum targets boot_watchdog(enum reset_sources rs)
 
 	enum targets last_target = loader_ops.get_last_target_mode();
 
-	if (uefi_get_wd_cold_reset() == 1) {
-		if (EFI_ERROR(uefi_set_wd_cold_reset(0)))
-			error(L"Failed to set WDColdReset variable to 0\n");
-	} else {
-		// else branch for 0 and -1 when WDColdReset var is not yet initialized.
-		loader_ops.save_target_mode(last_target);
-		if (EFI_ERROR(uefi_set_wd_cold_reset(1)))
-			error(L"Failed to set WDColdReset variable to 1\n");
-		debug(L"cold reset after watchdog\n");
-		uefi_reset_system(EfiResetCold);
-		error(L"Reset requested, this code should not be reached\n");
+	if (do_cold_reset_after_wd) {
+		if (uefi_get_wd_cold_reset() == 1) {
+			if (EFI_ERROR(uefi_set_wd_cold_reset(0)))
+				error(L"Failed to set WDColdReset variable to 0\n");
+		} else {
+			// else branch for 0 and -1 when WDColdReset var is not yet initialized.
+			loader_ops.save_target_mode(last_target);
+			if (EFI_ERROR(uefi_set_wd_cold_reset(1)))
+				error(L"Failed to set WDColdReset variable to 1\n");
+			debug(L"cold reset after watchdog\n");
+			uefi_reset_system(EfiResetCold);
+			error(L"Reset requested, this code should not be reached\n");
+		}
 	}
 
 	int wdt_counter = loader_ops.get_wdt_counter();
@@ -296,7 +298,7 @@ enum targets target_from_inputs(enum flow_types flow_type)
 		return TARGET_BOOT;
 	}
 
-	if (uefi_get_wd_cold_reset() == 1) {
+	if (do_cold_reset_after_wd && uefi_get_wd_cold_reset() == 1) {
 		rs = RESET_KERNEL_WATCHDOG;
 		loader_ops.set_reset_source(RESET_KERNEL_WATCHDOG);
 		debug(L"Reset source changed to = 0x%x\n", rs);

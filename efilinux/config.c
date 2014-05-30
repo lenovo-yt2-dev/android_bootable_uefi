@@ -31,6 +31,12 @@
 #include <log.h>
 #include "config.h"
 
+#ifdef CONFIG_DO_COLD_RESET_AFTER_KERNEL_WD_WARM_RESET
+BOOLEAN do_cold_reset_after_wd = TRUE;
+#else
+BOOLEAN do_cold_reset_after_wd = FALSE;
+#endif	/* CONFIG_DO_COLD_RESET_AFTER_KERNEL_WD_WARM_RESET */
+
 #ifdef CONFIG_HAS_WARMDUMP
 BOOLEAN has_warmdump = TRUE;
 #else

@@ -76,8 +76,11 @@ EFILINUX_DEBUG_CFFLAGS := -DRUNTIME_SETTINGS -DCONFIG_LOG_LEVEL=LEVEL_DEBUG \
         -DCONFIG_LOG_FLUSH_TO_VARIABLE -DCONFIG_LOG_BUF_SIZE=51200 \
         -DCONFIG_LOG_TIMESTAMP -DCONFIG_ENABLE_FACTORY_MODES
 
+ifeq ($(BOARD_DO_COLD_RESET_AFTER_KERNEL_WD_WARM_RESET),true)
+	EFILINUX_CFLAGS += -DCONFIG_DO_COLD_RESET_AFTER_KERNEL_WD_WARM_RESET
 ifeq ($(BOARD_USE_WARMDUMP),true)
 	EFILINUX_DEBUG_CFFLAGS += -DCONFIG_HAS_WARMDUMP
+endif
 endif
 
 EFILINUX_PROFILING_CFLAGS := -finstrument-functions -finstrument-functions-exclude-file-list=stack_chk.c,profiling.c,efilinux.h,malloc.c,stdlib.h,boot.c,loaders/ -finstrument-functions-exclude-function-list=handover_kernel,checkpoint,exit_boot_services,setup_efi_memory_map,Print,SPrint,VSPrint,memory_map,stub_get_current_time_us,rdtsc,rdmsr
