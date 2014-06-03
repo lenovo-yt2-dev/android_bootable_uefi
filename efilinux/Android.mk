@@ -2,7 +2,6 @@ LOCAL_PATH := $(call my-dir)
 
 ifeq ($(BOARD_HAVE_LIMITED_POWERON_FEATURES),true)
 	OSLOADER_EM_POLICY ?= fake
-	EFILINUX_CFLAGS += -DDISABLE_SECURE_BOOT
 endif
 
 OSLOADER_EM_POLICY ?= uefi
@@ -17,31 +16,10 @@ EFILINUX_C_INCLUDES = \
 	$(LOCAL_PATH)/fs
 EFILINUX_C_INCLUDES += $(call include-path-for, recovery)
 
-watchdog_src_files := \
-	watchdog/tco_reset.c \
-	watchdog/watchdog.c
-
-security_src_files := \
-	security/secure_boot.c
-
-ifneq (, $(findstring isu,$(TARGET_OS_SIGNING_METHOD)))
-	EFILINUX_CFLAGS += -DUSE_INTEL_OS_VERIFICATION=1 -DUSE_SHIM=0
-	security_src_files += \
-	      security/os_verification.c
-endif
-
-ifeq ($(TARGET_OS_SIGNING_METHOD),uefi)
-	EFILINUX_CFLAGS += -DUSE_SHIM=1 -DUSE_INTEL_OS_VERIFICATION=0
-	security_src_files += \
-	      security/shim_protocol.c
-endif
-
 EFILINUX_SRC_FILES := \
 	esrt.c \
-	malloc.c \
 	config.c \
 	entry.c \
-	android/boot.c \
 	acpi.c \
 	bootlogic.c \
 	intel_partitions.c \
@@ -54,8 +32,6 @@ EFILINUX_SRC_FILES := \
 	em.c \
 	fake_em.c \
 	uefi_em.c \
-	$(security_src_files) \
-	$(watchdog_src_files) \
 	fs/fs.c \
 	splash_intel.bmp
 
@@ -83,10 +59,10 @@ ifeq ($(BOARD_USE_WARMDUMP),true)
 endif
 endif
 
-EFILINUX_PROFILING_CFLAGS := -finstrument-functions -finstrument-functions-exclude-file-list=stack_chk.c,profiling.c,efilinux.h,malloc.c,stdlib.h,boot.c,loaders/ -finstrument-functions-exclude-function-list=handover_kernel,checkpoint,exit_boot_services,setup_efi_memory_map,Print,SPrint,VSPrint,memory_map,stub_get_current_time_us,rdtsc,rdmsr
+EFILINUX_PROFILING_CFLAGS := -finstrument-functions -finstrument-functions-exclude-file-list=stack_chk.c,profiling.c,efilinux.h,stdlib.h,loaders/ -finstrument-functions-exclude-function-list=handover_kernel,checkpoint,exit_boot_services,setup_efi_memory_map,Print,SPrint,VSPrint,memory_map,stub_get_current_time_us,rdtsc,rdmsr
 EFILINUX_PROFILING_SRC_FILES := profiling.c
 
-EFILINUX_LIBRARIES := libuefi_log libuefi_utils libuefi_cpu libuefi_time libuefi_stack_chk
+EFILINUX_LIBRARIES := libuefi_log libuefi_utils libuefi_posix libuefi_cpu libuefi_time libuefi_stack_chk libuefi_bootimg libuefi_watchdog
 ################################################################################
 
 include $(CLEAR_VARS)
@@ -145,13 +121,12 @@ LOCAL_C_INCLUDES := \
 	$(LOCAL_PATH)/fs
 
 LOCAL_SRC_FILES := \
-	malloc.c \
 	acpi.c \
 	fs/fs.c \
 	config.c \
 	warmdump.c
 
-LOCAL_STATIC_LIBRARIES := libuefi_log libuefi_utils libuefi_profiling_stub libuefi_stack_chk
+LOCAL_STATIC_LIBRARIES := libuefi_log libuefi_utils libuefi_profiling_stub libuefi_stack_chk libuefi_posix
 WARMDUMP_VERSION_STRING := $(shell cd $(LOCAL_PATH) ; git describe --abbrev=12 --dirty --always)
 WARMDUMP_VERSION_DATE := $(shell cd $(LOCAL_PATH) ; git log --pretty=%cD HEAD^..HEAD)
 LOCAL_CFLAGS := -DWARMDUMP_VERSION_STRING='L"$(WARMDUMP_VERSION_STRING)"'

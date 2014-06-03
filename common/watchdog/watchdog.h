@@ -28,47 +28,19 @@
  *
  */
 
-#ifndef _OS_VERIFICATION_H
-#define _OS_VERIFICATION_H
+#ifndef _WATCHDOG_H
+#define _WATCHDOG_H
 
 #include <efi.h>
 
-#define MANIFEST_SIZE 1024
-
-typedef struct _OS_VERIFICATION_PROTOCOL OS_VERIFICATION_PROTOCOL;
-
-typedef
-EFI_STATUS
-(EFIAPI *EFI_OS_VERIFY) (
-  IN OS_VERIFICATION_PROTOCOL *This,
-  IN VOID                     *OsImagePtr,
-  IN UINTN                    OsImageSize,
-  IN VOID                     *ManifestPtr,
-  IN UINTN                    ManifestSize
-  );
-
-typedef
-EFI_STATUS
-(EFIAPI *GET_SECURITY_POLICY) (
-  IN     OS_VERIFICATION_PROTOCOL *This,
-  IN OUT BOOLEAN                  *AllowUnsignedOS
-);
-
-struct _OS_VERIFICATION_PROTOCOL {
-  EFI_OS_VERIFY           VerifiyOsImage;
-  GET_SECURITY_POLICY     GetSecurityPolicy;
+struct watchdog {
+	UINT32 reg;
+	struct watchdog_ops {
+		EFI_STATUS (*start)(struct watchdog *wd);
+		EFI_STATUS (*stop)(struct watchdog *wd);
+		void (*set_timeout)(struct watchdog *wd, UINT32 timeout);
+	} ops;
 };
 
-// {DAFB7EEC-B2E9-4ea6-A80A-37FED7909FF3}
-#define INTEL_OS_VERIFICATION_PROTOCOL_GUID				\
-	{								\
-		0xdafb7eec, 0xb2e9, 0x4ea6,				\
-		{ 0xa8, 0xa, 0x37, 0xfe, 0xd7, 0x90, 0x9f, 0xf3 }	\
-	}
-
-extern EFI_GUID gOsVerificationProtocolGuid;
-
-EFI_STATUS intel_os_verify(IN VOID *os, IN UINTN os_size,
-		IN VOID *manifest, IN UINTN manifest_size);
-
+extern struct watchdog stub_watchdog;
 #endif

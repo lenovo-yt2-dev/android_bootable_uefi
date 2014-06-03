@@ -28,37 +28,22 @@
  *
  */
 
+#ifndef _CHECK_SIGNATURE_H
+#define _CHECK_SIGNATURE_H
+
 #include <efi.h>
-#include <uefi_utils.h>
-#include <log.h>
-#include "watchdog.h"
-#include "tco_reset.h"
 
-static EFI_STATUS stub_watchdog_start(struct watchdog *wd)
+#if defined(USE_INTEL_OS_VERIFICATION) || defined(USE_SHIM)
+EFI_STATUS check_signature(IN VOID *os, IN UINTN os_size,
+			   IN VOID *manifest, IN UINTN manifest_size);
+
+#else
+static inline EFI_STATUS check_signature(IN VOID *os  __attribute__((__unused__)),
+		IN UINTN os_size  __attribute__((__unused__)),
+		IN VOID *manifest  __attribute__((__unused__)),
+		IN UINTN manifest_size  __attribute__((__unused__)))
 {
-	debug(L"boot watchdog disabled on this platform\n");
 	return EFI_SUCCESS;
 }
-
-static EFI_STATUS stub_watchdog_stop(struct watchdog *wd)
-{
-	debug(L"boot watchdog disabled on this platform\n");
-	return EFI_SUCCESS;
-}
-
-static void stub_watchdog_set_timeout(struct watchdog *wd, UINT32 timeout)
-{
-	debug(L"boot watchdog disabled on this platform\n");
-}
-
-static struct watchdog __attribute__((used)) stub_watchdog = {
-	.reg = 0,
-	.ops = {
-		.start = stub_watchdog_start,
-		.stop = stub_watchdog_stop,
-		.set_timeout = stub_watchdog_set_timeout,
-	},
-};
-
-struct watchdog *watchdog = &tco_watchdog;
-
+#endif
+#endif

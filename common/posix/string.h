@@ -31,10 +31,33 @@
 #define __STRING_H__
 
 #include <efi.h>
-typedef UINTN size_t;
+#include <efilib.h>
 
-int memcmp(const void *s1, const void *s2, size_t n);
-int strcmp(const char *s1, const char *s2);
-size_t strlen(const char *s);
+#define memcpy(dst, src, size) CopyMem(dst, src, size)
+#define memset(dst, c, size) ZeroMem(dst, size)
+#define memcmp(s1, s2, size) CompareMem(s1, s2, size)
+#define strlen(s) strlena((CHAR8 *)s)
+#define strcmp(s1,s2) strcmpa((CHAR8 *)s1, (CHAR8 *)s2)
+
+static inline char *strstr(char *haystack, char *needle)
+{
+	char *p;
+	char *word = NULL;
+	int len = strlen(needle);
+
+	if (!len)
+		return NULL;
+
+	p = haystack;
+	while (*p) {
+		word = p;
+		if (!strncmpa((CHAR8 *)p, (CHAR8 *)needle, len))
+			break;
+		p++;
+		word = NULL;
+	}
+
+	return word;
+}
 
 #endif	/* __STRING_H__ */

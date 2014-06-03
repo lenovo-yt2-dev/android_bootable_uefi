@@ -29,9 +29,10 @@
 
 #include <efi.h>
 #include <efilib.h>
+#include <string.h>
+#include <stdlib.h>
 #include "efilinux.h"
 #include "fs.h"
-#include "stdlib.h"
 #include "protocol.h"
 
 struct fs_device {
@@ -126,11 +127,11 @@ file_open(EFI_LOADED_IMAGE *image, CHAR16 *name, struct file **file)
 
 		if (!StriCmp(dev, name)) {
 			f->handle = fs_devices[i].fh;
-			free_pool(dev);
+			FreePool(dev);
 			break;
 		}
 
-		free_pool(dev);
+		FreePool(dev);
 	}
 
 	if (i == nr_fs_devices)
@@ -202,7 +203,7 @@ void list_blk_devices(void)
 		dev = DevicePathToStr(path);
 
 		info(L"\t%d. \"%s\"\n", i, dev);
-		free_pool(dev);
+		FreePool(dev);
 	}
 }
 

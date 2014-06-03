@@ -28,61 +28,49 @@
  *
  */
 
+#ifndef _TCO_RESET_H
+#define _TCO_RESET_H
+
 #include <efi.h>
-#include <efilib.h>
-#include <stdlib.h>
-#include <uefi_utils.h>
-#include <log.h>
-#include "tco_reset.h"
+#include "watchdog.h"
 
+#ifndef TCO_DEFAULT_TIMEOUT
+#define TCO_DEFAULT_TIMEOUT 60
+#endif
 
-EFI_GUID gEfiTcoResetProtocolGuid = EFI_TCO_RESET_PROTOCOL_GUID;
+typedef struct _EFI_TCO_RESET_PROTOCOL EFI_TCO_RESET_PROTOCOL;
 
-static EFI_STATUS start_tco_watchdog(struct watchdog *wd)
-{
-	EFI_TCO_RESET_PROTOCOL *tco;
-	EFI_STATUS ret;
+typedef
+EFI_STATUS
+(EFIAPI *EFI_TCO_RESET_PROTOCOL_ENABLE_TCO_RESET) (
+	/*
+	 *IN EFI_TCO_RESET_PROTOCOL *This,
+	 */
+	IN OUT      UINT32        *RcrbGcsValue
+  );
 
-	debug(L"timeout = %d\n", wd->reg);
-	ret = LibLocateProtocol(&gEfiTcoResetProtocolGuid, (void **)&tco);
-	if (EFI_ERROR(ret) || !tco) {
-		error(L"%x failure\n", __func__);
-		goto out;
-	}
+typedef
+EFI_STATUS
+(EFIAPI *EFI_TCO_RESET_PROTOCOL_DISABLE_TCO_RESET) (
+	/*
+	 *IN EFI_TCO_RESET_PROTOCOL *This,
+	 */
+	IN    UINT32    RcrbGcsValue
+  );
 
-	ret = uefi_call_wrapper(tco->EnableTcoReset, 1, &(wd->reg));
-
-out:
-	return ret;
-}
-
-static EFI_STATUS stop_tco_watchdog(struct watchdog *wd)
-{
-	EFI_TCO_RESET_PROTOCOL *tco;
-	EFI_STATUS ret;
-
-	ret = LibLocateProtocol(&gEfiTcoResetProtocolGuid, (void **)&tco);
-	if (EFI_ERROR(ret) || !tco) {
-		error(L"%x failure\n", __func__);
-		goto out;
-	}
-
-	ret = uefi_call_wrapper(tco->DisableTcoReset, 1, wd->reg);
-
-out:
-	return ret;
-}
-
-static void set_tco_timeout(struct watchdog *wd, UINT32 timeout)
-{
-	wd->reg = timeout;
-}
-
-struct watchdog tco_watchdog = {
-	.reg = TCO_DEFAULT_TIMEOUT,
-	.ops = {
-		.start = start_tco_watchdog,
-		.stop = stop_tco_watchdog,
-		.set_timeout = set_tco_timeout,
-	},
+struct _EFI_TCO_RESET_PROTOCOL {
+  EFI_TCO_RESET_PROTOCOL_ENABLE_TCO_RESET       EnableTcoReset;
+  EFI_TCO_RESET_PROTOCOL_DISABLE_TCO_RESET    	DisableTcoReset;
 };
+
+//  {A6A79162-E325-4c30-BCC3-59373064EFB3}
+#define EFI_TCO_RESET_PROTOCOL_GUID					\
+	{								\
+		0xa6a79162, 0xe325, 0x4c30,				\
+		{ 0xbc, 0xc3, 0x59, 0x37, 0x30, 0x64, 0xef, 0xb3 }	\
+	}
+
+extern EFI_GUID gEfiTcoResetProtocolGuid;
+
+void tco_start_watchdog(void);
+#endif

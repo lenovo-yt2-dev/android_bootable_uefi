@@ -30,11 +30,15 @@
 #include <efi.h>
 #include <efilib.h>
 #include <uefi_utils.h>
-#include "efilinux.h"
-#include "stdlib.h"
-#include "bootlogic.h"
-#include "android/boot.h"
+#include <bootimg.h>
+#include <stdlib.h>
+#include <string.h>
 #include <bootloader.h>
+#include <tco_reset.h>
+
+#include "efilinux.h"
+#include "bootlogic.h"
+#include "platform/platform.h"
 
 #define BOOT_GUID	{0x80868086, 0x8086, 0x8086, {0x80, 0x86, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00}}
 #define RECOVERY_GUID	{0x80868086, 0x8086, 0x8086, {0x80, 0x86, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01}}
@@ -121,6 +125,7 @@ static EFI_STATUS intel_go_to_rescue_mode(void)
 EFI_STATUS intel_load_target(enum targets target, CHAR8 *cmdline)
 {
 	CHAR8 *updated_cmdline;
+	struct bootimg_hooks hooks;
 
 	struct target_entry *entry = get_target_entry(target);
 	if (!entry) {
@@ -136,7 +141,11 @@ EFI_STATUS intel_load_target(enum targets target, CHAR8 *cmdline)
 	debug(L"target cmdline = %a\n", updated_cmdline ? updated_cmdline : (CHAR8 *)"");
 	debug(L"Loading target %s\n", entry->name);
 
-	return android_image_start_partition(NULL, &entry->guid, updated_cmdline);
+	hooks.before_exit = loader_ops.hook_before_exit;
+	hooks.before_jump = loader_ops.hook_before_jump;
+	hooks.watchdog = tco_start_watchdog;
+
+	return android_image_start_partition(&entry->guid, updated_cmdline, &hooks);
 }
 
 static struct target_entry *name_to_entry(CHAR16 *name)

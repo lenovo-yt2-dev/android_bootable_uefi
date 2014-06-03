@@ -32,9 +32,12 @@
 #include <fs.h>
 #include <uefi_utils.h>
 #include <protocol.h>
+#include <bootimg.h>
+#include <stdlib.h>
+#include <string.h>
+#include <tco_reset.h>
+
 #include "efilinux.h"
-#include "stdlib.h"
-#include "android/boot.h"
 #include "acpi.h"
 #include "esrt.h"
 #include "intel_partitions.h"
@@ -128,7 +131,7 @@ static EFI_STATUS print_memory_map(void)
 		i++;
 	}
 
-	free_pool(buf);
+	FreePool(buf);
 	return err;
 }
 
@@ -502,6 +505,7 @@ efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *_table)
 	BOOLEAN options_from_conf_file = FALSE;
 	UINT32 options_size;
 	CHAR8 *cmdline = NULL;
+	struct bootimg_hooks hooks;
 
 	main_image_handle = image;
 	InitializeLib(image, _table);
@@ -509,7 +513,7 @@ efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *_table)
 	boot = sys_table->BootServices;
 	runtime = sys_table->RuntimeServices;
 
-	if (CheckCrc(sys_table->Hdr.HeaderSize, &sys_table->Hdr) != TRUE)
+	if (CheckCrc(ST->Hdr.HeaderSize, &ST->Hdr) != TRUE)
 		return EFI_LOAD_ERROR;
 
 	log_init();
@@ -568,6 +572,10 @@ efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *_table)
 			goto fs_deinit;
 	}
 
+	hooks.before_exit = loader_ops.hook_before_exit;
+	hooks.before_jump = loader_ops.hook_before_jump;
+	hooks.watchdog = tco_start_watchdog;
+
 	debug(L"shell cmdline=%a\n", cmdline);
 	switch(type) {
 	case 'f':
@@ -576,7 +584,7 @@ efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *_table)
 			goto free_args;
 		}
 		info(L"Starting file %s\n", name);
-		err = android_image_start_file(image, info->DeviceHandle, name, cmdline);
+		err = android_image_start_file(info->DeviceHandle, name, cmdline, &hooks);
 		break;
 	case 't': {
 		enum targets target;
@@ -595,7 +603,7 @@ efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *_table)
 			goto free_args;
 		}
 		info(L"Starting partition %s\n", name);
-		err = android_image_start_partition(image, &part_guid, cmdline);
+		err = android_image_start_partition(&part_guid, cmdline, &hooks);
 		break;
 	}
 	case 'c': {
@@ -615,7 +623,7 @@ efi_main(EFI_HANDLE image, EFI_SYSTEM_TABLE *_table)
 			goto free_args;
 		}
 		debug(L"Loading android image at 0x%x\n", addr);
-		err = android_image_start_buffer(image, addr, cmdline);
+		err = android_image_start_buffer(addr, cmdline, &hooks);
 		break;
 	}
 	default:
@@ -639,10 +647,11 @@ fs_deinit:
 	 * to allocate enough memory to hold the error string fallback
 	 * to returning 'err'.
 	 */
-	if (allocate_pool(EfiLoaderData, ERROR_STRING_LENGTH,
-			  (void **)&error_buf) != EFI_SUCCESS) {
+
+	error_buf = AllocatePool(ERROR_STRING_LENGTH);
+	if (!error_buf) {
 		error(L"Couldn't allocate pages for error string\n");
-		return err;
+		return EFI_OUT_OF_RESOURCES;
 	}
 
 	StatusToString(error_buf, err);

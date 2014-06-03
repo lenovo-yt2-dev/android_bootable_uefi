@@ -40,20 +40,13 @@
 #include "uefi_em.h"
 #include "fake_em.h"
 #include "config.h"
-
-#if USE_INTEL_OS_VERIFICATION
-#include "os_verification.h"
-#endif
-
-#if USE_SHIM
-#include "shim_protocol.h"
-#endif
-
+#include "fs.h"
 #include "x86.h"
 
 static void x86_hook_before_exit()
 {
 	log_save_to_variable(EFILINUX_LOGS_VARNAME, &osloader_guid);
+	fs_close();
 }
 
 static void x86_hook_bootlogic_begin()
@@ -92,13 +85,6 @@ void x86_ops(struct osloader_ops *ops)
 
 	ops->em_ops = &OSLOADER_EM_POLICY_OPS;
 
-#if USE_INTEL_OS_VERIFICATION
-	ops->hash_verify = intel_os_verify;
-#endif
-
-#if USE_SHIM
-	ops->hash_verify = shim_blob_verify;
-#endif
 	ops->get_extra_cmdline = uefi_get_extra_cmdline;
 	ops->load_bcb = load_bcb;
 

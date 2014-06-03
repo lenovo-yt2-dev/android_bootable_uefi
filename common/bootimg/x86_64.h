@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, Intel Corporation
+ * Copyright (c) 2011, Intel Corporation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -25,53 +25,48 @@
  * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
- *
  */
 
-#ifndef _TCO_RESET_H
-#define _TCO_RESET_H
+#ifndef __X86_64_H__
+#define __X86_64_H__
 
-#include <efi.h>
-#include "watchdog.h"
+#define EFI_LOADER_SIGNATURE	"EL64"
 
-#ifndef TCO_DEFAULT_TIMEOUT
-#define TCO_DEFAULT_TIMEOUT 60
-#endif
+typedef void(*kernel_func)(void *, struct boot_params *);
+typedef void(*handover_func)(void *, EFI_SYSTEM_TABLE *, struct boot_params *);
 
-extern struct watchdog tco_watchdog;
+static inline void kernel_jump(EFI_PHYSICAL_ADDRESS kernel_start,
+			       struct boot_params *boot_params)
+{
+	kernel_func kf;
 
-typedef struct _EFI_TCO_RESET_PROTOCOL EFI_TCO_RESET_PROTOCOL;
+	asm volatile ("cli");
 
-typedef
-EFI_STATUS
-(EFIAPI *EFI_TCO_RESET_PROTOCOL_ENABLE_TCO_RESET) (
+	/* The 64-bit kernel entry is 512 bytes after the start. */
+	kf = (kernel_func) (kernel_start + 512);
+
 	/*
-	 *IN EFI_TCO_RESET_PROTOCOL *This,
+	 * The first parameter is a dummy because the kernel expects
+	 * boot_params in %[re]si.
 	 */
-	IN OUT      UINT32        *RcrbGcsValue
-  );
+	kf(NULL, boot_params);
+}
 
-typedef
-EFI_STATUS
-(EFIAPI *EFI_TCO_RESET_PROTOCOL_DISABLE_TCO_RESET) (
-	/*
-	 *IN EFI_TCO_RESET_PROTOCOL *This,
-	 */
-	IN    UINT32    RcrbGcsValue
-  );
+static inline void handover_jump(UINT16 kernel_version  __attribute__((__unused__)),
+				 EFI_HANDLE image,
+				 struct boot_params *bp,
+				 EFI_PHYSICAL_ADDRESS kernel_start)
+{
+	UINT32 offset = bp->hdr.handover_offset;
+	handover_func hf;
 
-struct _EFI_TCO_RESET_PROTOCOL {
-  EFI_TCO_RESET_PROTOCOL_ENABLE_TCO_RESET       EnableTcoReset;
-  EFI_TCO_RESET_PROTOCOL_DISABLE_TCO_RESET    	DisableTcoReset;
-};
+	asm volatile ("cli");
 
-//  {A6A79162-E325-4c30-BCC3-59373064EFB3}
-#define EFI_TCO_RESET_PROTOCOL_GUID					\
-	{								\
-		0xa6a79162, 0xe325, 0x4c30,				\
-		{ 0xbc, 0xc3, 0x59, 0x37, 0x30, 0x64, 0xef, 0xb3 }	\
-	}
+	/* The 64-bit kernel entry is 512 bytes after the start. */
+	kernel_start += 512;
 
-extern EFI_GUID gEfiTcoResetProtocolGuid;
+	hf = (handover_func)(kernel_start + offset);
+	hf(image, ST, bp);
+}
 
-#endif
+#endif /* __X86_64_H__ */

@@ -30,26 +30,62 @@
 
 #include <efi.h>
 #include <efilib.h>
-#include <stdlib.h>
 #include <uefi_utils.h>
-#include "secure_boot.h"
+#include <log.h>
+#include "tco_reset.h"
 
-#if USE_SHIM
-BOOL is_secure_boot_enabled(void)
+EFI_GUID gEfiTcoResetProtocolGuid = EFI_TCO_RESET_PROTOCOL_GUID;
+
+static EFI_STATUS start_tco_watchdog(struct watchdog *wd)
 {
-        UINT8 secure_boot;
-        UINTN size;
-        EFI_STATUS status;
-        EFI_GUID global_var_guid = EFI_GLOBAL_VARIABLE;
+	EFI_TCO_RESET_PROTOCOL *tco;
+	EFI_STATUS ret;
 
-        size = sizeof(secure_boot);
-        status = uefi_call_wrapper(RT->GetVariable, 5,
-			L"SecureBoot", (EFI_GUID *)&global_var_guid, NULL, &size, (void*)&secure_boot);
+	debug(L"timeout = %d\n", wd->reg);
+	ret = LibLocateProtocol(&gEfiTcoResetProtocolGuid, (void **)&tco);
+	if (EFI_ERROR(ret) || !tco) {
+		error(L"%x failure\n", __func__);
+		goto out;
+	}
 
-        if (EFI_ERROR(status))
-                secure_boot = 0;
+	ret = uefi_call_wrapper(tco->EnableTcoReset, 1, &(wd->reg));
 
-	debug(L"SecureBoot value = 0x%02X\n", secure_boot);
-        return (secure_boot == 1);
+out:
+	return ret;
 }
-#endif
+
+static EFI_STATUS stop_tco_watchdog(struct watchdog *wd)
+{
+	EFI_TCO_RESET_PROTOCOL *tco;
+	EFI_STATUS ret;
+
+	ret = LibLocateProtocol(&gEfiTcoResetProtocolGuid, (void **)&tco);
+	if (EFI_ERROR(ret) || !tco) {
+		error(L"%x failure\n", __func__);
+		goto out;
+	}
+
+	ret = uefi_call_wrapper(tco->DisableTcoReset, 1, wd->reg);
+
+out:
+	return ret;
+}
+
+static void set_tco_timeout(struct watchdog *wd, UINT32 timeout)
+{
+	wd->reg = timeout;
+}
+
+struct watchdog tco_watchdog = {
+	.reg = TCO_DEFAULT_TIMEOUT,
+	.ops = {
+		.start = start_tco_watchdog,
+		.stop = stop_tco_watchdog,
+		.set_timeout = set_tco_timeout,
+	},
+};
+
+void tco_start_watchdog(void)
+{
+	tco_watchdog.ops.start(&tco_watchdog);
+}

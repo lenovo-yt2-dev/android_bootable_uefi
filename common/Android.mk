@@ -1,7 +1,5 @@
 LOCAL_PATH := $(call my-dir)
 
-
-
 define common_defs
 $(strip \
     $(eval LOCAL_IMPORT_C_INCLUDE_DIRS_FROM_STATIC_LIBRARIES := libgnuefi) \
@@ -62,7 +60,33 @@ $(call common_defs)
 include $(BUILD_STATIC_LIBRARY)
 
 include $(CLEAR_VARS)
-LOCAL_SRC_FILES := posix/stdio.c posix/string.c posix/stdlib.c
+LOCAL_SRC_FILES := watchdog/watchdog.c watchdog/tco_reset.c
+LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)/watchdog
+LOCAL_MODULE := libuefi_watchdog
+LOCAL_WHOLE_STATIC_LIBRARIES := libuefi_log libuefi_utils
+$(call common_defs)
+include $(BUILD_STATIC_LIBRARY)
+
+include $(CLEAR_VARS)
+LOCAL_SRC_FILES := bootimg/bootimg.c bootimg/check_signature.c
+LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)/bootimg
+LOCAL_MODULE := libuefi_bootimg
+LOCAL_WHOLE_STATIC_LIBRARIES := libuefi_log libuefi_posix
+
+ifneq ($(BOARD_HAVE_LIMITED_POWERON_FEATURES),true)
+ifneq (, $(findstring isu,$(TARGET_OS_SIGNING_METHOD)))
+LOCAL_CFLAGS := -DUSE_INTEL_OS_VERIFICATION
+endif
+ifeq ($(TARGET_OS_SIGNING_METHOD),uefi)
+LOCAL_CFLAGS := -DUSE_SHIM
+endif
+endif
+
+$(call common_defs)
+include $(BUILD_STATIC_LIBRARY)
+
+include $(CLEAR_VARS)
+LOCAL_SRC_FILES := posix/stdio.c posix/stdlib.c
 LOCAL_EXPORT_C_INCLUDE_DIRS := $(LOCAL_PATH)/posix
 LOCAL_MODULE := libuefi_posix
 LOCAL_CFLAGS := -finstrument-functions

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, Intel Corporation
+ * Copyright (c) 2013, Intel Corporation
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -25,22 +25,36 @@
  * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
  */
 
-#include "string.h"
-#include <efilib.h>
+#include <efi.h>
+#include <uefi_utils.h>
+#include <log.h>
+#include "watchdog.h"
 
-inline int memcmp(const void *s1, const void *s2, size_t n)
+static EFI_STATUS stub_watchdog_start(struct watchdog __attribute__((unused)) *wd)
 {
-	return CompareMem(s1, s2, n);
+	debug(L"boot watchdog disabled on this platform\n");
+	return EFI_SUCCESS;
 }
 
-inline int strcmp(const char *s1, const char *s2)
+static EFI_STATUS stub_watchdog_stop(struct watchdog __attribute__((unused)) *wd)
 {
-	return strcmpa((CHAR8 *)s1, (CHAR8 *)s2);
+	debug(L"boot watchdog disabled on this platform\n");
+	return EFI_SUCCESS;
 }
 
-inline size_t strlen(const char *s)
+static void stub_watchdog_set_timeout(struct watchdog __attribute__((unused)) *wd, UINT32 __attribute__((unused)) timeout)
 {
-	return strlena((CHAR8 *)s);
+	debug(L"boot watchdog disabled on this platform\n");
 }
+
+struct watchdog __attribute__((used)) stub_watchdog = {
+	.reg = 0,
+	.ops = {
+		.start = stub_watchdog_start,
+		.stop = stub_watchdog_stop,
+		.set_timeout = stub_watchdog_set_timeout,
+	},
+};

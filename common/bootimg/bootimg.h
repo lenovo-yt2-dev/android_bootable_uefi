@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef _BOOT_H
+#ifndef __BOOTIMG_H__
+#define __BOOTIMG_H__
 
 #include <efi.h>
 #include <efilib.h>
@@ -22,24 +23,31 @@
 #define XLF_EFI_HANDOVER_32     (1<<2)
 #define XLF_EFI_HANDOVER_64     (1<<3)
 
+
+struct bootimg_hooks {
+	void (*watchdog)(void);
+	void (*before_exit)(void);
+	void (*before_jump)(void);
+};
+
 /* Functions to load an Android boot image.
  * You can do this from a file, a partition GUID, or
  * from a RAM buffer */
 EFI_STATUS android_image_start_buffer(
-                IN EFI_HANDLE parent_image,
-                IN VOID *bootimage,
-                IN CHAR8 *install_id);
+	IN VOID *bootimage,
+	IN CHAR8 *cmdline,
+	IN struct bootimg_hooks *hooks);
 
 EFI_STATUS android_image_start_file(
-                IN EFI_HANDLE parent_image,
-                IN EFI_HANDLE device,
-                IN CHAR16 *loader,
-                IN CHAR8 *install_id);
+	IN EFI_HANDLE device,
+	IN CHAR16 *loader,
+	IN CHAR8 *cmdline,
+	IN struct bootimg_hooks *hooks);
 
 EFI_STATUS android_image_start_partition(
-                IN EFI_HANDLE parent_image,
-                IN const EFI_GUID *guid,
-                IN CHAR8 *install_id);
+	IN const EFI_GUID *guid,
+	IN CHAR8 *cmdline,
+	IN struct bootimg_hooks *hooks);
 
 /* Load the next boot target if specified in the BCB partition,
  * which we specify by partition GUID. Place the value in var,
@@ -53,15 +61,15 @@ EFI_STATUS android_image_start_partition(
  * EFI_INVALID_PARAMETER - BCB wasn't readble, bad GUID?
  * Potentially other errors related to Disk I/O */
 EFI_STATUS android_load_bcb(
-                IN EFI_FILE *root_dir,
-                IN const EFI_GUID *bcb_guid,
-                OUT CHAR16 **var);
+	IN EFI_FILE *root_dir,
+	IN const EFI_GUID *bcb_guid,
+	OUT CHAR16 **var);
 
 /* Convert a string GUID read from a config file into a real GUID
  * that we can do things with */
 EFI_STATUS string_to_guid(
-                IN CHAR16 *guid_str,
-                OUT EFI_GUID *guid);
+	IN CHAR16 *guid_str,
+	OUT EFI_GUID *guid);
 #endif
 
 /* vim: softtabstop=8:shiftwidth=8:expandtab
