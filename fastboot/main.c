@@ -33,6 +33,8 @@
 #include <protocol.h>
 #include <uefi_utils.h>
 #include <gpt.h>
+#include <bootimg.h>
+
 #include "flash.h"
 #include "fastboot.h"
 
@@ -90,6 +92,15 @@ static EFI_STATUS command_erase(UINTN argc, CHAR16 **argv)
 	return EFI_INVALID_PARAMETER;
 }
 
+static EFI_STATUS command_boot(UINTN argc, CHAR16 **argv)
+{
+	if (argc == 1)
+		return android_image_start_file(application_handle, argv[0], NULL, NULL);
+
+	error(L"Usage: boot <path_to_bootimg>");
+	return EFI_INVALID_PARAMETER;
+}
+
 struct fastboot_commands {
 	CHAR16 *name;
 	EFI_STATUS (*func)(UINTN argc, CHAR16 **argv);
@@ -97,6 +108,7 @@ struct fastboot_commands {
 	{L"find_label", find_label},
 	{L"flash_file", command_flash_file},
 	{L"erase", command_erase},
+	{L"boot", command_boot},
 };
 
 /**

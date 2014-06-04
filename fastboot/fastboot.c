@@ -33,6 +33,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <uefi_utils.h>
+#include <bootimg.h>
+#include <tco_reset.h>
+
 #include "fastboot_usb.h"
 #include "flash.h"
 
@@ -181,6 +184,25 @@ static void cmd_flash(char *arg, void **addr, unsigned *sz)
 		fastboot_okay("");
 }
 
+static void boot_ok(void)
+{
+	fastboot_okay("");
+}
+
+static void cmd_boot(char *arg, void **addr, unsigned *sz)
+{
+	struct bootimg_hooks hooks;
+	EFI_STATUS ret;
+
+	hooks.before_exit = boot_ok;
+	hooks.watchdog = tco_start_watchdog;
+	hooks.before_jump = NULL;
+
+	ret = android_image_start_buffer(*addr, NULL, &hooks);
+
+	fastboot_fail("boot failure: %r", ret);
+}
+
 static void cmd_getvar(char *arg, void **addr, unsigned *sz)
 {
 	if (!strcmp(arg, "all")) {
@@ -302,6 +324,7 @@ int fastboot_start()
 	fastboot_register("flash:", cmd_flash);
 	fastboot_register("getvar:", cmd_getvar);
 	fastboot_register("download:", cmd_download);
+	fastboot_register("boot", cmd_boot);
 	fastboot_usb_start(fastboot_start_callback, fastboot_process_data);
 
 	return 0;
