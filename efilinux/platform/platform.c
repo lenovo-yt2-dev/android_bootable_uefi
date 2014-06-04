@@ -131,6 +131,12 @@ static int stub_combo_key(enum combo_keys combo)
 	return 0;
 }
 
+static EFI_STATUS stub_save_previous_target_mode(enum targets target)
+{
+	warning(L"stubbed!\n");
+	return EFI_SUCCESS;
+}
+
 static EFI_STATUS stub_save_target_mode(enum targets target)
 {
 	warning(L"stubbed!\n");
@@ -244,6 +250,7 @@ struct osloader_ops loader_ops = {
 	.is_osnib_corrupted = stub_is_osnib_corrupted,
 	.em_ops = &fake_em_ops,
 	.combo_key = stub_combo_key,
+	.save_previous_target_mode = stub_save_previous_target_mode,
 	.save_target_mode = stub_save_target_mode,
 	.set_rtc_alarm_charging = stub_set_rtc_alarm_charging,
 	.set_wdt_counter = stub_set_wdt_counter,

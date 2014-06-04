@@ -64,6 +64,7 @@ error:
 
 static const CHAR16	*target_mode_name      = L"LoaderEntryOneShot";
 static const CHAR16	*last_target_mode_name = L"LoaderEntryLast";
+static const CHAR16	*previous_target_mode_name = L"LoadEntryPrevious";
 
 static enum targets get_target_from_var(const CHAR16 *varname)
 {
@@ -87,6 +88,21 @@ enum targets get_entry_oneshot(void)
 enum targets get_entry_last(void)
 {
 	return get_target_from_var(last_target_mode_name);
+}
+
+EFI_STATUS save_entry_previous(enum targets target)
+{
+	CHAR16 *name;
+	EFI_STATUS status;
+
+	status = target_to_name(target, &name);
+	if (EFI_ERROR(status)) {
+		error(L"Target name not found for target_id=%x\n", target);
+		return status;
+	}
+
+	return LibSetVariable((CHAR16 *)previous_target_mode_name, (EFI_GUID *)&osloader_guid,
+				StrSize(name), name);
 }
 
 EFI_STATUS set_entry_last(enum targets target)

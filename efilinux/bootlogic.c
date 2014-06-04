@@ -399,6 +399,8 @@ EFI_STATUS start_boot_logic(CHAR8 *cmdline)
 	if (EFI_ERROR(ret))
 		goto error;
 
+	loader_ops.save_previous_target_mode(loader_ops.get_last_target_mode());
+
 	flow_type = loader_ops.read_flow_type();
 
 	target = target_from_inputs(flow_type);

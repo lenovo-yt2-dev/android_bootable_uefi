@@ -33,6 +33,7 @@
 EFI_STATUS uefi_display_splash(CHAR8 *bmp, UINTN size);
 enum targets get_entry_oneshot(void);
 enum targets get_entry_last(void);
+EFI_STATUS save_entry_previous(enum targets target);
 EFI_STATUS set_entry_last(enum targets target);
 
 #endif /* __UEFI_BOOT_H__ */
