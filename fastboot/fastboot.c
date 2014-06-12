@@ -35,12 +35,14 @@
 #include <uefi_utils.h>
 #include <bootimg.h>
 #include <tco_reset.h>
+#include <gpt.h>
 
 #include "fastboot_usb.h"
 #include "flash.h"
 
 #define MAGIC_LENGTH 64
 #define MAX_DOWNLOAD_SIZE 500*1024*1024
+#define MAX_VARIABLE_LENGTH 128
 
 struct fastboot_cmd {
 	struct fastboot_cmd *next;
@@ -51,8 +53,8 @@ struct fastboot_cmd {
 
 struct fastboot_var {
 	struct fastboot_var *next;
-	const char *name;
-	const char *value;
+	char name[MAX_VARIABLE_LENGTH];
+	char value[MAX_VARIABLE_LENGTH];
 };
 
 enum fastboot_states {
@@ -62,6 +64,8 @@ enum fastboot_states {
 	STATE_DOWNLOAD,
 	STATE_ERROR,
 };
+
+EFI_GUID guid_linux_data = {0xebd0a0a2, 0xb9e5, 0x4433, {0x87, 0xc0, 0x68, 0xb6, 0xb7, 0x26, 0x99, 0xc7}};
 
 static struct fastboot_cmd *cmdlist;
 static char command_buffer[MAGIC_LENGTH];
@@ -87,13 +91,21 @@ void fastboot_register(const char *prefix,
 void fastboot_publish(const char *name, const char *value)
 {
 	struct fastboot_var *var;
-	var = AllocatePool(sizeof(*var));
+	UINTN namelen = strlena((CHAR8 *) name) + 1;
+	UINTN valuelen = strlena((CHAR8 *) value) + 1;
+
+	if (namelen > sizeof(var->name) ||
+		valuelen > sizeof(var->value)) {
+		error(L"name or value too long\n");
+		return;
+	}
+	var = AllocateZeroPool(sizeof(*var));
 	if (!var) {
 		error(L"Failed to allocate variable %a\n", name);
 		return;
 	}
-	var->name = name;
-	var->value = value;
+	CopyMem(var->name, name, namelen);
+	CopyMem(var->value, value, valuelen);
 	var->next = varlist;
 	varlist = var;
 }
@@ -126,6 +138,7 @@ static void fastboot_ack(const char *code, const char *format, va_list ap)
 		error(L"Failed to build reason string\n");
 		return;
 	}
+	ZeroMem(response, sizeof(response));
 
 	/* Nip off trailing newlines */
 	for (i = strlen(reason); (i > 0) && reason[i - 1] == '\n'; i--)
@@ -329,6 +342,38 @@ static void fastboot_start_callback(void)
 	usb_read(command_buffer, sizeof(command_buffer));
 }
 
+static void publish_partsize(void)
+{
+	struct gpt_partition_interface *gparti;
+	UINTN part_count;
+	UINTN i;
+
+	gpt_list_partition(&gparti, &part_count);
+
+	for (i = 0; i < part_count; i++) {
+		char fastboot_var[MAX_VARIABLE_LENGTH];
+		char partsize[MAX_VARIABLE_LENGTH];
+		UINT64 size;
+
+		size = gparti[i].bio->Media->BlockSize * (gparti[i].part.ending_lba + 1 - gparti[i].part.starting_lba);
+
+		if (snprintf(fastboot_var, sizeof(fastboot_var), "partition-size:%s", gparti[i].part.name) < 0)
+			continue;
+		if (snprintf(partsize, sizeof(partsize), "0x%lX", size) < 0)
+			continue;
+
+		fastboot_publish(fastboot_var, partsize);
+
+		if (snprintf(fastboot_var, sizeof(fastboot_var), "partition-type:%s", gparti[i].part.name) < 0)
+			continue;
+
+		if (!CompareGuid(&gparti[i].part.type, &guid_linux_data))
+			fastboot_publish(fastboot_var, "ext4");
+		else
+			fastboot_publish(fastboot_var, "none");
+	}
+}
+
 int fastboot_start()
 {
 	char download_max_str[30];
@@ -344,6 +389,7 @@ int fastboot_start()
 	fastboot_register("download:", cmd_download);
 	fastboot_register("boot", cmd_boot);
 	fastboot_register("erase:", cmd_erase);
+	publish_partsize();
 
 	fastboot_usb_start(fastboot_start_callback, fastboot_process_data);
 

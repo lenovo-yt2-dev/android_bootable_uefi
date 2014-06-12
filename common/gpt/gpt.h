@@ -55,5 +55,6 @@ struct gpt_partition_interface {
 };
 
 EFI_STATUS gpt_get_partition_by_label(CHAR16 *label, struct gpt_partition_interface *gpart);
+EFI_STATUS gpt_list_partition(struct gpt_partition_interface **gpartlist, UINTN *part_count);
 
 #endif	/* _GPT_H_ */
