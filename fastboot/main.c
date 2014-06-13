@@ -86,7 +86,7 @@ static EFI_STATUS command_flash_file(UINTN argc, CHAR16 **argv)
 static EFI_STATUS command_erase(UINTN argc, CHAR16 **argv)
 {
 	if (argc == 1)
-		return erase(argv[0]);
+		return erase_by_label(argv[0]);
 
 	error(L"Usage: erase <partition_name>");
 	return EFI_INVALID_PARAMETER;

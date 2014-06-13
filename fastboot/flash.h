@@ -34,6 +34,6 @@
 
 EFI_STATUS flash(VOID *data, UINTN size, CHAR16 *label);
 EFI_STATUS flash_file(EFI_HANDLE image, CHAR16 *filename, CHAR16 *label);
-EFI_STATUS erase(CHAR16 *label);
+EFI_STATUS erase_by_label(CHAR16 *label);
 
 #endif	/* _FLASH_H_ */

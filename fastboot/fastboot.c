@@ -178,12 +178,30 @@ static void cmd_flash(char *arg, void **addr, unsigned *sz)
 	}
 
 	ret = flash(*addr, *sz, label);
+	FreePool(label);
 	if (EFI_ERROR(ret))
 		fastboot_fail("Flash failure: %r", ret);
 	else
 		fastboot_okay("");
 }
 
+static void cmd_erase(char *arg, void **addr, unsigned *sz)
+{
+	EFI_STATUS ret;
+	CHAR16 *label = stra_to_str((CHAR8*)arg);
+	if (!label) {
+		error(L"Failed to get label %a\n", arg);
+		fastboot_fail("Allocation error");
+		return;
+	}
+
+	ret = erase_by_label(label);
+	FreePool(label);
+	if (EFI_ERROR(ret))
+		fastboot_fail("Flash failure: %r", ret);
+	else
+		fastboot_okay("");
+}
 static void boot_ok(void)
 {
 	fastboot_okay("");
@@ -325,6 +343,8 @@ int fastboot_start()
 	fastboot_register("getvar:", cmd_getvar);
 	fastboot_register("download:", cmd_download);
 	fastboot_register("boot", cmd_boot);
+	fastboot_register("erase:", cmd_erase);
+
 	fastboot_usb_start(fastboot_start_callback, fastboot_process_data);
 
 	return 0;
