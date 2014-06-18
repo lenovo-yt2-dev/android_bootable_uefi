@@ -3,6 +3,7 @@ LOCAL_PATH := $(call my-dir)
 FASTBOOT_SRC_FILES := \
     main.c \
     flash.c \
+    sparse.c \
     fastboot.c \
     fastboot_usb.c
 

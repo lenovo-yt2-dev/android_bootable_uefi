@@ -27,17 +27,12 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _FLASH_H_
-#define _FLASH_H_
+#ifndef _SPARSE_H_
+#define _SPARSE_H_
 
 #include <efi.h>
 
-EFI_STATUS flash_skip(UINT64 size);
-EFI_STATUS flash_write(VOID *data, UINTN size);
-EFI_STATUS flash_fill(UINT32 pattern, UINTN size);
+int is_sparse_image(void *data, UINT64 size);
+EFI_STATUS flash_sparse(void *data, UINT64 size);
 
-EFI_STATUS flash(VOID *data, UINTN size, CHAR16 *label);
-EFI_STATUS flash_file(EFI_HANDLE image, CHAR16 *filename, CHAR16 *label);
-EFI_STATUS erase_by_label(CHAR16 *label);
-
-#endif	/* _FLASH_H_ */
+#endif	/* _SPARSE_H_ */

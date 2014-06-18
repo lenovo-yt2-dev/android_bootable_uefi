@@ -35,12 +35,69 @@
 #include "flash.h"
 #include "SdHostIo.h"
 #include "Mmc.h"
+#include "sparse.h"
+
+static struct gpt_partition_interface gparti;
+static UINT64 cur_offset;
+
+#define part_start (gparti.part.starting_lba * gparti.bio->Media->BlockSize)
+#define part_end ((gparti.part.ending_lba + 1) * gparti.bio->Media->BlockSize)
+
+#define is_inside_partition(off, sz) \
+		(off >= part_start && off + sz <= part_end)
+
+EFI_STATUS flash_skip(UINT64 size)
+{
+	if (!is_inside_partition(cur_offset, size)) {
+		error(L"Attempt to skip outside of partition [%ld %ld] [%ld %ld]\n",
+				part_start, part_end, cur_offset, cur_offset + size);
+		return EFI_INVALID_PARAMETER;
+	}
+	cur_offset += size;
+	return EFI_SUCCESS;
+}
+
+EFI_STATUS flash_write(VOID *data, UINTN size)
+{
+	EFI_STATUS ret;
+
+	if (!gparti.bio)
+		return EFI_INVALID_PARAMETER;
+
+	if (!is_inside_partition(cur_offset, size)) {
+		error(L"Attempt to write outside of partition [%ld %ld] [%ld %ld]\n",
+				part_start, part_end, cur_offset, cur_offset + size);
+		return EFI_INVALID_PARAMETER;
+	}
+	ret = uefi_call_wrapper(gparti.dio->WriteDisk, 5, gparti.dio, gparti.bio->Media->MediaId, cur_offset, size, data);
+	if (EFI_ERROR(ret))
+		error(L"Failed to write bytes: %r\n", ret);
+
+	cur_offset += size;
+	return ret;
+}
+
+EFI_STATUS flash_fill(UINT32 pattern, UINTN size)
+{
+	UINT32 *buf;
+	UINTN i;
+	EFI_STATUS ret;
+
+	buf = AllocatePool(size);
+	if (!buf)
+		return EFI_OUT_OF_RESOURCES;
+
+	for (i = 0; i < size / sizeof(UINTN); i++)
+		buf[i] = pattern;
+
+	ret = flash_write(buf, size);
+	FreePool(buf);
+	return ret;
+}
 
 EFI_STATUS flash(VOID *data, UINTN size, CHAR16 *label)
 {
-	struct gpt_partition_interface gparti;
 	EFI_STATUS ret;
-	UINT64 offset;
 
 	ret = gpt_get_partition_by_label(label, &gparti);
 	if (EFI_ERROR(ret)) {
@@ -48,14 +105,13 @@ EFI_STATUS flash(VOID *data, UINTN size, CHAR16 *label)
 		return ret;
 	}
 
-	offset = gparti.part.starting_lba * gparti.bio->Media->BlockSize;
+	cur_offset = gparti.part.starting_lba * gparti.bio->Media->BlockSize;
 
-	debug(L"Write %d bytes at offset 0x%x\n", size, offset);
-	ret = uefi_call_wrapper(gparti.dio->WriteDisk, 5, gparti.dio, gparti.bio->Media->MediaId, offset, size, data);
-	if (EFI_ERROR(ret))
-		error(L"Failed to write bytes: %r\n", ret);
+	debug(L"Write %d bytes at offset 0x%x\n", size, cur_offset);
+	if (is_sparse_image(data, size))
+		return flash_sparse(data, size);
 
-	return ret;
+	return flash_write(data, size);
 }
 
 EFI_STATUS flash_file(EFI_HANDLE image, CHAR16 *filename, CHAR16 *label)
@@ -247,7 +303,6 @@ fallback:
 
 EFI_STATUS erase_by_label(CHAR16 *label)
 {
-	struct gpt_partition_interface gparti;
 	EFI_STATUS ret;
 
 	ret = gpt_get_partition_by_label(label, &gparti);
