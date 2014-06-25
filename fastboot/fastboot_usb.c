@@ -45,7 +45,8 @@
 #define PRODUCT_ID		0x0A65
 #define BCD_DEVICE		0x0100
 
-static data_callback_t		data_callback  = NULL;
+static data_callback_t		rx_callback  = NULL;
+static data_callback_t		tx_callback  = NULL;
 static start_callback_t		start_callback = NULL;
 static USB_DEVICE_OBJ		gDevObj;
 static USB_DEVICE_CONFIG_OBJ	device_configs[CONFIG_COUNT];
@@ -162,7 +163,6 @@ int usb_write(void *pBuf, uint32_t size)
 	ret = uefi_call_wrapper(usb_device->EpTxData, 2, usb_device, &ioReq);
 	if (EFI_ERROR(ret))
 		error(L"failed to queue Tx request: %r\n", ret);
-
 	return EFI_ERROR(ret);
 }
 
@@ -203,7 +203,8 @@ static EFIAPI EFI_STATUS config_handler(UINT8 cfgVal)
 
 	if (cfgVal == config_descriptor.config.ConfigurationValue) {
 		/* we've been configured, get ready to receive Commands */
-		start_callback();
+		if (start_callback)
+			start_callback();
 	} else {
 		error(L"invalid configuration value: 0x%x\n", cfgVal);
 		status = EFI_INVALID_PARAMETER;
@@ -215,9 +216,12 @@ static EFIAPI EFI_STATUS config_handler(UINT8 cfgVal)
 EFIAPI EFI_STATUS data_handler(EFI_USB_DEVICE_XFER_INFO *XferInfo)
 {
 	/* if we are receiving a command or data, call the processing routine */
-	if (XferInfo->EndpointDir == USB_ENDPOINT_DIR_OUT)
-		data_callback(XferInfo->Buffer, XferInfo->Length);
-
+	if (XferInfo->EndpointDir == USB_ENDPOINT_DIR_OUT) {
+		if (rx_callback)
+			rx_callback(XferInfo->Buffer, XferInfo->Length);
+	} else
+		if (tx_callback)
+			tx_callback(XferInfo->Buffer, XferInfo->Length);
 	return EFI_SUCCESS;
 }
 
@@ -277,12 +281,15 @@ static int fastboot_usb_init(void)
 	return 0;
 }
 
-int fastboot_usb_start(start_callback_t sc, data_callback_t dc)
+int fastboot_usb_start(start_callback_t start_cb,
+		       data_callback_t rx_cb,
+		       data_callback_t tx_cb)
 {
 	EFI_STATUS ret;
 
-	start_callback = sc;
-	data_callback = dc;
+	start_callback = start_cb;
+	rx_callback = rx_cb;
+	tx_callback = tx_cb;
 
 	ret = fastboot_usb_init();
 	if (EFI_ERROR(ret))

@@ -35,6 +35,8 @@ typedef void (*start_callback_t)(void);
 
 int usb_write(void *buf, unsigned len);
 int usb_read(void *buf, unsigned len);
-int fastboot_usb_start(start_callback_t start_callback, data_callback_t data_callback);
+int fastboot_usb_start(start_callback_t start_cb,
+		       data_callback_t rx_cb,
+		       data_callback_t tx_cb);
 
 #endif	/* _FASTBOOT_USB_H_ */

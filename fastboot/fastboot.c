@@ -62,6 +62,7 @@ enum fastboot_states {
 	STATE_COMMAND,
 	STATE_COMPLETE,
 	STATE_DOWNLOAD,
+	STATE_GETVAR,
 	STATE_ERROR,
 };
 
@@ -130,9 +131,6 @@ static void fastboot_ack(const char *code, const char *format, va_list ap)
 	char response[MAGIC_LENGTH];
 	char reason[MAGIC_LENGTH];
 	int i;
-
-	if (fastboot_state != STATE_COMMAND)
-		return;
 
 	if (vsnprintf(reason, MAGIC_LENGTH, format, ap) < 0) {
 		error(L"Failed to build reason string\n");
@@ -234,14 +232,24 @@ static void cmd_boot(char *arg, void **addr, unsigned *sz)
 	fastboot_fail("boot failure: %r", ret);
 }
 
+static void worker_getvar_all(struct fastboot_var *start)
+{
+	static struct fastboot_var *var;
+	if (start)
+		var = start;
+
+	if (var) {
+		fastboot_info("%a: %a", var->name, var->value);
+		var = var->next;
+	} else
+		fastboot_okay("");
+}
+
 static void cmd_getvar(char *arg, void **addr, unsigned *sz)
 {
 	if (!strcmp(arg, "all")) {
-		struct fastboot_var *var;
-		for (var = varlist; var; var = var->next) {
-			fastboot_info("%a: %a", var->name, var->value);
-		}
-		fastboot_okay("");
+		fastboot_state = STATE_GETVAR;
+		worker_getvar_all(varlist);
 	} else {
 		const char *value;
 		value = fastboot_getvar(arg);
@@ -256,6 +264,11 @@ static void cmd_getvar(char *arg, void **addr, unsigned *sz)
 static void cmd_reboot(char *arg, void **addr, unsigned *sz)
 {
 	uefi_reset_system(EfiResetCold);
+}
+
+static void fastboot_read_command(void)
+{
+	usb_read(command_buffer, sizeof(command_buffer));
 }
 
 static void cmd_download(char *arg, void **addr, unsigned *sz)
@@ -291,7 +304,22 @@ static void cmd_download(char *arg, void **addr, unsigned *sz)
 	fastboot_state = STATE_DOWNLOAD;
 }
 
-static void fastboot_process_data(void *buf, unsigned len)
+static void fastboot_process_tx(void *buf, unsigned len)
+{
+	switch (fastboot_state) {
+	case STATE_GETVAR:
+		worker_getvar_all(NULL);
+		break;
+	case STATE_COMPLETE:
+		fastboot_read_command();
+		break;
+	default:
+		/* Nothing to do */
+		break;
+	}
+}
+
+static void fastboot_process_rx(void *buf, unsigned len)
 {
 	struct fastboot_cmd *cmd;
 	static void *addr = NULL;
@@ -332,14 +360,12 @@ static void fastboot_process_data(void *buf, unsigned len)
 	default:
 		error(L"Inconsistent fastboot state: 0x%x\n", fastboot_state);
 	}
-	if (fastboot_state != STATE_DOWNLOAD)
-		usb_read(command_buffer, sizeof(command_buffer));
 }
 
 static void fastboot_start_callback(void)
 {
 	fastboot_state = STATE_COMPLETE;
-	usb_read(command_buffer, sizeof(command_buffer));
+	fastboot_read_command();
 }
 
 static void publish_partsize(void)
@@ -391,7 +417,7 @@ int fastboot_start()
 	fastboot_register("erase:", cmd_erase);
 	publish_partsize();
 
-	fastboot_usb_start(fastboot_start_callback, fastboot_process_data);
+	fastboot_usb_start(fastboot_start_callback, fastboot_process_rx, fastboot_process_tx);
 
 	return 0;
 }

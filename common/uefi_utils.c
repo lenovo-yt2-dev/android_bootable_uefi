@@ -615,7 +615,7 @@ EFI_STATUS uefi_usleep(UINTN useconds)
 
 EFI_STATUS uefi_msleep(UINTN mseconds)
 {
-	return uefi_msleep(mseconds * 1000);
+	return uefi_usleep(mseconds * 1000);
 }
 
 EFI_STATUS str_to_stra(CHAR8 *dst, CHAR16 *src, UINTN len)
