@@ -74,7 +74,7 @@ LOCAL_MODULE := libuefi_bootimg
 LOCAL_WHOLE_STATIC_LIBRARIES := libuefi_log libuefi_posix
 
 ifneq ($(BOARD_HAVE_LIMITED_POWERON_FEATURES),true)
-ifneq (, $(findstring isu,$(TARGET_OS_SIGNING_METHOD)))
+ifneq (,$(findstring isu,$(TARGET_OS_SIGNING_METHOD)))
 LOCAL_CFLAGS := -DUSE_INTEL_OS_VERIFICATION
 endif
 ifeq ($(TARGET_OS_SIGNING_METHOD),uefi)

@@ -184,11 +184,6 @@ static EFI_STATUS verify_boot_image(UINT8 *bootimage)
 	debug(L"manifest addr: 0x%02X\n", bootimage + sig_offset);
 	debug(L"manifest size: %d\n", sigsize);
 
-	if (!sigsize) {
-		error(L"Image is not signed\n");
-		return EFI_LOAD_ERROR;
-	}
-
 	return check_signature(bootimage, sig_offset,
 			       bootimage + sig_offset, sigsize);
 }

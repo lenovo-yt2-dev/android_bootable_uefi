@@ -97,6 +97,10 @@ EFI_STATUS check_signature(IN VOID *os, IN UINTN os_size,
 	if (!is_secure_boot_enabled())
 		return EFI_SUCCESS;
 
+	if(!manifest_size) {
+		error(L"image is not signed\n");
+		return EFI_ACCESS_DENIED;
+	}
 	debug(L"checking boot image signature\n");
 
 	ret = LibLocateProtocol(&gOsVerificationProtocolGuid, (void **)&ovp);
@@ -146,18 +150,17 @@ EFI_STATUS check_signature(IN VOID *blob, IN UINTN blob_size,
 	if (!is_secure_boot_enabled())
 		return EFI_SUCCESS;
 
+	if (!sig_size) {
+		error(L"Secure boot enabled, "
+		      "but Android boot image is unsigned\n");
+		return EFI_ACCESS_DENIED;
+	}
 	debug(L"checking boot image signature\n");
 
 	ret = LibLocateProtocol(&gShimLockProtocolGuid, (VOID **)&shim_lock);
 	if (EFI_ERROR(ret)) {
 		error(L"Couldn't instantiate shim protocol", ret);
 		return ret;
-	}
-
-	if (!sigsize) {
-		error(L"Secure boot enabled, "
-		      "but Android boot image is unsigned\n");
-		return EFI_ACCESS_DENIED;
 	}
 
 	ret = uefi_call_wrapper(VerifyBlob, 4, shim_lock,
