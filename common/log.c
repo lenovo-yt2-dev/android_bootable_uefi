@@ -40,7 +40,7 @@
 #define LOG_BUF_SIZE ((10 * 1024))
 
 static CHAR16 log_tag[LOG_TAG_LEN];
-static UINTN log_line_len = 100;
+static UINTN log_line_len = 200;
 static BOOLEAN log_flush_to_variable = FALSE;
 static BOOLEAN log_timestamp = TRUE;
 enum loglevel log_level = LEVEL_DEBUG;
@@ -89,12 +89,12 @@ void log(enum loglevel level, const CHAR16 *prefix, const void *func, const INTN
 		UINT64 sec = time / 1000000;
 		UINT64 usec = time - (sec * 1000000);
 
-		cur += SPrint(cur, sizeof(buffer) - (cur - buffer), L"[%5ld.%06ld] ",
+		cur += SPrint(cur, sizeof(buffer) - sizeof(CHAR16) * (cur - buffer), L"[%5ld.%06ld] ",
 			      sec, usec);
 	}
-	cur += SPrint(cur, sizeof(buffer) - (cur - buffer), (CHAR16 *)prefix,
+	cur += SPrint(cur, sizeof(buffer) - sizeof(CHAR16) * (cur - buffer), (CHAR16 *)prefix,
 		      func, line);
-	cur += VSPrint(cur, sizeof(buffer) - (cur - buffer), (CHAR16 *)fmt,
+	cur += VSPrint(cur, sizeof(buffer) - sizeof(CHAR16) * (cur - buffer), (CHAR16 *)fmt,
 		       args);
 	if (((cur - buffer) + log_line_len) * sizeof(CHAR16) >= LOG_BUF_SIZE)
 		cur = buffer;
