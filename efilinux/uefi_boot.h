@@ -35,5 +35,7 @@ enum targets get_entry_oneshot(void);
 enum targets get_entry_last(void);
 EFI_STATUS save_entry_previous(enum targets target);
 EFI_STATUS set_entry_last(enum targets target);
+EFI_STATUS save_reset_source(enum reset_sources reset_source);
+enum reset_sources get_reset_source(void);
 
 #endif /* __UEFI_BOOT_H__ */

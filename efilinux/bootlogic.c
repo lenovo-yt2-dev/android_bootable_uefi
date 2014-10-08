@@ -229,6 +229,7 @@ enum targets boot_watchdog(enum reset_sources rs)
 		} else {
 			// else branch for 0 and -1 when WDColdReset var is not yet initialized.
 			loader_ops.save_target_mode(last_target);
+			loader_ops.save_reset_source(rs);
 			if (EFI_ERROR(uefi_set_wd_cold_reset(1)))
 				error(L"Failed to set WDColdReset variable to 1\n");
 			debug(L"cold reset after watchdog\n");
@@ -292,16 +293,14 @@ enum targets target_from_inputs(enum flow_types flow_type)
 		return target_from_off(ws);
 
 	rs = loader_ops.get_reset_source();
-	debug(L"Reset source = 0x%x\n", rs);
 	if (rs == RESET_ERROR) {
 		error(L"Reset source couldn't be retrieved. Falling back in TARGET_BOOT\n");
 		return TARGET_BOOT;
 	}
+	debug(L"Reset source = 0x%x\n", rs);
 
 	if (do_cold_reset_after_wd && uefi_get_wd_cold_reset() == 1) {
-		rs = RESET_KERNEL_WATCHDOG;
-		loader_ops.set_reset_source(RESET_KERNEL_WATCHDOG);
-		debug(L"Reset source changed to = 0x%x\n", rs);
+		loader_ops.set_reset_source(rs);
 	}
 
 	if (rs != RESET_NOT_APPLICABLE)

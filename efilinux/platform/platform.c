@@ -98,13 +98,19 @@ static enum wake_sources stub_get_wake_source(void)
 static enum reset_sources stub_get_reset_source(void)
 {
 	warning(L"stubbed!\n");
-	return WAKE_NOT_APPLICABLE;
+	return RESET_NOT_APPLICABLE;
 }
 
 static EFI_STATUS stub_set_reset_source(enum reset_sources value)
 {
 	debug(L"WARNING: stubbed!\n");
 	return EFI_SUCCESS;
+}
+
+static EFI_STATUS stub_save_reset_source(enum reset_sources value)
+{
+	debug(L"WARNING: stubbed!\n");
+	return EFI_UNSUPPORTED;
 }
 
 static enum reset_types stub_get_reset_type(void)
@@ -245,6 +251,7 @@ struct osloader_ops loader_ops = {
 	.get_wake_source = stub_get_wake_source,
 	.get_reset_source = stub_get_reset_source,
 	.set_reset_source = stub_set_reset_source,
+	.save_reset_source = stub_save_reset_source,
 	.get_reset_type = stub_get_reset_type,
 	.get_shutdown_source = stub_get_shutdown_source,
 	.is_osnib_corrupted = stub_is_osnib_corrupted,

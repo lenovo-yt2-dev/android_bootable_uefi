@@ -34,6 +34,8 @@
 #include "config.h"
 #include "bootlogic.h"
 #include "intel_partitions.h"
+#include "uefi_osnib.h"
+#include "acpi.h"
 
 EFI_STATUS uefi_display_splash(CHAR8 *bmp, UINTN size)
 {
@@ -65,6 +67,45 @@ error:
 static const CHAR16	*target_mode_name      = L"LoaderEntryOneShot";
 static const CHAR16	*last_target_mode_name = L"LoaderEntryLast";
 static const CHAR16	*previous_target_mode_name = L"LoadEntryPrevious";
+static const CHAR16	*saved_reset_source = L"SavedResetSource";
+
+EFI_STATUS save_reset_source(enum reset_sources reset_source)
+{
+	EFI_STATUS status;
+
+	status = LibSetNVVariable((CHAR16 *)saved_reset_source, (EFI_GUID *)&osloader_guid, sizeof(enum reset_sources), &reset_source);
+	if (EFI_ERROR(status))
+		error(L"Failed to save the reset source, %r\n", status);
+	return status;
+}
+
+enum reset_sources get_reset_source(void)
+{
+	static enum reset_sources reset_source = RESET_ERROR;
+	enum reset_sources *rs = NULL;
+	EFI_STATUS status;
+
+	if (reset_source != RESET_ERROR)
+		return reset_source;
+
+	if (do_cold_reset_after_wd && uefi_get_wd_cold_reset() == 1) {
+		rs = (enum reset_sources *)LibGetVariable((CHAR16 *)saved_reset_source, (EFI_GUID *)&osloader_guid);
+		if (!rs) {
+			warning(L"Failed to read %s EFI variable\n", saved_reset_source);
+			goto error;
+		}
+		reset_source = *rs;
+		FreePool(rs);
+	}
+	else
+		reset_source = rsci_get_reset_source();
+
+error:
+	status = LibDeleteVariable((CHAR16 *)saved_reset_source, (EFI_GUID *)&osloader_guid);
+	if (status != EFI_SUCCESS)
+		warning(L"Failed to delete %s variable\n", saved_reset_source);
+	return reset_source;
+}
 
 static enum targets get_target_from_var(const CHAR16 *varname)
 {
