@@ -26,6 +26,7 @@ EFILINUX_SRC_FILES := \
 	uefi_osnib.c \
 	platform/platform.c \
 	platform/x86.c \
+	platform/pmic.c \
 	uefi_keys.c \
 	uefi_boot.c \
 	commands.c \

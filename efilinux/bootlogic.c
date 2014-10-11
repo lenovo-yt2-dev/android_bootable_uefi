@@ -39,6 +39,7 @@
 #include "splash.h"
 #include "config.h"
 #include "fs.h"
+#include "pmic.h"
 
 static enum targets boot_bcb(int dummy)
 {
@@ -79,7 +80,15 @@ enum targets boot_rtc(enum wake_sources ws)
 enum targets boot_battery_insertion(enum wake_sources ws)
 {
 	if (ws == WAKE_BATTERY_INSERTED) {
-		debug(L"Battery insertion detected. Shutdown\n");
+		/* TI PMIC reports BATTERY INSERTED when charging
+		 * from dead battery. Enter COS when charger present
+		 */
+		if (pmic_get_type_from_smbios() == DOLLAR_TI
+		    && loader_ops.em_ops->is_charger_present()) {
+			debug(L"Charging from dead battery detected.\n");
+			return TARGET_CHARGING;
+		}
+		debug(L"Battery insertion detected. Shutdown.\n");
 		return TARGET_COLD_OFF;
 	}
 	else
