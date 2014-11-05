@@ -172,7 +172,10 @@ enum targets em_fallback_target(enum targets target)
 		case TARGET_BOOT:
 		case TARGET_FACTORY:
 		case TARGET_FACTORY2:
-			fallback = TARGET_CHARGING;
+			if (loader_ops.em_ops->is_charger_present())
+				fallback = TARGET_CHARGING;
+			else
+				fallback = TARGET_COLD_OFF;
 			debug(L"EM fallback from 0x%x to 0x%x\n", target, fallback);
 			break;
 		default:
