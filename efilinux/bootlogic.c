@@ -381,6 +381,11 @@ static EFI_STATUS launch_or_fallback(enum targets target, CHAR8 *cmdline)
 	do {
 		target = em_fallback_target(target);
 
+		if (target == TARGET_COLD_OFF) {
+			debug(L"TARGET_COLD_OFF shutdown\n");
+			loader_ops.do_cold_off();
+		}
+
 		ret = loader_ops.populate_indicators();
 		if (EFI_ERROR(ret))
 			return ret;
@@ -422,11 +427,6 @@ EFI_STATUS start_boot_logic(CHAR8 *cmdline)
 		target = TARGET_BOOT;
 	}
 	debug(L"target = 0x%x\n", target);
-
-	if (target == TARGET_COLD_OFF) {
-		debug(L"TARGET_COLD_OFF shutdown\n");
-		loader_ops.do_cold_off();
-	}
 
 	loader_ops.display_splash(splash_intel, splash_intel_size);
 
